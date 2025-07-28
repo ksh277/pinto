@@ -1,57 +1,82 @@
-import React, { useState, useEffect } from 'react';
-import { User, Package, Heart, Star, Settings, LogOut, Edit2, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { useSupabaseAuth } from '@/components/SupabaseProvider';
-import { Link } from 'wouter';
+import React, { useState, useEffect } from "react";
+import {
+  User,
+  Package,
+  Heart,
+  Star,
+  Settings,
+  LogOut,
+  Edit2,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSupabaseAuth } from "@/components/SupabaseProvider";
+import { supabase } from "@/lib/supabase";
+import { Link } from "wouter";
 
 export default function MyPage() {
   const { user: localUser, logout: localLogout } = useAuth();
   const { user: supabaseUser, signOut } = useSupabaseAuth();
   const { toast } = useToast();
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [userInfo, setUserInfo] = useState({
-    name: localUser?.name || supabaseUser?.user_metadata?.name || '사용자',
-    email: localUser?.email || supabaseUser?.email || 'user@example.com',
-    phone: localUser?.phone || '010-1234-5678',
-    address: localUser?.address || '서울시 강남구 테헤란로 123',
-    password: '••••••••'
+    name: localUser?.name || supabaseUser?.user_metadata?.name || "사용자",
+    email: localUser?.email || supabaseUser?.email || "user@example.com",
+    phone: localUser?.phone || "010-1234-5678",
+    address: localUser?.address || "서울시 강남구 테헤란로 123",
+    password: "••••••••",
   });
 
-  // Load user orders from database
+  // Load user orders from Supabase
   useEffect(() => {
     const loadUserOrders = async () => {
-      if (!localUser?.id) return;
-      
+      const currentUser = localUser || supabaseUser;
+      if (!currentUser?.id) return;
+
       try {
         setLoading(true);
-        const response = await fetch(`/api/orders/user/${localUser.id}`);
-        
-        if (response.ok) {
-          const ordersData = await response.json();
-          setOrders(ordersData);
-        } else {
-          console.error('Failed to load orders');
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("user_id", currentUser.id)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Failed to load orders:", error);
+          toast({
+            title: "오류",
+            description: "주문 내역을 불러오지 못했습니다.",
+            variant: "destructive",
+          });
+          return;
         }
+        setOrders(data || []);
       } catch (error) {
-        console.error('Error loading orders:', error);
+        console.error("Error loading orders:", error);
+        toast({
+          title: "오류",
+          description: "주문 내역을 불러오는 중 문제가 발생했습니다.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
 
     loadUserOrders();
-  }, [localUser?.id]);
+  }, [localUser?.id, supabaseUser?.id]);
 
   const handleLogout = async () => {
     try {
@@ -59,25 +84,25 @@ export default function MyPage() {
       if (supabaseUser) {
         await signOut();
       }
-      
+
       // 로컬 로그아웃
       if (localUser) {
         localLogout();
       }
-      
+
       // 로컬 스토리지 정리
-      localStorage.removeItem('cart');
-      localStorage.removeItem('wishlist');
-      
+      localStorage.removeItem("cart");
+      localStorage.removeItem("wishlist");
+
       toast({
         title: "로그아웃 완료",
         description: "성공적으로 로그아웃되었습니다.",
       });
-      
+
       // 홈페이지로 리디렉션
-      window.location.href = '/';
+      window.location.href = "/";
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       toast({
         title: "로그아웃 오류",
         description: "로그아웃 중 오류가 발생했습니다.",
@@ -88,23 +113,23 @@ export default function MyPage() {
 
   const handleSaveProfile = async () => {
     if (!localUser?.id) return;
-    
+
     try {
       setLoading(true);
       const response = await fetch(`/api/users/${localUser.id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          first_name: userInfo.name.split(' ')[0],
-          last_name: userInfo.name.split(' ')[1] || '',
+          first_name: userInfo.name.split(" ")[0],
+          last_name: userInfo.name.split(" ")[1] || "",
           email: userInfo.email,
           phone: userInfo.phone,
           address: userInfo.address,
         }),
       });
-      
+
       if (response.ok) {
         setIsEditing(false);
         toast({
@@ -119,7 +144,7 @@ export default function MyPage() {
         });
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       toast({
         title: "프로필 수정 실패",
         description: "네트워크 오류가 발생했습니다.",
@@ -133,37 +158,38 @@ export default function MyPage() {
   // 주문 상태 표시 함수
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'pending': { label: '주문접수', variant: 'secondary' as const },
-      'processing': { label: '제작중', variant: 'default' as const },
-      'shipping': { label: '배송중', variant: 'outline' as const },
-      'delivered': { label: '배송완료', variant: 'default' as const },
-      'cancelled': { label: '취소됨', variant: 'destructive' as const },
+      pending: { label: "주문접수", variant: "secondary" as const },
+      processing: { label: "제작중", variant: "default" as const },
+      shipping: { label: "배송중", variant: "outline" as const },
+      delivered: { label: "배송완료", variant: "default" as const },
+      cancelled: { label: "취소됨", variant: "destructive" as const },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   // 임시 주문 데이터 (데이터베이스에서 가져온 데이터가 없을 때 표시)
   const fallbackOrders = [
     {
-      id: 'ORD-2024-001',
-      created_at: '2024-01-15',
-      status: '배송완료',
-      items: [{ name: '아크릴 키링', quantity: 2, price: 15000 }],
-      total: 30000
+      id: "ORD-2024-001",
+      created_at: "2024-01-15",
+      status: "배송완료",
+      items: [{ name: "아크릴 키링", quantity: 2, price: 15000 }],
+      total: 30000,
     },
     {
-      id: 'ORD-2024-002', 
-      date: '2024-01-10',
-      status: '배송중',
-      items: [{ name: '핸드폰 케이스', quantity: 1, price: 25000 }],
-      total: 25000
-    }
+      id: "ORD-2024-002",
+      date: "2024-01-10",
+      status: "배송중",
+      items: [{ name: "핸드폰 케이스", quantity: 1, price: 25000 }],
+      total: 25000,
+    },
   ];
 
   const currentUser = localUser || supabaseUser;
-  
+
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a] py-8">
@@ -227,19 +253,25 @@ export default function MyPage() {
                 </div>
               </div>
               <div>
-                <Label className="text-gray-700 dark:text-gray-300">이메일</Label>
+                <Label className="text-gray-700 dark:text-gray-300">
+                  이메일
+                </Label>
                 <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {userInfo.email}
                 </div>
               </div>
               <div>
-                <Label className="text-gray-700 dark:text-gray-300">가입일</Label>
+                <Label className="text-gray-700 dark:text-gray-300">
+                  가입일
+                </Label>
                 <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   2024년 1월 1일
                 </div>
               </div>
               <div>
-                <Label className="text-gray-700 dark:text-gray-300">회원등급</Label>
+                <Label className="text-gray-700 dark:text-gray-300">
+                  회원등급
+                </Label>
                 <div className="mt-1">
                   <Badge variant="secondary" className="text-sm">
                     일반회원
@@ -257,7 +289,9 @@ export default function MyPage() {
               <div className="flex items-center">
                 <Package className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 <div className="ml-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">총 주문</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    총 주문
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {orders.length}건
                   </p>
@@ -270,8 +304,12 @@ export default function MyPage() {
               <div className="flex items-center">
                 <Heart className="h-8 w-8 text-red-500" />
                 <div className="ml-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">찜한 상품</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">0개</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    찜한 상품
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    0개
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -281,8 +319,12 @@ export default function MyPage() {
               <div className="flex items-center">
                 <Star className="h-8 w-8 text-yellow-500" />
                 <div className="ml-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">리뷰 작성</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">0개</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    리뷰 작성
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    0개
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -292,8 +334,12 @@ export default function MyPage() {
               <div className="flex items-center">
                 <Package className="h-8 w-8 text-green-500" />
                 <div className="ml-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">적립금</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">₩0</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    적립금
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    ₩0
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -303,16 +349,28 @@ export default function MyPage() {
         {/* 탭 메뉴 */}
         <Tabs defaultValue="orders" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
-            <TabsTrigger value="orders" className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600">
+            <TabsTrigger
+              value="orders"
+              className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
+            >
               주문내역
             </TabsTrigger>
-            <TabsTrigger value="wishlist" className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600">
+            <TabsTrigger
+              value="wishlist"
+              className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
+            >
               찜한상품
             </TabsTrigger>
-            <TabsTrigger value="reviews" className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600">
+            <TabsTrigger
+              value="reviews"
+              className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
+            >
               리뷰관리
             </TabsTrigger>
-            <TabsTrigger value="settings" className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600">
+            <TabsTrigger
+              value="settings"
+              className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
+            >
               설정
             </TabsTrigger>
           </TabsList>
@@ -320,51 +378,68 @@ export default function MyPage() {
           <TabsContent value="orders" className="space-y-4">
             <Card className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle className="text-gray-900 dark:text-white">주문 내역</CardTitle>
+                <CardTitle className="text-gray-900 dark:text-white">
+                  주문 내역
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {loading ? (
                     <div className="text-center py-8">
-                      <div className="text-gray-600 dark:text-gray-300">주문 내역을 불러오는 중...</div>
+                      <div className="text-gray-600 dark:text-gray-300">
+                        주문 내역을 불러오는 중...
+                      </div>
                     </div>
                   ) : orders.length === 0 ? (
                     <div className="text-center py-8">
                       <Package className="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-                      <p className="text-gray-600 dark:text-gray-300">주문 내역이 없습니다.</p>
+                      <p className="text-gray-600 dark:text-gray-300">
+                        주문 내역이 없습니다.
+                      </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                         첫 주문을 시작해보세요.
                       </p>
                     </div>
                   ) : (
                     orders.map((order) => (
-                      <div key={order.id} className="border-b border-gray-200 dark:border-gray-700 pb-4">
+                      <div
+                        key={order.id}
+                        className="border-b border-gray-200 dark:border-gray-700 pb-4"
+                      >
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h3 className="font-semibold text-gray-900 dark:text-white">
                               주문번호: {order.id}
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-300">
-                              {new Date(order.created_at).toLocaleDateString('ko-KR')}
+                              {new Date(order.created_at).toLocaleDateString(
+                                "ko-KR",
+                              )}
                             </p>
                           </div>
                           {getStatusBadge(order.status)}
                         </div>
                         <div className="space-y-2">
-                          {order.order_items?.map((item: any, index: number) => (
-                            <div key={index} className="flex justify-between">
-                              <span className="text-gray-900 dark:text-white">
-                                {item.products?.name_ko || item.products?.name} x {item.quantity}
-                              </span>
-                              <span className="text-gray-900 dark:text-white">
-                                ₩{item.price.toLocaleString()}
-                              </span>
-                            </div>
-                          ))}
+                          {order.order_items?.map(
+                            (item: any, index: number) => (
+                              <div key={index} className="flex justify-between">
+                                <span className="text-gray-900 dark:text-white">
+                                  {item.products?.name_ko ||
+                                    item.products?.name}{" "}
+                                  x {item.quantity}
+                                </span>
+                                <span className="text-gray-900 dark:text-white">
+                                  ₩{item.price.toLocaleString()}
+                                </span>
+                              </div>
+                            ),
+                          )}
                         </div>
                         <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                           <div className="flex justify-between font-semibold">
-                            <span className="text-gray-900 dark:text-white">총 금액:</span>
+                            <span className="text-gray-900 dark:text-white">
+                              총 금액:
+                            </span>
                             <span className="text-blue-600 dark:text-blue-400">
                               ₩{order.total_amount.toLocaleString()}
                             </span>
@@ -381,12 +456,16 @@ export default function MyPage() {
           <TabsContent value="wishlist">
             <Card className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle className="text-gray-900 dark:text-white">찜한 상품</CardTitle>
+                <CardTitle className="text-gray-900 dark:text-white">
+                  찜한 상품
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
                   <Heart className="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-                  <p className="text-gray-600 dark:text-gray-300">찜한 상품이 없습니다.</p>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    찜한 상품이 없습니다.
+                  </p>
                   <Link href="/wishlist">
                     <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white">
                       찜 목록 보기
@@ -400,12 +479,16 @@ export default function MyPage() {
           <TabsContent value="reviews">
             <Card className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle className="text-gray-900 dark:text-white">리뷰 관리</CardTitle>
+                <CardTitle className="text-gray-900 dark:text-white">
+                  리뷰 관리
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
                   <Star className="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-                  <p className="text-gray-600 dark:text-gray-300">작성한 리뷰가 없습니다.</p>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    작성한 리뷰가 없습니다.
+                  </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                     구매한 상품에 대한 리뷰를 작성해보세요.
                   </p>
@@ -426,55 +509,75 @@ export default function MyPage() {
                     className="dark:border-gray-600 dark:text-gray-300"
                   >
                     <Edit2 className="h-4 w-4 mr-2" />
-                    {isEditing ? '취소' : '편집'}
+                    {isEditing ? "취소" : "편집"}
                   </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-gray-700 dark:text-gray-300">이름</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">
+                      이름
+                    </Label>
                     <Input
                       value={userInfo.name}
-                      onChange={(e) => setUserInfo({...userInfo, name: e.target.value})}
+                      onChange={(e) =>
+                        setUserInfo({ ...userInfo, name: e.target.value })
+                      }
                       disabled={!isEditing}
                       className="mt-1 dark:bg-[#1a1a1a] dark:text-white dark:border-gray-600"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700 dark:text-gray-300">이메일</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">
+                      이메일
+                    </Label>
                     <Input
                       value={userInfo.email}
-                      onChange={(e) => setUserInfo({...userInfo, email: e.target.value})}
+                      onChange={(e) =>
+                        setUserInfo({ ...userInfo, email: e.target.value })
+                      }
                       disabled={!isEditing}
                       className="mt-1 dark:bg-[#1a1a1a] dark:text-white dark:border-gray-600"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700 dark:text-gray-300">전화번호</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">
+                      전화번호
+                    </Label>
                     <Input
                       value={userInfo.phone}
-                      onChange={(e) => setUserInfo({...userInfo, phone: e.target.value})}
+                      onChange={(e) =>
+                        setUserInfo({ ...userInfo, phone: e.target.value })
+                      }
                       disabled={!isEditing}
                       className="mt-1 dark:bg-[#1a1a1a] dark:text-white dark:border-gray-600"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700 dark:text-gray-300">주소</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">
+                      주소
+                    </Label>
                     <Input
                       value={userInfo.address}
-                      onChange={(e) => setUserInfo({...userInfo, address: e.target.value})}
+                      onChange={(e) =>
+                        setUserInfo({ ...userInfo, address: e.target.value })
+                      }
                       disabled={!isEditing}
                       className="mt-1 dark:bg-[#1a1a1a] dark:text-white dark:border-gray-600"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700 dark:text-gray-300">비밀번호</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">
+                      비밀번호
+                    </Label>
                     <div className="relative">
                       <Input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         value={userInfo.password}
-                        onChange={(e) => setUserInfo({...userInfo, password: e.target.value})}
+                        onChange={(e) =>
+                          setUserInfo({ ...userInfo, password: e.target.value })
+                        }
                         disabled={!isEditing}
                         className="mt-1 pr-10 dark:bg-[#1a1a1a] dark:text-white dark:border-gray-600"
                       />
@@ -507,7 +610,7 @@ export default function MyPage() {
                         disabled={loading}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
-                        {loading ? '저장 중...' : '저장'}
+                        {loading ? "저장 중..." : "저장"}
                       </Button>
                     </div>
                   )}

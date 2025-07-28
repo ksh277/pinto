@@ -16,6 +16,7 @@ import { useCart } from "@/hooks/useCart";
 import { useOrders } from "@/hooks/useOrders";
 import { Link, useLocation } from "wouter";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/components/SupabaseProvider";
 
 const CartPage = () => {
   const [, setLocation] = useLocation();
@@ -24,7 +25,6 @@ const CartPage = () => {
     cartTotal,
     itemCount,
     isLoadingCart,
-    currentUser,
     updateQuantity,
     removeFromCart,
     clearCart,
@@ -32,7 +32,7 @@ const CartPage = () => {
     isRemovingFromCart,
     isClearingCart,
   } = useCart();
-
+  const { user: currentUser } = useSupabaseAuth();
   const { placeOrder, isPlacingOrder } = useOrders();
 
   const handlePlaceOrder = async () => {

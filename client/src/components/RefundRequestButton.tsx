@@ -1,7 +1,7 @@
-import React from 'react';
-import { RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useRefundRequestCheck } from '@/hooks/useRefundRequest';
+import React from "react";
+import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useRefundRequestCheck } from "@/hooks/useRefundRequest";
 
 interface RefundRequestButtonProps {
   orderId: number;
@@ -16,23 +16,38 @@ export const RefundRequestButton: React.FC<RefundRequestButtonProps> = ({
   orderAmount,
   orderDate,
   orderStatus,
-  onRefundRequest
+  onRefundRequest,
 }) => {
   const { data: refundCheck, isLoading } = useRefundRequestCheck(orderId);
 
   // Don't show refund button for cancelled orders
-  if (orderStatus === 'cancelled') {
+  if (orderStatus === "cancelled") {
     return null;
   }
-
+  if (orderStatus === "refund_requested") {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        className="text-gray-500 cursor-not-allowed"
+      >
+        환불 요청됨
+      </Button>
+    );
+  }
   // Show existing refund request status
   if (refundCheck?.exists) {
-    const status = refundCheck.request?.status as 'pending' | 'approved' | 'rejected';
-    const statusText = {
-      pending: '환불 검토중',
-      approved: '환불 승인됨',
-      rejected: '환불 거절됨'
-    }[status] || '환불 요청됨';
+    const status = refundCheck.request?.status as
+      | "pending"
+      | "approved"
+      | "rejected";
+    const statusText =
+      {
+        pending: "환불 검토중",
+        approved: "환불 승인됨",
+        rejected: "환불 거절됨",
+      }[status] || "환불 요청됨";
 
     return (
       <Button

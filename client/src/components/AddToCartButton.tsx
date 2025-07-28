@@ -1,20 +1,22 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ShoppingCart, Plus } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
-import { useToast } from '@/hooks/use-toast';
-import { Link } from 'wouter';
-import { Product } from '@/lib/supabase';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart, Plus } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
+import { Product } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/components/SupabaseProvider";
 
 interface AddToCartButtonProps {
-  product: Product & { 
+  product: Product & {
     stock?: number;
     isOutOfStock?: boolean;
     isLowStock?: boolean;
   };
   quantity?: number;
   customizationOptions?: any;
-  variant?: 'default' | 'icon' | 'compact';
+  variant?: "default" | "icon" | "compact";
   className?: string;
 }
 
@@ -22,10 +24,11 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
   product,
   quantity = 1,
   customizationOptions,
-  variant = 'default',
-  className = '',
+  variant = "default",
+  className = "",
 }) => {
-  const { addToCart, isAddingToCart, currentUser } = useCart();
+  const { addToCart, isAddingToCart } = useCart();
+  const { user: currentUser } = useSupabaseAuth();
   const { toast } = useToast();
 
   const handleAddToCart = () => {
@@ -44,9 +47,19 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       });
       return;
     }
-
+    if (!isSupabaseConfigured) {
+      toast({
+        title: "서비스 준비 중",
+        description: "장바구니 기능을 사용할 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
     // 재고 확인
-    if (product.isOutOfStock || (product.stock !== undefined && product.stock <= 0)) {
+    if (
+      product.isOutOfStock ||
+      (product.stock !== undefined && product.stock <= 0)
+    ) {
       toast({
         title: "품절된 상품입니다",
         description: "현재 이 상품은 품절되어 구매할 수 없습니다.",
@@ -77,16 +90,17 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
     addToCart({
       productId: product.id,
       quantity,
-      price: product.base_price,
-      customizationOptions,
+      options: customizationOptions,
     });
   };
 
-  if (variant === 'icon') {
+  if (variant === "icon") {
     return (
       <Button
         onClick={handleAddToCart}
-        disabled={isAddingToCart || !product.is_available || product.isOutOfStock}
+        disabled={
+          isAddingToCart || !product.is_available || product.isOutOfStock
+        }
         size="icon"
         variant="outline"
         className={`shrink-0 ${className}`}
@@ -100,11 +114,13 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
     );
   }
 
-  if (variant === 'compact') {
+  if (variant === "compact") {
     return (
       <Button
         onClick={handleAddToCart}
-        disabled={isAddingToCart || !product.is_available || product.isOutOfStock}
+        disabled={
+          isAddingToCart || !product.is_available || product.isOutOfStock
+        }
         size="sm"
         variant="outline"
         className={`shrink-0 ${className}`}
@@ -114,7 +130,7 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
         ) : (
           <ShoppingCart className="w-4 h-4 mr-2" />
         )}
-        {product.isOutOfStock ? '품절' : '담기'}
+        {product.isOutOfStock ? "품절" : "담기"}
       </Button>
     );
   }

@@ -1,89 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import { Heart, ShoppingCart, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Link } from 'wouter';
+import React from "react";
+import { Heart, ShoppingCart, Trash2, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useCart } from "@/hooks/useCart";
+import { useSupabaseAuth } from "@/components/SupabaseProvider";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
-interface WishlistItem {
-  id: string;
-  name: string;
-  base_price: number;
-  image_url: string;
-  category_id: number;
-  description: string;
-  addedAt: string;
-}
-
-export default function Wishlist() {
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-  const [loading, setLoading] = useState(true);
+const Wishlist = () => {
+  const { user } = useSupabaseAuth();
+  const { favorites = [], isLoading, toggleFavorite } = useFavorites();
+  const { addToCart } = useCart();
   const { toast } = useToast();
 
-  useEffect(() => {
-    // 찜한 상품 목록 로드
-    const loadWishlist = () => {
-      const savedWishlist = localStorage.getItem('wishlist');
-      if (savedWishlist) {
-        const items = JSON.parse(savedWishlist);
-        setWishlistItems(items);
-      }
-      setLoading(false);
-    };
-
-    loadWishlist();
-  }, []);
-
-  const removeFromWishlist = (productId: string) => {
-    const updatedItems = wishlistItems.filter(item => item.id !== productId);
-    setWishlistItems(updatedItems);
-    localStorage.setItem('wishlist', JSON.stringify(updatedItems));
-    
-    toast({
-      title: "찜 목록에서 제거됨",
-      description: "상품이 찜 목록에서 제거되었습니다.",
-    });
-  };
-
-  const addToCart = (product: WishlistItem) => {
-    const cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
-    const existingItem = cartItems.find((item: any) => item.id === product.id);
-    
-    if (existingItem) {
-      existingItem.quantity += 1;
-    } else {
-      cartItems.push({
-        id: product.id,
-        name: product.name,
-        price: product.base_price,
-        image_url: product.image_url,
-        quantity: 1,
-        options: {}
-      });
-    }
-    
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-    
-    toast({
-      title: "장바구니에 추가됨",
-      description: `${product.name}이(가) 장바구니에 추가되었습니다.`,
-    });
-  };
-
-  if (loading) {
+  if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a] py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center items-center h-64">
-            <div className="text-lg text-gray-600 dark:text-gray-300">
-              찜 목록을 불러오는 중...
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Supabase 설정이 필요합니다.</p>
       </div>
     );
   }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Heart className="w-16 h-16 mx-auto mb-4 text-blue-400" />
+            <h2 className="text-2xl font-bold mb-2">로그인이 필요합니다</h2>
+            <p className="text-gray-500 mb-6">
+              찜 목록을 보려면 로그인해주세요.
+            </p>
+            <Link href="/auth">
+              <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                로그인하기
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">불러오는 중...</p>
+      </div>
+    );
+  }
+
+  const handleRemove = (productId: string) => {
+    toggleFavorite({ productId });
+  };
+
+  const handleAddToCart = (item: any) => {
+    addToCart({
+      productId: item.product_id,
+      quantity: 1,
+    });
+
+    toast({
+      title: "장바구니에 추가됨",
+      description: `${item.products?.name || ""}이(가) 장바구니에 추가되었습니다.`,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a] py-8">
@@ -93,13 +77,13 @@ export default function Wishlist() {
             찜한 상품
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            {wishlistItems.length}개의 상품이 찜 목록에 있습니다.
+            {favorites.length}개의 상품이 찜 목록에 있습니다.
           </p>
         </div>
 
-        {wishlistItems.length === 0 ? (
+        {favorites.length === 0 ? (
           <div className="text-center py-16">
-            <Heart className="mx-auto h-24 w-24 text-gray-300 dark:text-gray-600 mb-4" />
+            <Package className="mx-auto h-24 w-24 text-gray-300 dark:text-gray-600 mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               찜한 상품이 없습니다
             </h2>
@@ -114,19 +98,22 @@ export default function Wishlist() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {wishlistItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
+            {favorites.map((item) => (
+              <Card
+                key={item.id}
+                className="overflow-hidden hover:shadow-lg transition-shadow bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+              >
                 <div className="relative">
                   <img
-                    src={item.image_url || '/api/placeholder/300/300'}
-                    alt={item.name}
+                    src={item.products?.image_url || "/api/placeholder/300/300"}
+                    alt={item.products?.name}
                     className="w-full h-48 object-cover"
                   />
                   <Button
                     variant="ghost"
                     size="icon"
                     className="absolute top-2 right-2 bg-white/90 dark:bg-black/90 hover:bg-white dark:hover:bg-black"
-                    onClick={() => removeFromWishlist(item.id)}
+                    onClick={() => handleRemove(item.product_id)}
                   >
                     <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
@@ -136,27 +123,31 @@ export default function Wishlist() {
                     {item.name}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
-                    {item.description}
+                    {item.products?.description}
                   </p>
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      ₩{item.base_price.toLocaleString()}
+                      ₩{(item.products?.base_price || 0).toLocaleString()}
                     </span>
                     <Badge variant="secondary" className="text-xs">
-                      {new Date(item.addedAt).toLocaleDateString()}
+                      {new Date(item.created_at).toLocaleDateString()}
                     </Badge>
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => addToCart(item)}
+                      onClick={() => handleAddToCart(item)}
                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                       size="sm"
                     >
                       <ShoppingCart className="h-4 w-4 mr-2" />
                       장바구니
                     </Button>
-                    <Link href={`/product/${item.id}`}>
-                      <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300">
+                    <Link href={`/product/${item.product_id}`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="dark:border-gray-600 dark:text-gray-300"
+                      >
                         상세보기
                       </Button>
                     </Link>
@@ -169,4 +160,6 @@ export default function Wishlist() {
       </div>
     </div>
   );
-}
+};
+
+export default Wishlist;
