@@ -74,7 +74,7 @@ interface Product {
   image_url: string;
   is_active: boolean;
   is_featured: boolean;
-  customization_options: any;
+  options: any;
   created_at: string;
 }
 
@@ -122,168 +122,180 @@ export default function ProductDetailSupabase() {
   const [selectedPackaging, setSelectedPackaging] = useState("기본 포장");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
-  const [expandedOptions, setExpandedOptions] = useState<Record<string, boolean>>({});
+  const [expandedOptions, setExpandedOptions] = useState<
+    Record<string, boolean>
+  >({});
 
   const currentUser = supabaseUser || localUser;
   const isLoggedIn = !!currentUser;
 
   // Product data query
-  const { data: product, isLoading: productLoading, error: productError } = useQuery({
-    queryKey: ['product', id],
+  const {
+    data: product,
+    isLoading: productLoading,
+    error: productError,
+  } = useQuery({
+    queryKey: ["product", id],
     queryFn: async () => {
       if (!id) return null;
-      
+
       const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
+        .from("products")
+        .select("*")
+        .eq("id", id)
         .single();
-      
+
       if (error) {
-        console.error('Error fetching product:', error);
+        console.error("Error fetching product:", error);
         throw error;
       }
-      
+
       return data;
     },
-    enabled: !!id
+    enabled: !!id,
   });
 
   // Product images query
   const { data: productImages, isLoading: imagesLoading } = useQuery({
-    queryKey: ['productImages', id],
+    queryKey: ["productImages", id],
     queryFn: async () => {
       if (!id) return [];
-      
+
       const { data, error } = await supabase
-        .from('product_images')
-        .select('*')
-        .eq('product_id', id)
-        .order('display_order');
-      
+        .from("product_images")
+        .select("*")
+        .eq("product_id", id)
+        .order("display_order");
+
       if (error) {
-        console.error('Error fetching product images:', error);
+        console.error("Error fetching product images:", error);
         return [];
       }
-      
+
       return data || [];
     },
-    enabled: !!id
+    enabled: !!id,
   });
 
   // Product reviews query
   const { data: productReviews, isLoading: reviewsLoading } = useQuery({
-    queryKey: ['productReviews', id],
+    queryKey: ["productReviews", id],
     queryFn: async () => {
       if (!id) return [];
-      
+
       const { data, error } = await supabase
-        .from('product_reviews')
-        .select(`
+        .from("product_reviews")
+        .select(
+          `
           *,
           users (
             username
           )
-        `)
-        .eq('product_id', id)
-        .order('created_at', { ascending: false });
-      
+        `,
+        )
+        .eq("product_id", id)
+        .order("created_at", { ascending: false });
+
       if (error) {
-        console.error('Error fetching product reviews:', error);
+        console.error("Error fetching product reviews:", error);
         return [];
       }
-      
+
       return data || [];
     },
-    enabled: !!id
+    enabled: !!id,
   });
 
   // Favorite status query
   const { data: isFavorite, isLoading: favoriteLoading } = useQuery({
-    queryKey: ['isFavorite', id, currentUser?.id],
+    queryKey: ["isFavorite", id, currentUser?.id],
     queryFn: async () => {
       if (!id || !currentUser?.id) return false;
-      
+
       const { data, error } = await supabase
-        .from('favorites')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .eq('product_id', id)
+        .from("favorites")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("product_id", id)
         .single();
-      
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error checking favorite status:', error);
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error checking favorite status:", error);
         return false;
       }
-      
+
       return !!data;
     },
-    enabled: !!id && !!currentUser?.id
+    enabled: !!id && !!currentUser?.id,
   });
 
   // Toggle favorite mutation
   const toggleFavoriteMutation = useMutation({
     mutationFn: async () => {
-      if (!currentUser?.id || !id) throw new Error('User not logged in');
-      
+      if (!currentUser?.id || !id) throw new Error("User not logged in");
+
       if (isFavorite) {
         // Remove from favorites
         const { error } = await supabase
-          .from('favorites')
+          .from("favorites")
           .delete()
-          .eq('user_id', currentUser.id)
-          .eq('product_id', id);
-        
+          .eq("user_id", currentUser.id)
+          .eq("product_id", id);
+
         if (error) throw error;
         return false;
       } else {
         // Add to favorites
-        const { error } = await supabase
-          .from('favorites')
-          .insert([{
+        const { error } = await supabase.from("favorites").insert([
+          {
             user_id: currentUser.id,
-            product_id: id
-          }]);
-        
+            product_id: id,
+          },
+        ]);
+
         if (error) throw error;
         return true;
       }
     },
     onSuccess: (newFavoriteStatus) => {
-      queryClient.invalidateQueries({ queryKey: ['isFavorite', id, currentUser?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["isFavorite", id, currentUser?.id],
+      });
       toast({
         title: newFavoriteStatus ? "찜 추가" : "찜 제거",
-        description: newFavoriteStatus ? "찜 목록에 추가되었습니다." : "찜 목록에서 제거되었습니다.",
+        description: newFavoriteStatus
+          ? "찜 목록에 추가되었습니다."
+          : "찜 목록에서 제거되었습니다.",
       });
     },
     onError: (error) => {
-      console.error('Error toggling favorite:', error);
+      console.error("Error toggling favorite:", error);
       toast({
         title: "오류",
         description: "찜 상태를 변경할 수 없습니다.",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Add to cart mutation
   const addToCartMutation = useMutation({
     mutationFn: async () => {
-      if (!currentUser?.id || !id) throw new Error('User not logged in');
-      
-      const { error } = await supabase
-        .from('cart_items')
-        .insert([{
+      if (!currentUser?.id || !id) throw new Error("User not logged in");
+
+      const { error } = await supabase.from("cart_items").insert([
+        {
           user_id: currentUser.id,
           product_id: id,
           quantity: quantity,
           customization: {
             size: selectedSize,
             base: selectedBase,
-            packaging: selectedPackaging
-          }
-        }]);
-      
+            packaging: selectedPackaging,
+          },
+        },
+      ]);
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -293,70 +305,70 @@ export default function ProductDetailSupabase() {
       });
     },
     onError: (error) => {
-      console.error('Error adding to cart:', error);
+      console.error("Error adding to cart:", error);
       toast({
         title: "오류",
         description: "장바구니에 추가할 수 없습니다.",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Get all available images (product main image + additional images)
   const allImages = [
-    { image_url: product?.image_url || '', alt_text: product?.name || '' },
-    ...(productImages || [])
-  ].filter(img => img.image_url);
+    { image_url: product?.image_url || "", alt_text: product?.name || "" },
+    ...(productImages || []),
+  ].filter((img) => img.image_url);
 
   // Calculate total price
   const calculateTotalPrice = () => {
     if (!product) return 0;
-    
+
     let basePrice = product.base_price;
-    
+
     // Add size-based pricing
     if (selectedSize) {
       const sizeMultipliers: Record<string, number> = {
-        '20x20': 1,
-        '30x30': 1.2,
-        '40x40': 1.5,
-        '50x50': 1.8,
-        '60x60': 2.2,
-        '70x70': 2.5,
-        '80x80': 2.8,
-        '90x90': 3.2,
-        '100x100': 3.5,
-        '라미 20x20': 1.3,
-        '라미 30x30': 1.6,
-        '라미 40x40': 2.0,
-        '라미 50x50': 2.4,
-        '라미 60x60': 2.8,
-        '라미 70x70': 3.2,
-        '라미 80x80': 3.6,
-        '라미 100x100': 4.0,
-        '대형 100x200': 4.5,
-        '대형 150x150': 5.0,
-        '대형 200x200': 6.0,
-        '투명': 1.1,
-        '컬러': 1.2
+        "20x20": 1,
+        "30x30": 1.2,
+        "40x40": 1.5,
+        "50x50": 1.8,
+        "60x60": 2.2,
+        "70x70": 2.5,
+        "80x80": 2.8,
+        "90x90": 3.2,
+        "100x100": 3.5,
+        "라미 20x20": 1.3,
+        "라미 30x30": 1.6,
+        "라미 40x40": 2.0,
+        "라미 50x50": 2.4,
+        "라미 60x60": 2.8,
+        "라미 70x70": 3.2,
+        "라미 80x80": 3.6,
+        "라미 100x100": 4.0,
+        "대형 100x200": 4.5,
+        "대형 150x150": 5.0,
+        "대형 200x200": 6.0,
+        투명: 1.1,
+        컬러: 1.2,
       };
-      
+
       const multiplier = sizeMultipliers[selectedSize] || 1;
       basePrice *= multiplier;
     }
-    
+
     // Add base-specific pricing
     if (selectedBase) {
       const baseAddons: Record<string, number> = {
-        '투명': 0,
-        '인쇄': 500,
-        '라미 3T': 1000,
-        '라미 5T': 1500
+        투명: 0,
+        인쇄: 500,
+        "라미 3T": 1000,
+        "라미 5T": 1500,
       };
-      
+
       basePrice += baseAddons[selectedBase] || 0;
     }
-    
+
     return basePrice * quantity;
   };
 
@@ -365,20 +377,20 @@ export default function ProductDetailSupabase() {
       toast({
         title: "로그인 필요",
         description: "장바구니에 추가하려면 로그인해주세요.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     if (!selectedSize || !selectedBase) {
       toast({
         title: "옵션 선택",
         description: "사이즈와 받침을 선택해주세요.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     addToCartMutation.mutate();
   };
 
@@ -387,11 +399,11 @@ export default function ProductDetailSupabase() {
       toast({
         title: "로그인 필요",
         description: "찜하려면 로그인해주세요.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     toggleFavoriteMutation.mutate();
   };
 
@@ -400,21 +412,23 @@ export default function ProductDetailSupabase() {
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+    setCurrentImageIndex(
+      (prev) => (prev - 1 + allImages.length) % allImages.length,
+    );
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ko-KR', {
-      style: 'currency',
-      currency: 'KRW'
+    return new Intl.NumberFormat("ko-KR", {
+      style: "currency",
+      currency: "KRW",
     }).format(price);
   };
 
@@ -423,7 +437,7 @@ export default function ProductDetailSupabase() {
       <Star
         key={i}
         className={`h-4 w-4 ${
-          i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+          i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
         }`}
       />
     ));
@@ -450,9 +464,7 @@ export default function ProductDetailSupabase() {
               요청하신 상품이 존재하지 않거나 삭제되었습니다.
             </p>
             <Link href="/category/acrylic">
-              <Button>
-                상품 목록으로 돌아가기
-              </Button>
+              <Button>상품 목록으로 돌아가기</Button>
             </Link>
           </CardContent>
         </Card>
@@ -465,11 +477,17 @@ export default function ProductDetailSupabase() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-8">
-          <Link href="/" className="hover:text-gray-700 dark:hover:text-gray-200">
+          <Link
+            href="/"
+            className="hover:text-gray-700 dark:hover:text-gray-200"
+          >
             Home
           </Link>
           <span>/</span>
-          <Link href="/category/acrylic" className="hover:text-gray-700 dark:hover:text-gray-200">
+          <Link
+            href="/category/acrylic"
+            className="hover:text-gray-700 dark:hover:text-gray-200"
+          >
             카테고리
           </Link>
           <span>/</span>
@@ -484,11 +502,14 @@ export default function ProductDetailSupabase() {
           <div className="space-y-4">
             <div className="relative bg-white dark:bg-[#1a1a1a] rounded-lg overflow-hidden">
               <img
-                src={allImages[currentImageIndex]?.image_url || '/api/placeholder/500/500'}
+                src={
+                  allImages[currentImageIndex]?.image_url ||
+                  "/api/placeholder/500/500"
+                }
                 alt={allImages[currentImageIndex]?.alt_text || product.name}
                 className="w-full h-96 object-cover"
               />
-              
+
               {allImages.length > 1 && (
                 <>
                   <button
@@ -506,7 +527,7 @@ export default function ProductDetailSupabase() {
                 </>
               )}
             </div>
-            
+
             {/* Image Thumbnails */}
             {allImages.length > 1 && (
               <div className="flex space-x-2 overflow-x-auto">
@@ -516,13 +537,13 @@ export default function ProductDetailSupabase() {
                     onClick={() => setCurrentImageIndex(index)}
                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
                       index === currentImageIndex
-                        ? 'border-blue-500'
-                        : 'border-gray-200 dark:border-gray-700'
+                        ? "border-blue-500"
+                        : "border-gray-200 dark:border-gray-700"
                     }`}
                   >
                     <img
-                      src={image.image_url || '/api/placeholder/80/80'}
-                      alt={image.alt_text || ''}
+                      src={image.image_url || "/api/placeholder/80/80"}
+                      alt={image.alt_text || ""}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -562,18 +583,26 @@ export default function ProductDetailSupabase() {
                   </Label>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                     {[
-                      { name: '일반 35×50', value: '35x50', price: '3,000원' },
-                      { name: '라미 70×140', value: '70x140', price: '7,000원' },
-                      { name: '대형 100×200', value: '100x200', price: '15,000원' },
-                      { name: '투명', value: '투명', price: '4,000원' }
+                      { name: "일반 35×50", value: "35x50", price: "3,000원" },
+                      {
+                        name: "라미 70×140",
+                        value: "70x140",
+                        price: "7,000원",
+                      },
+                      {
+                        name: "대형 100×200",
+                        value: "100x200",
+                        price: "15,000원",
+                      },
+                      { name: "투명", value: "투명", price: "4,000원" },
                     ].map((size) => (
                       <button
                         key={size.value}
                         onClick={() => setSelectedSize(size.value)}
                         className={`p-3 text-sm rounded-lg border-2 transition-all ${
                           selectedSize === size.value
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                         }`}
                       >
                         <div className="font-medium">{size.name}</div>
@@ -592,18 +621,18 @@ export default function ProductDetailSupabase() {
                   </Label>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                     {[
-                      { name: '투명', value: '투명', price: '+0원' },
-                      { name: '인쇄', value: '인쇄', price: '+500원' },
-                      { name: '라미 3T', value: '라미 3T', price: '+1,000원' },
-                      { name: '라미 5T', value: '라미 5T', price: '+1,500원' }
+                      { name: "투명", value: "투명", price: "+0원" },
+                      { name: "인쇄", value: "인쇄", price: "+500원" },
+                      { name: "라미 3T", value: "라미 3T", price: "+1,000원" },
+                      { name: "라미 5T", value: "라미 5T", price: "+1,500원" },
                     ].map((base) => (
                       <button
                         key={base.value}
                         onClick={() => setSelectedBase(base.value)}
                         className={`p-3 text-sm rounded-lg border-2 transition-all ${
                           selectedBase === base.value
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                         }`}
                       >
                         <div className="font-medium">{base.name}</div>
@@ -644,13 +673,18 @@ export default function ProductDetailSupabase() {
                   <Label className="text-sm font-medium text-gray-900 dark:text-white mb-2 block">
                     ✅ 포장 방식
                   </Label>
-                  <Select value={selectedPackaging} onValueChange={setSelectedPackaging}>
+                  <Select
+                    value={selectedPackaging}
+                    onValueChange={setSelectedPackaging}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="포장 방식을 선택하세요" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="기본 포장">기본 포장</SelectItem>
-                      <SelectItem value="OPP 동봉">OPP 동봉 (+500원)</SelectItem>
+                      <SelectItem value="OPP 동봉">
+                        OPP 동봉 (+500원)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -665,8 +699,10 @@ export default function ProductDetailSupabase() {
                 className="flex-1"
                 disabled={favoriteLoading || toggleFavoriteMutation.isPending}
               >
-                <Heart className={`h-5 w-5 mr-2 ${isFavorite ? 'text-red-500 fill-current' : ''}`} />
-                {isFavorite ? '찜 해제' : '찜하기'}
+                <Heart
+                  className={`h-5 w-5 mr-2 ${isFavorite ? "text-red-500 fill-current" : ""}`}
+                />
+                {isFavorite ? "찜 해제" : "찜하기"}
               </Button>
               <Button
                 onClick={handleAddToCart}
@@ -674,7 +710,7 @@ export default function ProductDetailSupabase() {
                 disabled={addToCartMutation.isPending}
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
-                {addToCartMutation.isPending ? '추가 중...' : '장바구니 담기'}
+                {addToCartMutation.isPending ? "추가 중..." : "장바구니 담기"}
               </Button>
             </div>
           </div>
@@ -686,9 +722,7 @@ export default function ProductDetailSupabase() {
             <CardTitle className="flex items-center space-x-2">
               <Star className="h-5 w-5 text-yellow-400" />
               <span>상품 리뷰</span>
-              <Badge variant="secondary">
-                {productReviews?.length || 0}
-              </Badge>
+              <Badge variant="secondary">{productReviews?.length || 0}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -712,7 +746,7 @@ export default function ProductDetailSupabase() {
                           {renderStars(review.rating)}
                         </div>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {review.users?.username || '익명'}
+                          {review.users?.username || "익명"}
                         </span>
                       </div>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -731,9 +765,7 @@ export default function ProductDetailSupabase() {
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
                   아직 리뷰가 없습니다.
                 </p>
-                <Button variant="outline">
-                  첫 리뷰 작성하기
-                </Button>
+                <Button variant="outline">첫 리뷰 작성하기</Button>
               </div>
             )}
           </CardContent>

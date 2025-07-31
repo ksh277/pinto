@@ -215,3 +215,12 @@ CREATE POLICY "Anyone can view events" ON events FOR SELECT USING (true);
 CREATE POLICY "Anyone can view templates" ON templates FOR SELECT USING (true);
 CREATE POLICY "Anyone can view additional_services" ON additional_services FOR SELECT USING (true);
 CREATE POLICY "Anyone can view product_reviews" ON product_reviews FOR SELECT USING (true);
+
+-- Reviews table RLS and policies
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read approved reviews" ON reviews
+  FOR SELECT USING (is_approved = true);
+
+CREATE POLICY "Users can insert reviews" ON reviews
+  FOR INSERT WITH CHECK (auth.uid() = user_id);

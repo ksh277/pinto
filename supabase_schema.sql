@@ -28,6 +28,7 @@ CREATE TABLE products (
     is_featured BOOLEAN DEFAULT false,
     is_available BOOLEAN DEFAULT true,
     stock_quantity INTEGER DEFAULT 0,
+    options JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -55,7 +56,7 @@ CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id),
     order_number VARCHAR(20) UNIQUE NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled')),
+    status VARCHAR(20) DEFAULT 'payment_completed' CHECK (status IN ('payment_completed', 'processing', 'shipping', 'delivered', 'canceled')),
     total_amount DECIMAL(10,2) NOT NULL,
     shipping_address JSONB,
     payment_method VARCHAR(20) CHECK (payment_method IN ('card', 'kakao_pay', 'naver_pay', 'bank_transfer')),
@@ -70,10 +71,12 @@ CREATE TABLE order_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID REFERENCES orders(id),
     product_id UUID REFERENCES products(id),
+    design_id UUID REFERENCES goods_editor_designs(id),
     quantity INTEGER NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,
     total_price DECIMAL(10,2) NOT NULL,
-    customization_options JSONB,
+    options JSONB,
+    design_data JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
@@ -90,6 +93,16 @@ CREATE TABLE product_reviews (
     like_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+-- Reviews table for simple product feedback with admin approval
+CREATE TABLE reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id),
+    product_id UUID REFERENCES products(id),
+    rating INTEGER CHECK (rating BETWEEN 1 AND 5),
+    content TEXT,
+    is_approved BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 -- 7. Community Posts 테이블
@@ -127,7 +140,7 @@ CREATE TABLE cart_items (
     user_id UUID REFERENCES users(id),
     product_id UUID REFERENCES products(id),
     quantity INTEGER NOT NULL,
-    customization_options JSONB,
+    options JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );

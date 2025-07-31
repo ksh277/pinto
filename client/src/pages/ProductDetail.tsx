@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -58,7 +58,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { motion } from "framer-motion";
-import ProductReviews from "@/components/ProductReviews";
+import ReviewForm from "@/components/ReviewForm";
+import { supabase } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/components/SupabaseProvider";
 import type { Product, ProductReview } from "@shared/schema";
 
 export default function ProductDetail() {
@@ -71,51 +73,80 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedBase, setSelectedBase] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [selectedPackaging, setSelectedPackaging] = useState("기본 포장"); // Default packaging
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [activeTab, setActiveTab] = useState("pdf");
   const [customText, setCustomText] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const { user } = useSupabaseAuth();
+
+  const refreshReviews = async () => {
+    if (!id) return;
+    const { data } = await supabase
+      .from("reviews")
+      .select("id,rating,content,created_at,user_id")
+      .eq("product_id", id)
+      .eq("is_approved", true)
+      .order("created_at", { ascending: false });
+    setReviews(data || []);
+  };
+
+  useEffect(() => {
+    refreshReviews();
+  }, [id]);
 
   // Fetch product data
-  const { data: product, isLoading, error } = useQuery({
+  const {
+    data: product,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: [`/api/product/${id}`],
     enabled: !!id,
   });
 
   // Default product structure for UI
-  const productDisplay = product ? {
-    ...product,
-    images: [
-      product.imageUrl || "/api/placeholder/600/600",
-      "/api/placeholder/600/600",
-      "/api/placeholder/600/600",
-    ],
-    sizes: [
-      { name: "일반 35x50", price: 3500, description: "기본 사이즈" },
-      { name: "라미 70x140", price: 8500, description: "라미네이팅 처리" },
-      { name: "대형 100x200", price: 12000, description: "대형 사이즈" },
-    ],
-    bases: [
-      { name: "투명", price: 0, description: "투명 받침" },
-      { name: "인쇄", price: 500, description: "인쇄 받침" },
-      { name: "라미 3T", price: 800, description: "라미네이팅 3T" },
-      { name: "라미 5T", price: 1200, description: "라미네이팅 5T" },
-    ],
-    quantityRanges: [
-      { range: "1~9개", condition: "도안 1종류", multiplier: 1 },
-      { range: "10~99개", condition: "도안 1종류", multiplier: 0.9 },
-      { range: "100~499개", condition: "도안 3종류 이하", multiplier: 0.8 },
-      { range: "500개 이상", condition: "도안 5종류 이하", multiplier: 0.7 },
-    ],
-    packaging: [
-      { name: "기본 포장", price: 0, description: "기본 포장" },
-      { name: "OPP 동봉", price: 200, description: "OPP 포장지 동봉" },
-    ],
-    rating: 4.8,
-    reviewCount: product.reviewCount || 0,
-  } : null;
+  const productDisplay = product
+    ? {
+        ...product,
+        images: [
+          product.imageUrl || "/api/placeholder/600/600",
+          "/api/placeholder/600/600",
+          "/api/placeholder/600/600",
+        ],
+        sizes: product.options?.sizes || [
+          { name: "일반 35x50", price: 3500, description: "기본 사이즈" },
+          { name: "라미 70x140", price: 8500, description: "라미네이팅 처리" },
+          { name: "대형 100x200", price: 12000, description: "대형 사이즈" },
+        ],
+        colors: product.options?.colors || [],
+        bases: [
+          { name: "투명", price: 0, description: "투명 받침" },
+          { name: "인쇄", price: 500, description: "인쇄 받침" },
+          { name: "라미 3T", price: 800, description: "라미네이팅 3T" },
+          { name: "라미 5T", price: 1200, description: "라미네이팅 5T" },
+        ],
+        quantityRanges: [
+          { range: "1~9개", condition: "도안 1종류", multiplier: 1 },
+          { range: "10~99개", condition: "도안 1종류", multiplier: 0.9 },
+          { range: "100~499개", condition: "도안 3종류 이하", multiplier: 0.8 },
+          {
+            range: "500개 이상",
+            condition: "도안 5종류 이하",
+            multiplier: 0.7,
+          },
+        ],
+        packaging: [
+          { name: "기본 포장", price: 0, description: "기본 포장" },
+          { name: "OPP 동봉", price: 200, description: "OPP 포장지 동봉" },
+        ],
+        rating: 4.8,
+        reviewCount: product.reviewCount || 0,
+      }
+    : null;
 
   // Mock reviews data
   const mockReviews = [
@@ -150,46 +181,20 @@ export default function ProductDetail() {
     const basePrice = productDisplay?.basePrice
       ? parseInt(productDisplay.basePrice)
       : 0;
-    
-    // Define all size options with prices
-    const allSizes = [
-      // 일반 사이즈
-      { name: "일반 20x20", price: 3500 },
-      { name: "일반 30x15", price: 4000 },
-      { name: "일반 30x30", price: 4500 },
-      { name: "일반 40x40", price: 5500 },
-      { name: "일반 50x30", price: 6000 },
-      { name: "일반 50x50", price: 6500 },
-      { name: "일반 60x30", price: 7000 },
-      { name: "일반 60x60", price: 7500 },
-      { name: "일반 70x35", price: 8000 },
-      { name: "일반 70x50", price: 8500 },
-      { name: "일반 70x70", price: 9000 },
-      { name: "일반 80x20", price: 8500 },
-      // 라미 사이즈
-      { name: "라미 20x20", price: 4000 },
-      { name: "라미 30x30", price: 5000 },
-      { name: "라미 40x40", price: 6000 },
-      { name: "라미 50x50", price: 7000 },
-      { name: "라미 60x60", price: 8000 },
-      { name: "라미 70x70", price: 9000 },
-      { name: "라미 80x80", price: 10000 },
-      { name: "라미 100x100", price: 12000 },
-      // 대형 사이즈
-      { name: "대형 100x200", price: 15000 },
-      { name: "대형 120x200", price: 18000 },
-      { name: "대형 150x200", price: 22000 },
-      { name: "대형 200x200", price: 25000 },
-    ];
-    
-    const sizePrice = allSizes.find((s) => s.name === selectedSize)?.price || 0;
+
+    const sizePrice =
+      productDisplay?.sizes.find((s: any) => s.name === selectedSize)?.price ||
+      0;
+    const colorPrice =
+      productDisplay?.colors?.find((c: any) => c.name === selectedColor)
+        ?.priceDelta || 0;
     const baseTypePrice =
       productDisplay?.bases.find((b) => b.name === selectedBase)?.price || 0;
     const packagingPrice =
-      productDisplay?.packaging.find((p) => p.name === selectedPackaging)?.price ||
-      0;
+      productDisplay?.packaging.find((p) => p.name === selectedPackaging)
+        ?.price || 0;
 
-    const subtotal = sizePrice + baseTypePrice + packagingPrice;
+    const subtotal = sizePrice + colorPrice + baseTypePrice + packagingPrice;
     const quantityRange = productDisplay?.quantityRanges.find((r) => {
       const [min, max] = r.range
         .split("~")
@@ -234,7 +239,7 @@ export default function ProductDetail() {
       setUploadedFile(file);
       toast({
         title: t({
-          ko: "PDF 파일 업로드 완료",
+          ko: "PDF 파일 rk�로드 완료",
           en: "PDF file uploaded successfully",
         }),
         description: t({
@@ -247,12 +252,16 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     // Validate required selections
-    if (!selectedSize || !selectedBase) {
+    if (
+      !selectedSize ||
+      !selectedBase ||
+      (productDisplay.colors.length > 0 && !selectedColor)
+    ) {
       toast({
         title: t({ ko: "옵션을 선택해주세요", en: "Please select options" }),
         description: t({
-          ko: "사이즈와 받침을 선택해야 합니다.",
-          en: "Size and base must be selected.",
+          ko: "사이즈, 색상, 받침을 선택해야 합니다.",
+          en: "Size, color and base must be selected.",
         }),
         variant: "destructive",
       });
@@ -270,6 +279,7 @@ export default function ProductDetail() {
         image: productDisplay?.images[0],
         options: {
           size: selectedSize,
+          color: selectedColor,
           base: selectedBase,
           packaging: selectedPackaging,
           uploadedFile: uploadedFile?.name || null,
@@ -358,7 +368,9 @@ export default function ProductDetail() {
       <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">상품 정보를 불러오는 중...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            상품 정보를 불러오는 중...
+          </p>
         </div>
       </div>
     );
@@ -369,11 +381,10 @@ export default function ProductDetail() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400">상품을 불러오는 중 오류가 발생했습니다.</p>
-          <Button 
-            onClick={() => window.location.reload()} 
-            className="mt-4"
-          >
+          <p className="text-red-600 dark:text-red-400">
+            상품을 불러오는 중 오류가 발생했습니다.
+          </p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
             다시 시도
           </Button>
         </div>
@@ -386,7 +397,9 @@ export default function ProductDetail() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-400">상품을 찾을 수 없습니다.</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            상품을 찾을 수 없습니다.
+          </p>
           <Link href="/products">
             <Button className="mt-4">상품 목록으로 돌아가기</Button>
           </Link>
@@ -401,15 +414,23 @@ export default function ProductDetail() {
       <div className="bg-white dark:bg-[#1a1a1a] border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <Link href="/" className="hover:text-gray-700 dark:hover:text-gray-300">
+            <Link
+              href="/"
+              className="hover:text-gray-700 dark:hover:text-gray-300"
+            >
               홈
             </Link>
             <ChevronRight className="w-4 h-4 mx-2" />
-            <Link href="/products" className="hover:text-gray-700 dark:hover:text-gray-300">
+            <Link
+              href="/products"
+              className="hover:text-gray-700 dark:hover:text-gray-300"
+            >
               제품
             </Link>
             <ChevronRight className="w-4 h-4 mx-2" />
-            <span className="text-gray-900 dark:text-white">{productDisplay.nameKo}</span>
+            <span className="text-gray-900 dark:text-white">
+              {productDisplay.nameKo}
+            </span>
           </nav>
         </div>
       </div>
@@ -492,7 +513,9 @@ export default function ProductDetail() {
                 <div className="space-y-4">
                   {/* 일반 사이즈 */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">일반 사이즈</h4>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      일반 사이즈
+                    </h4>
                     <div className="grid grid-cols-4 gap-2">
                       {[
                         { name: "일반 20x20", price: 3500 },
@@ -528,7 +551,9 @@ export default function ProductDetail() {
 
                   {/* 라미 사이즈 */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">라미 사이즈</h4>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      라미 사이즈
+                    </h4>
                     <div className="grid grid-cols-4 gap-2">
                       {[
                         { name: "라미 20x20", price: 4000 },
@@ -560,7 +585,9 @@ export default function ProductDetail() {
 
                   {/* 대형 사이즈 */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">대형 사이즈</h4>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      대형 사이즈
+                    </h4>
                     <div className="grid grid-cols-4 gap-2">
                       {[
                         { name: "대형 100x200", price: 15000 },
@@ -617,7 +644,33 @@ export default function ProductDetail() {
                   ))}
                 </div>
               </div>
-
+              {productDisplay.colors.length > 0 && (
+                <div>
+                  <Label className="text-base font-medium mb-3 block text-gray-900 dark:text-white">
+                    ✅ 색상 선택
+                  </Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {productDisplay.colors.map((color: any) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`p-3 rounded-lg border text-center transition-all ${
+                          selectedColor === color.name
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-900 dark:text-gray-100"
+                        }`}
+                      >
+                        <div className="font-medium">{color.name}</div>
+                        {color.priceDelta ? (
+                          <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                            +{color.priceDelta.toLocaleString()}원
+                          </div>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {/* Quantity Selection */}
               <div>
                 <Label className="text-base font-medium mb-3 block text-gray-900 dark:text-white">
@@ -824,7 +877,10 @@ export default function ProductDetail() {
                   className={`w-5 h-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}`}
                 />
               </Button>
-              <Button variant="outline" className="p-3 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">
+              <Button
+                variant="outline"
+                className="p-3 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
                 <Share2 className="w-5 h-5" />
               </Button>
             </div>
@@ -845,7 +901,10 @@ export default function ProductDetail() {
                 </p>
               </div>
             </div>
-            <Button variant="outline" className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+            <Button
+              variant="outline"
+              className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+            >
               <Download className="w-4 h-4 mr-2" />
               다운로드
             </Button>
@@ -857,9 +916,7 @@ export default function ProductDetail() {
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="description">상품 상세</TabsTrigger>
-              <TabsTrigger value="reviews">
-                상품 후기
-              </TabsTrigger>
+              <TabsTrigger value="reviews">상품 후기</TabsTrigger>
               <TabsTrigger value="qna">상품 문의</TabsTrigger>
             </TabsList>
 
@@ -867,7 +924,9 @@ export default function ProductDetail() {
               <div className="space-y-8">
                 {/* Product Detail Images */}
                 <div className="bg-white dark:bg-[#1a1a1a] rounded-lg p-6">
-                  <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">상품 상세 정보</h3>
+                  <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
+                    상품 상세 정보
+                  </h3>
                   <div className="space-y-6">
                     <img
                       src="/api/placeholder/800/600"
@@ -875,7 +934,9 @@ export default function ProductDetail() {
                       className="w-full rounded-lg"
                     />
                     <div className="prose max-w-none">
-                      <h4 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">제품 특징</h4>
+                      <h4 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+                        제품 특징
+                      </h4>
                       <ul className="space-y-2 text-gray-700 dark:text-gray-100">
                         <li>• 고품질 아크릴 소재 사용으로 선명한 인쇄 품질</li>
                         <li>• 다양한 사이즈 옵션으로 원하는 크기 제작 가능</li>
@@ -904,20 +965,35 @@ export default function ProductDetail() {
               </div>
             </TabsContent>
 
-            <TabsContent value="reviews" className="mt-8">
-              <ProductReviews 
-                productId={id || "1"} 
-                productName={productDisplay?.nameKo}
-              />
+            <TabsContent value="reviews" className="mt-8 space-y-4">
+              {user && (
+                <ReviewForm productId={id || ""} onSubmitted={refreshReviews} />
+              )}
+              {reviews.map((r) => (
+                <div key={r.id} className="border p-3 rounded mb-2">
+                  <p className="text-sm text-yellow-500">★ {r.rating} / 5</p>
+                  <p className="text-base">{r.content}</p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
             </TabsContent>
 
             <TabsContent value="qna" className="mt-8">
               <div className="bg-white dark:bg-[#1a1a1a] rounded-lg p-6">
-                <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">상품 문의</h3>
+                <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
+                  상품 문의
+                </h3>
                 <div className="text-center py-12">
                   <HelpCircle className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">아직 문의가 없습니다.</p>
-                  <Button variant="outline" className="border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                    아직 문의가 없습니다.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     문의하기
                   </Button>

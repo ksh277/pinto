@@ -71,7 +71,7 @@ export const AdminProducts = () => {
   // Fetch products
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["/api/products"],
-    select: (data: unknown) => (data as Product[]) || []
+    select: (data: unknown) => (data as Product[]) || [],
   });
 
   // Fetch categories
@@ -148,21 +148,24 @@ export const AdminProducts = () => {
   });
 
   // Filter products
-  const filteredProducts = (products as Product[]).filter((product: Product) => {
-    const matchesSearch = 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.nameKo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = 
-      selectedCategory === "all" || product.categoryId.toString() === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = (products as Product[]).filter(
+    (product: Product) => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.nameKo.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "all" ||
+        product.categoryId.toString() === selectedCategory;
+      return matchesSearch && matchesCategory;
+    },
+  );
 
-  const ProductForm = ({ 
-    product, 
-    onSubmit, 
-    isLoading 
-  }: { 
-    product?: Product | null; 
+  const ProductForm = ({
+    product,
+    onSubmit,
+    isLoading,
+  }: {
+    product?: Product | null;
     onSubmit: (data: Partial<Product>) => void;
     isLoading: boolean;
   }) => {
@@ -179,13 +182,31 @@ export const AdminProducts = () => {
       isFeatured: product?.isFeatured ?? false,
       stockQuantity: product?.stockQuantity || 0,
       tags: product?.tags?.join(", ") || "",
+      options: product?.options ? JSON.stringify(product.options, null, 2) : "",
     });
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
+      let parsedOptions: any = null;
+      if (formData.options) {
+        try {
+          parsedOptions = JSON.parse(formData.options);
+        } catch {
+          toast({
+            title: "옵션 형식 오류",
+            description: "옵션 JSON을 확인해주세요.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
       onSubmit({
         ...formData,
-        tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean),
+        tags: formData.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        options: parsedOptions,
       });
     };
 
@@ -197,7 +218,9 @@ export const AdminProducts = () => {
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
             />
           </div>
@@ -206,7 +229,9 @@ export const AdminProducts = () => {
             <Input
               id="nameKo"
               value={formData.nameKo}
-              onChange={(e) => setFormData({ ...formData, nameKo: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, nameKo: e.target.value })
+              }
               required
             />
           </div>
@@ -217,7 +242,9 @@ export const AdminProducts = () => {
           <Textarea
             id="description"
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
             rows={3}
           />
         </div>
@@ -227,7 +254,9 @@ export const AdminProducts = () => {
           <Textarea
             id="descriptionKo"
             value={formData.descriptionKo}
-            onChange={(e) => setFormData({ ...formData, descriptionKo: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, descriptionKo: e.target.value })
+            }
             rows={3}
           />
         </div>
@@ -239,7 +268,9 @@ export const AdminProducts = () => {
               id="price"
               type="number"
               value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+              onChange={(e) =>
+                setFormData({ ...formData, price: Number(e.target.value) })
+              }
               required
             />
           </div>
@@ -249,7 +280,12 @@ export const AdminProducts = () => {
               id="originalPrice"
               type="number"
               value={formData.originalPrice}
-              onChange={(e) => setFormData({ ...formData, originalPrice: Number(e.target.value) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  originalPrice: Number(e.target.value),
+                })
+              }
             />
           </div>
           <div>
@@ -258,7 +294,12 @@ export const AdminProducts = () => {
               id="stockQuantity"
               type="number"
               value={formData.stockQuantity}
-              onChange={(e) => setFormData({ ...formData, stockQuantity: Number(e.target.value) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  stockQuantity: Number(e.target.value),
+                })
+              }
             />
           </div>
         </div>
@@ -268,7 +309,9 @@ export const AdminProducts = () => {
             <Label htmlFor="categoryId">카테고리</Label>
             <Select
               value={formData.categoryId.toString()}
-              onValueChange={(value) => setFormData({ ...formData, categoryId: Number(value) })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, categoryId: Number(value) })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -287,14 +330,26 @@ export const AdminProducts = () => {
             <Input
               id="imageUrl"
               value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, imageUrl: e.target.value })
+              }
               placeholder="https://example.com/image.jpg"
             />
           </div>
-        </div>
-
-        <div>
-          <Label htmlFor="tags">태그 (쉼표로 구분)</Label>
+          <div>
+            <div className="md:col-span-2">
+              <Label htmlFor="options">옵션 JSON</Label>
+              <Textarea
+                id="options"
+                value={formData.options}
+                onChange={(e) =>
+                  setFormData({ ...formData, options: e.target.value })
+                }
+                rows={3}
+              />
+            </div>
+          <div>
+            <Label htmlFor="tags">태그 (쉼표로 구분)</Label>
           <Input
             id="tags"
             value={formData.tags}
@@ -308,7 +363,9 @@ export const AdminProducts = () => {
             <input
               type="checkbox"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, isActive: e.target.checked })
+              }
             />
             <span>활성화</span>
           </label>
@@ -316,7 +373,9 @@ export const AdminProducts = () => {
             <input
               type="checkbox"
               checked={formData.isFeatured}
-              onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, isFeatured: e.target.checked })
+              }
             />
             <span>추천상품</span>
           </label>
@@ -337,7 +396,6 @@ export const AdminProducts = () => {
             {isLoading ? "저장 중..." : product ? "수정" : "추가"}
           </Button>
         </div>
-      </form>
     );
   };
 
@@ -357,7 +415,7 @@ export const AdminProducts = () => {
           <h1 className="text-2xl font-bold">상품 관리</h1>
           <Badge variant="secondary">{filteredProducts.length}개</Badge>
         </div>
-        
+
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -415,21 +473,25 @@ export const AdminProducts = () => {
               />
               <div className="absolute top-2 left-2 flex flex-col gap-1">
                 {product.isFeatured && (
-                  <Badge variant="destructive" className="text-xs">추천</Badge>
+                  <Badge variant="destructive" className="text-xs">
+                    추천
+                  </Badge>
                 )}
                 {!product.isActive && (
-                  <Badge variant="secondary" className="text-xs">비활성</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    비활성
+                  </Badge>
                 )}
               </div>
             </div>
-            
+
             <CardContent className="p-4">
               <div className="space-y-2">
                 <h3 className="font-semibold text-lg">{product.nameKo}</h3>
                 <p className="text-sm text-gray-600 line-clamp-2">
                   {product.descriptionKo}
                 </p>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
@@ -468,16 +530,21 @@ export const AdminProducts = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(`/product/${product.id}`, '_blank')}
+                  onClick={() =>
+                    window.open(`/product/${product.id}`, "_blank")
+                  }
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   미리보기
                 </Button>
-                
+
                 <div className="flex space-x-2">
-                  <Dialog open={editingProduct?.id === product.id} onOpenChange={(open) => {
-                    if (!open) setEditingProduct(null);
-                  }}>
+                  <Dialog
+                    open={editingProduct?.id === product.id}
+                    onOpenChange={(open) => {
+                      if (!open) setEditingProduct(null);
+                    }}
+                  >
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
@@ -493,7 +560,12 @@ export const AdminProducts = () => {
                       </DialogHeader>
                       <ProductForm
                         product={editingProduct}
-                        onSubmit={(data) => updateProductMutation.mutate({ ...data, id: product.id })}
+                        onSubmit={(data) =>
+                          updateProductMutation.mutate({
+                            ...data,
+                            id: product.id,
+                          })
+                        }
                         isLoading={updateProductMutation.isPending}
                       />
                     </DialogContent>
@@ -501,7 +573,11 @@ export const AdminProducts = () => {
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
@@ -509,13 +585,16 @@ export const AdminProducts = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>상품 삭제</AlertDialogTitle>
                         <AlertDialogDescription>
-                          "{product.nameKo}" 상품을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                          "{product.nameKo}" 상품을 삭제하시겠습니까? 이 작업은
+                          되돌릴 수 없습니다.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>취소</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => deleteProductMutation.mutate(product.id)}
+                          onClick={() =>
+                            deleteProductMutation.mutate(product.id)
+                          }
                           className="bg-red-600 hover:bg-red-700"
                         >
                           삭제

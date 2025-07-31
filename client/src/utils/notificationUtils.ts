@@ -28,7 +28,7 @@ export const createCommentNotification = (
   userId: number,
   postTitle: string,
   commenterName: string,
-  postId: number
+  postId: number,
 ) => {
   return createNotification({
     user_id: userId,
@@ -45,7 +45,7 @@ export const createLikeNotification = (
   userId: number,
   postTitle: string,
   likerName: string,
-  postId: number
+  postId: number,
 ) => {
   return createNotification({
     user_id: userId,
@@ -61,21 +61,23 @@ export const createLikeNotification = (
 export const createOrderNotification = (
   userId: number,
   orderStatus: string,
-  orderId: number
+  orderId: number,
 ) => {
   const statusMessages = {
-    pending: "주문이 접수되었습니다",
-    processing: "주문이 처리 중입니다",
-    shipped: "주문이 배송되었습니다",
+    payment_completed: "결제가 완료되었습니다",
+    processing: "주문이 제작 중입니다",
+    shipping: "주문이 배송 중입니다",
     delivered: "주문이 배송 완료되었습니다",
-    cancelled: "주문이 취소되었습니다",
+    canceled: "주문이 취소되었습니다",
   };
 
   return createNotification({
     user_id: userId,
     type: "order",
     title: "주문 상태 업데이트",
-    message: statusMessages[orderStatus as keyof typeof statusMessages] || "주문 상태가 변경되었습니다",
+    message:
+      statusMessages[orderStatus as keyof typeof statusMessages] ||
+      "주문 상태가 변경되었습니다",
     related_id: orderId,
     related_type: "order",
     related_url: `/mypage?tab=orders`,
@@ -86,7 +88,7 @@ export const createSystemNotification = (
   userId: number,
   title: string,
   message: string,
-  relatedUrl?: string
+  relatedUrl?: string,
 ) => {
   return createNotification({
     user_id: userId,
@@ -104,7 +106,7 @@ export const createSampleNotifications = async (userId: number) => {
       user_id: userId,
       type: "comment" as const,
       title: "새 댓글이 달렸습니다",
-      message: "김철수님이 \"아크릴 키링 후기\" 게시물에 댓글을 달았습니다.",
+      message: '김철수님이 "아크릴 키링 후기" 게시물에 댓글을 달았습니다.',
       related_id: 1,
       related_type: "post",
       related_url: "/community/1",
@@ -113,7 +115,7 @@ export const createSampleNotifications = async (userId: number) => {
       user_id: userId,
       type: "like" as const,
       title: "좋아요를 받았습니다",
-      message: "이영희님이 \"스마트톡 디자인 공유\" 게시물을 좋아합니다.",
+      message: '이영희님이 "스마트톡 디자인 공유" 게시물을 좋아합니다.',
       related_id: 2,
       related_type: "post",
       related_url: "/community/2",
@@ -131,14 +133,15 @@ export const createSampleNotifications = async (userId: number) => {
       user_id: userId,
       type: "system" as const,
       title: "회원 등급 업데이트",
-      message: "축하합니다! SPECIAL 등급으로 승급하셨습니다. 더 많은 혜택을 누리세요!",
+      message:
+        "축하합니다! SPECIAL 등급으로 승급하셨습니다. 더 많은 혜택을 누리세요!",
       related_url: "/rewards",
     },
     {
       user_id: userId,
       type: "comment" as const,
       title: "새 댓글이 달렸습니다",
-      message: "박민수님이 \"포카홀더 제작 문의\" 게시물에 댓글을 달았습니다.",
+      message: '박민수님이 "포카홀더 제작 문의" 게시물에 댓글을 달았습니다.',
       related_id: 3,
       related_type: "post",
       related_url: "/community/3",
@@ -147,7 +150,7 @@ export const createSampleNotifications = async (userId: number) => {
 
   try {
     const results = await Promise.all(
-      notifications.map(notification => createNotification(notification))
+      notifications.map((notification) => createNotification(notification)),
     );
     return results;
   } catch (error) {

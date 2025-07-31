@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { supabase } from "@/lib/supabase";
 
 interface User {
   id: string;
@@ -22,6 +29,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   redirectPath: string | null;
   setRedirectPath: (path: string | null) => void;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,93 +40,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is already logged in with JWT token
     const checkAuth = async () => {
       try {
-        // First check localStorage
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-          } catch (e) {
-            localStorage.removeItem('user');
-          }
-        }
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-        // Then verify with server
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include', // Include cookies
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          const user: User = {
-            id: userData.id.toString(),
-            name: `${userData.first_name} ${userData.last_name}`.trim(),
-            username: userData.username,
-            email: userData.email,
+        if (session?.user) {
+          const u = session.user;
+          const mappedUser: User = {
+            id: u.id,
+            name: u.user_metadata?.full_name || u.email!,
+            username: u.user_metadata?.username || u.email!,
+            email: u.email!,
             points: 0,
             coupons: 0,
             totalOrders: 0,
             totalSpent: 0,
-            isAdmin: userData.isAdmin || false,
-            firstName: userData.first_name,
-            lastName: userData.last_name || ''
+            isAdmin: u.user_metadata?.isAdmin || false,
+            firstName: u.user_metadata?.first_name || "",
+            lastName: u.user_metadata?.last_name || "",
           };
-          setUser(user);
-          localStorage.setItem('user', JSON.stringify(user));
+          setUser(mappedUser);
+          localStorage.setItem("user", JSON.stringify(mappedUser));
         } else {
-          // Clear any existing user data if server says no
           setUser(null);
-          localStorage.removeItem('user');
+          localStorage.removeItem("user");
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
-        // Keep localStorage user if server check fails but don't clear
+        console.error("Auth check failed:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies
-        body: JSON.stringify({ username, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (response.ok) {
-        const userData = await response.json();
-        const user: User = {
-          id: userData.id.toString(),
-          name: `${userData.first_name} ${userData.last_name}`.trim(),
-          username: userData.username,
-          email: userData.email,
-          points: 0,
-          coupons: 0,
-          totalOrders: 0,
-          totalSpent: 0,
-          isAdmin: userData.isAdmin || false,
-          firstName: userData.first_name,
-          lastName: userData.last_name || ''
-        };
-        
-        setUser(user);
-        localStorage.setItem('user', JSON.stringify(user));
+      if (error || !data.user) {
+        console.error("로그인 오류:", error, data);
         setIsLoading(false);
-        return true;
+        return false;
       }
+
+      const u = data.user;
+      const mappedUser: User = {
+        id: u.id,
+        name: u.user_metadata?.full_name || u.email!,
+        username: u.user_metadata?.username || u.email!,
+        email: u.email!,
+        points: 0,
+        coupons: 0,
+        totalOrders: 0,
+        totalSpent: 0,
+        isAdmin: u.user_metadata?.isAdmin || false,
+        firstName: u.user_metadata?.first_name || "",
+        lastName: u.user_metadata?.last_name || "",
+      };
+
+      setUser(mappedUser);
+      localStorage.setItem("user", JSON.stringify(mappedUser));
+      setIsLoading(false);
+      return true;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
     }
     setIsLoading(false);
     return false;
@@ -126,29 +119,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include', // Include cookies
-      });
+      await supabase.auth.signOut();
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     } finally {
       setUser(null);
-      localStorage.removeItem('user');
+      localStorage.removeItem("user");
       setRedirectPath(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated: !!user,
-      isLoading,
-      login,
-      logout,
-      redirectPath,
-      setRedirectPath
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        logout,
+        redirectPath,
+        setRedirectPath,
+        setUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -157,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

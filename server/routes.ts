@@ -709,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             total_amount,
             shipping_address,
             payment_method,
-            status: "preparing", // 주문 상태를 preparing으로 설정
+            status: "payment_completed", // 결제 완료 상태로 설정
           },
         ])
         .select()
@@ -737,9 +737,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const orderItems = items.map((item: any) => ({
         order_id: order.id,
         product_id: item.product_id,
+        design_id: item.design_id,
         quantity: item.quantity,
-        price: item.price,
+        unit_price: item.price,
+        total_price: item.price * item.quantity,
         options: item.options,
+        design_data: item.design_data,
       }));
 
       const { error: itemsError } = await supabase
@@ -790,6 +793,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             *,
             products (
               id, name, name_ko, image_url, base_price
+              ),
+                goods_editor_designs (
+                  id, title, thumbnail_url, canvas_data
             )
           )
         `,
@@ -855,6 +861,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             *,
             products (
               id, name, name_ko, image_url
+              ),
+                goods_editor_designs (
+                  id, title, thumbnail_url, canvas_data
             )
           )
         `,
@@ -986,6 +995,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             *,
             products (
               id, name, name_ko, image_url
+              ),
+                goods_editor_designs (
+                  id, title, thumbnail_url, canvas_data
             )
           )
         `,
@@ -1567,6 +1579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customization_options: customizationOptions,
             is_active: true,
             is_approved: false, // 관리자 승인 대기
+            status: "pending",
           },
         ])
         .select()
@@ -1624,7 +1637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           categoryId,
           imageUrl,
           stock,
-          customizationOptions,
+          options,
         } = req.body;
 
         const { data: product, error } = await supabase
@@ -1638,8 +1651,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             category_id: categoryId,
             image_url: imageUrl,
             stock,
-            customization_options: customizationOptions,
+            options,
             is_approved: false, // 수정 시 재승인 필요
+            status: "pending",
           })
           .eq("id", productId)
           .select()
@@ -1787,7 +1801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updateData.shipping_company_id = shippingCompanyId;
         }
 
-        if (status === "shipped") {
+        if (status === "shipping") {
           updateData.shipped_at = new Date().toISOString();
         }
 
@@ -1952,7 +1966,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { productId } = req.params;
         const { approved } = req.body;
 
-        const updateData: any = { is_approved: approved };
+        const status = approved ? "approved" : "rejected";
+        const updateData: any = { is_approved: approved, status };
         if (approved) {
           updateData.approval_date = new Date().toISOString();
         } else {
@@ -2197,6 +2212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         supabase
           .from("products")
           .select("*", { count: "exact" })
+          .eq("status", "pending")
           .then(({ count }) => ({ count: count || 0 })),
         supabase
           .from("users")
@@ -2636,6 +2652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from("products")
         .select("*")
         .eq("id", id)
+        .eq("status", "approved")
         .single();
 
       if (error || !product) {
@@ -3985,7 +4002,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             user_id,
             total_amount,
-            status: status || "pending",
+            status: status || "payment_completed",
             shipping_address: {
               address: shipping_address,
               phone: shipping_phone,
@@ -4022,7 +4039,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             order_id,
             amount,
             method: method || "toss",
-            status: status || "pending",
+            status: status || "payment_completed",
           },
         ])
         .select()
@@ -4053,7 +4070,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { data: order, error } = await supabase
         .from("orders")
-        .select("*")
+        .select(
+          `
+          *,
+          order_items (
+            *,
+            products (
+              id, name, name_ko, image_url
+            ),
+            goods_editor_designs (
+              id, title, thumbnail_url, canvas_data
+            )
+          )
+        `,
+        )
         .eq("id", orderId)
         .single();
 
@@ -4366,7 +4396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "주문을 찾을 수 없습니다." });
         }
         if (
-          order.status === "cancelled" ||
+          order.status === "canceled" ||
           order.status === "refund_requested"
         ) {
           return res
@@ -4459,6 +4489,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isFeatured: productData.isFeatured ?? false,
           stock: productData.stockQuantity,
           tags: productData.tags || [],
+          isApproved: true,
+          status: "approved",
+          approvalDate: new Date().toISOString(),
         });
 
         res.status(201).json(newProduct);

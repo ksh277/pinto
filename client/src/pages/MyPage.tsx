@@ -9,6 +9,10 @@ import {
   Edit2,
   Eye,
   EyeOff,
+  Clock,
+  Truck,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,18 +160,40 @@ export default function MyPage() {
   };
 
   // 주문 상태 표시 함수
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { label: "주문접수", variant: "secondary" as const },
-      processing: { label: "제작중", variant: "default" as const },
-      shipping: { label: "배송중", variant: "outline" as const },
-      delivered: { label: "배송완료", variant: "default" as const },
-      cancelled: { label: "취소됨", variant: "destructive" as const },
-    };
+  const statusMap = {
+    payment_completed: {
+      label: '결제 완료',
+      icon: <Clock className="w-3 h-3 mr-1" />,
+      color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    },
+    processing: {
+      label: '제작 중',
+      icon: <Package className="w-3 h-3 mr-1" />,
+      color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    },
+    shipping: {
+      label: '배송 중',
+      icon: <Truck className="w-3 h-3 mr-1" />,
+      color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    },
+    delivered: {
+      label: '배송 완료',
+      icon: <CheckCircle className="w-3 h-3 mr-1" />,
+      color: 'bg-gray-100 text-gray-800 dark:bg-[#1a1a1a]/30 dark:text-gray-300',
+    },
+    canceled: {
+      label: '취소됨',
+      icon: <XCircle className="w-3 h-3 mr-1" />,
+      color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    },
+  } as const;
 
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  const info =
+    statusMap[status as keyof typeof statusMap] || statusMap.payment_completed;
+
+  return (
+    <Badge className={`flex items-center ${info.color}`}>{info.icon}{info.label}</Badge>
+  );
   };
 
   // 임시 주문 데이터 (데이터베이스에서 가져온 데이터가 없을 때 표시)

@@ -782,6 +782,7 @@ export const fetchReviews = async (options?: {
   userId?: string;
   featured?: boolean;
   minRating?: number;
+  approved?: boolean
   limit?: number;
   offset?: number;
 }) => {
@@ -801,6 +802,10 @@ export const fetchReviews = async (options?: {
 
   if (options?.featured !== undefined) {
     query = query.eq("is_featured", options.featured);
+  }
+  
+  if (options?.approved !== undefined) {
+    query = query.eq('is_approved', options.approved)
   }
 
   if (options?.minRating) {
@@ -830,6 +835,21 @@ export const fetchReviews = async (options?: {
   return data;
 };
 
+export const createReview = async (review: {
+  user_id: string
+  product_id: string
+  rating: number
+  content: string
+}) => {
+  const { data, error } = await supabase.from('reviews').insert([review])
+
+  if (error) {
+    console.error('Error creating review:', error)
+    throw error
+  }
+
+  return data
+}
 // Community API (legacy - using community table)
 export const fetchCommunityPostsLegacy = async (options?: {
   category?: string;
@@ -1121,7 +1141,7 @@ export const addToCart = async (
           product_id: productId,
           quantity,
           price,
-          customization_options: customizationOptions,
+          options: customizationOptions,
         },
       ])
       .select();
@@ -1144,7 +1164,7 @@ export const updateCartItem = async (
     .from("cart_items")
     .update({
       quantity,
-      customization_options: customizationOptions,
+      options: customizationOptions,
       updated_at: new Date().toISOString(),
     })
     .eq("id", cartItemId)
@@ -1411,13 +1431,13 @@ export const createOrder = async (userId: string, cartItems: any[]) => {
         {
           user_id: userId,
           total_price: totalPrice,
-          status: "pending",
+          status: 'payment_completed',
           items: cartItems.map((item) => ({
             product_id: item.product_id,
             quantity: item.quantity,
             price: item.price || item.products?.base_price || 0,
             product_name: item.products?.name_ko || item.products?.name,
-            customization_options: item.customization_options,
+            options: item.options,
           })),
         },
       ])
@@ -1428,14 +1448,34 @@ export const createOrder = async (userId: string, cartItems: any[]) => {
       console.error("Error creating order:", orderError);
       throw orderError;
     }
+    const orderItems = cartItems.map(item => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      design_id: item.design_id,
+      quantity: item.quantity,
+      unit_price: item.price || item.products?.base_price || 0,
+      total_price: (item.price || item.products?.base_price || 0) * item.quantity,
+      options: item.options,
+      design_data: item.design_data
+    }));
 
+    if (orderItems.length > 0) {
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (orderItemsError) {
+        console.error('Error creating order items:', orderItemsError);
+        // Do not throw here to avoid failing the whole order creation
+      }
+    }
     // Create print jobs for each item
     const printJobs = cartItems.map((item) => ({
       order_id: order.id,
       product_id: item.product_id,
       quantity: item.quantity,
       status: "pending",
-      customization_options: item.customization_options,
+      options: item.optionss
       created_at: new Date().toISOString(),
     }));
 
@@ -1463,7 +1503,18 @@ export const createOrder = async (userId: string, cartItems: any[]) => {
 export const fetchUserOrders = async (userId: string) => {
   const { data, error } = await supabase
     .from("orders")
-    .select("*")
+    .select(
+      `
+      id,
+      status,
+      total_price,
+      created_at,
+      order_items (
+        *,
+        products (id, name, name_ko, image_url)
+      )
+    `,
+    )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 

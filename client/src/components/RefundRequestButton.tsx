@@ -20,8 +20,8 @@ export const RefundRequestButton: React.FC<RefundRequestButtonProps> = ({
 }) => {
   const { data: refundCheck, isLoading } = useRefundRequestCheck(orderId);
 
-  // Don't show refund button for cancelled orders
-  if (orderStatus === "cancelled") {
+  // Don't show refund button for canceled orders
+  if (orderStatus === "canceled") {
     return null;
   }
   if (orderStatus === "refund_requested") {

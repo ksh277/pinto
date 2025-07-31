@@ -52,7 +52,7 @@ export const useCart = () => {
           .from("cart_items")
           .update({
             quantity: existing.quantity + quantity,
-            customization_options: options,
+            options,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existing.id);

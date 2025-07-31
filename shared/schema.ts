@@ -70,15 +70,16 @@ export const products = mysqlTable("products", {
   categoryId: int("category_id")
     .references(() => categories.id)
     .notNull(),
-  sellerId: int("seller_id")
-    .references(() => sellers.id),
+  sellerId: int("seller_id").references(() => sellers.id),
   imageUrl: text("image_url").notNull(),
   stock: int("stock").default(0).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isApproved: boolean("is_approved").default(false).notNull(),
+  status: text("status").default("pending").notNull(),
   approvalDate: timestamp("approval_date"),
   customizationOptions: json("customization_options"),
+  options: json("options"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -186,16 +187,22 @@ export const orders = mysqlTable("orders", {
   shippingAddress: json("shipping_address").notNull(),
   orderItems: json("order_items").notNull(),
   trackingNumber: text("tracking_number"),
-  shippingCompanyId: int("shipping_company_id")
-    .references(() => shippingCompanies.id),
+  shippingCompanyId: int("shipping_company_id").references(
+    () => shippingCompanies.id,
+  ),
   shippedAt: timestamp("shipped_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const orderItems = mysqlTable("order_items", {
   id: serial("id").primaryKey(),
-  orderId: int("order_id").references(() => orders.id).notNull(),
-  productId: int("product_id").references(() => products.id).notNull(),
+  orderId: int("order_id")
+    .references(() => orders.id)
+    .notNull(),
+  productId: int("product_id")
+    .references(() => products.id)
+    .notNull(),
+  designId: int("design_id").references(() => goodsEditorDesigns.id),
   quantity: int("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -203,7 +210,9 @@ export const orderItems = mysqlTable("order_items", {
 
 export const payments = mysqlTable("payments", {
   id: serial("id").primaryKey(),
-  orderId: int("order_id").references(() => orders.id).notNull(),
+  orderId: int("order_id")
+    .references(() => orders.id)
+    .notNull(),
   paymentMethod: text("payment_method").notNull(), // 카드, 계좌이체 등
   status: text("status").notNull(), // pending, success, failed
   transactionId: text("transaction_id"),
@@ -213,8 +222,12 @@ export const payments = mysqlTable("payments", {
 
 export const refundRequests = mysqlTable("refund_requests", {
   id: serial("id").primaryKey(),
-  orderId: int("order_id").references(() => orders.id).notNull(),
-  userId: int("user_id").references(() => users.id).notNull(),
+  orderId: int("order_id")
+    .references(() => orders.id)
+    .notNull(),
+  userId: int("user_id")
+    .references(() => users.id)
+    .notNull(),
   reason: text("reason").notNull(),
   status: text("status").default("pending").notNull(), // pending, approved, rejected
   requestedAt: timestamp("requested_at").defaultNow().notNull(),
@@ -226,7 +239,10 @@ export const coupons = mysqlTable("coupons", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
   discountType: text("discount_type").notNull(), // percent, fixed
-  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
+  discountValue: decimal("discount_value", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
   expiresAt: timestamp("expires_at"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -234,7 +250,9 @@ export const coupons = mysqlTable("coupons", {
 
 export const adminLogs = mysqlTable("admin_logs", {
   id: serial("id").primaryKey(),
-  adminId: int("admin_id").references(() => users.id).notNull(),
+  adminId: int("admin_id")
+    .references(() => users.id)
+    .notNull(),
   action: text("action").notNull(), // 예: "상품 삭제"
   targetTable: text("target_table").notNull(),
   targetId: int("target_id"),
@@ -275,10 +293,8 @@ export const notifications = mysqlTable("notifications", {
   title: text("title").notNull(),
   message: text("message").notNull(),
   isRead: boolean("is_read").default(false).notNull(),
-  relatedPostId: int("related_post_id")
-    .references(() => communityPosts.id),
-  relatedOrderId: int("related_order_id")
-    .references(() => orders.id),
+  relatedPostId: int("related_post_id").references(() => communityPosts.id),
+  relatedOrderId: int("related_order_id").references(() => orders.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -373,9 +389,7 @@ export const insertCommunityCommentSchema = createInsertSchema(
   createdAt: true,
 });
 
-export const insertCommentSchema = createInsertSchema(
-  communityComments,
-).omit({
+export const insertCommentSchema = createInsertSchema(communityComments).omit({
   id: true,
   createdAt: true,
 });
@@ -407,7 +421,9 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   createdAt: true,
 });
 
-export const insertRefundRequestSchema = createInsertSchema(refundRequests).omit({
+export const insertRefundRequestSchema = createInsertSchema(
+  refundRequests,
+).omit({
   id: true,
   requestedAt: true,
   resolvedAt: true,
@@ -447,7 +463,9 @@ export type InsertCommunityComment = z.infer<
 export type BelugaTemplate = typeof belugaTemplates.$inferSelect;
 export type InsertBelugaTemplate = z.infer<typeof insertBelugaTemplateSchema>;
 export type GoodsEditorDesign = typeof goodsEditorDesigns.$inferSelect;
-export type InsertGoodsEditorDesign = z.infer<typeof insertGoodsEditorDesignSchema>;
+export type InsertGoodsEditorDesign = z.infer<
+  typeof insertGoodsEditorDesignSchema
+>;
 export type Inquiry = typeof inquiries.$inferSelect;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
 export type Notification = typeof notifications.$inferSelect;

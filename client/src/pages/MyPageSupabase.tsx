@@ -1,22 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { User, Package, Heart, Star, Settings, LogOut, Edit2, Eye, EyeOff, MessageSquare, ShoppingBag, Calendar, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { useSupabaseAuth } from '@/components/SupabaseProvider';
-import { Link, useLocation } from 'wouter';
-import { supabase } from '@/lib/supabase';
-import { useQuery } from '@tanstack/react-query';
-import { useLanguage } from '@/hooks/useLanguage';
-import { RefundRequestModal } from '@/components/RefundRequestModal';
-import { RefundRequestList } from '@/components/RefundRequestList';
-import { RefundRequestButton } from '@/components/RefundRequestButton';
-import { useRefundRequestCheck } from '@/hooks/useRefundRequest';
+import React, { useState, useEffect } from "react";
+import {
+  User,
+  Package,
+  Heart,
+  Star,
+  Settings,
+  LogOut,
+  Edit2,
+  Eye,
+  EyeOff,
+  MessageSquare,
+  ShoppingBag,
+  Calendar,
+  RefreshCw,
+  Clock,
+  Truck,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSupabaseAuth } from "@/components/SupabaseProvider";
+import { Link, useLocation } from "wouter";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { useLanguage } from "@/hooks/useLanguage";
+import { RefundRequestModal } from "@/components/RefundRequestModal";
+import { RefundRequestList } from "@/components/RefundRequestList";
+import { RefundRequestButton } from "@/components/RefundRequestButton";
+import { useRefundRequestCheck } from "@/hooks/useRefundRequest";
 
 interface CommunityPost {
   id: string;
@@ -56,19 +74,19 @@ export default function MyPageSupabase() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
-  
+
   // Refund request state
   const [refundModalOpen, setRefundModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [userInfo, setUserInfo] = useState({
-    name: localUser?.name || supabaseUser?.user_metadata?.name || '사용자',
-    email: localUser?.email || supabaseUser?.email || 'user@example.com',
-    phone: localUser?.phone || '010-1234-5678',
-    address: localUser?.address || '서울시 강남구 테헤란로 123',
-    password: '••••••••'
+    name: localUser?.name || supabaseUser?.user_metadata?.name || "사용자",
+    email: localUser?.email || supabaseUser?.email || "user@example.com",
+    phone: localUser?.phone || "010-1234-5678",
+    address: localUser?.address || "서울시 강남구 테헤란로 123",
+    password: "••••••••",
   });
 
   const currentUser = supabaseUser || localUser;
@@ -76,13 +94,14 @@ export default function MyPageSupabase() {
 
   // 내가 쓴 글 조회
   const { data: myPosts, isLoading: postsLoading } = useQuery({
-    queryKey: ['myPosts', currentUser?.id],
+    queryKey: ["myPosts", currentUser?.id],
     queryFn: async () => {
       if (!currentUser?.id) return [];
-      
+
       const { data, error } = await supabase
-        .from('community_posts')
-        .select(`
+        .from("community_posts")
+        .select(
+          `
           id,
           title,
           content,
@@ -90,29 +109,31 @@ export default function MyPageSupabase() {
           category,
           comments_count,
           likes_count
-        `)
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-      
+        `,
+        )
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
       if (error) {
-        console.error('Error fetching posts:', error);
+        console.error("Error fetching posts:", error);
         return [];
       }
-      
+
       return data || [];
     },
-    enabled: isLoggedIn
+    enabled: isLoggedIn,
   });
 
   // 찜한 상품 조회
   const { data: myFavorites, isLoading: favoritesLoading } = useQuery({
-    queryKey: ['myFavorites', currentUser?.id],
+    queryKey: ["myFavorites", currentUser?.id],
     queryFn: async () => {
       if (!currentUser?.id) return [];
-      
+
       const { data, error } = await supabase
-        .from('favorites')
-        .select(`
+        .from("favorites")
+        .select(
+          `
           id,
           product_id,
           created_at,
@@ -124,46 +145,49 @@ export default function MyPageSupabase() {
             image_url,
             category_id
           )
-        `)
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-      
+        `,
+        )
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
       if (error) {
-        console.error('Error fetching favorites:', error);
+        console.error("Error fetching favorites:", error);
         return [];
       }
-      
+
       return data || [];
     },
-    enabled: isLoggedIn
+    enabled: isLoggedIn,
   });
 
   // 주문 내역 조회
   const { data: myOrders, isLoading: ordersLoading } = useQuery({
-    queryKey: ['myOrders', currentUser?.id],
+    queryKey: ["myOrders", currentUser?.id],
     queryFn: async () => {
       if (!currentUser?.id) return [];
-      
+
       const { data, error } = await supabase
-        .from('orders')
-        .select(`
+        .from("orders")
+        .select(
+          `
           id,
           status,
           total_amount,
           created_at,
           order_items
-        `)
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-      
+        `,
+        )
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
       if (error) {
-        console.error('Error fetching orders:', error);
+        console.error("Error fetching orders:", error);
         return [];
       }
-      
+
       return data || [];
     },
-    enabled: isLoggedIn
+    enabled: isLoggedIn,
   });
 
   const handleLogout = async () => {
@@ -171,78 +195,105 @@ export default function MyPageSupabase() {
       if (supabaseUser) {
         await signOut();
       }
-      
+
       if (localUser) {
         localLogout();
       }
-      
-      localStorage.removeItem('cart');
-      localStorage.removeItem('wishlist');
-      
+
+      localStorage.removeItem("cart");
+      localStorage.removeItem("wishlist");
+
       toast({
         title: "로그아웃 완료",
         description: "성공적으로 로그아웃되었습니다.",
       });
-      
-      setLocation('/');
+
+      setLocation("/");
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
   const handleRemoveFavorite = async (favoriteId: string) => {
     try {
       const { error } = await supabase
-        .from('favorites')
+        .from("favorites")
         .delete()
-        .eq('id', favoriteId);
-      
+        .eq("id", favoriteId);
+
       if (error) {
-        console.error('Error removing favorite:', error);
+        console.error("Error removing favorite:", error);
         return;
       }
-      
+
       toast({
         title: "찜 해제",
         description: "찜 목록에서 제거되었습니다.",
       });
-      
+
       // 쿼리 재실행으로 UI 업데이트
       window.location.reload();
     } catch (error) {
-      console.error('Error removing favorite:', error);
+      console.error("Error removing favorite:", error);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ko-KR', {
-      style: 'currency',
-      currency: 'KRW'
+    return new Intl.NumberFormat("ko-KR", {
+      style: "currency",
+      currency: "KRW",
     }).format(price);
   };
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
-      'pending': { label: '대기중', color: 'bg-yellow-100 text-yellow-800' },
-      'processing': { label: '처리중', color: 'bg-blue-100 text-blue-800' },
-      'shipped': { label: '배송중', color: 'bg-green-100 text-green-800' },
-      'delivered': { label: '배송완료', color: 'bg-gray-100 text-gray-800' },
-      'cancelled': { label: '취소됨', color: 'bg-red-100 text-red-800' }
-    };
-    
-    const statusInfo = statusMap[status as keyof typeof statusMap] || { label: status, color: 'bg-gray-100 text-gray-800' };
-    
+      payment_completed: {
+        label: "결제 완료",
+        icon: <Clock className="w-3 h-3 mr-1" />,
+        color:
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+      },
+      processing: {
+        label: "제작 중",
+        icon: <Package className="w-3 h-3 mr-1" />,
+        color:
+          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+      },
+      shipping: {
+        label: "배송 중",
+        icon: <Truck className="w-3 h-3 mr-1" />,
+        color:
+          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+      },
+      delivered: {
+        label: "배송 완료",
+        icon: <CheckCircle className="w-3 h-3 mr-1" />,
+        color:
+          "bg-gray-100 text-gray-800 dark:bg-[#1a1a1a]/30 dark:text-gray-300",
+      },
+      canceled: {
+        label: "취소됨",
+        icon: <XCircle className="w-3 h-3 mr-1" />,
+        color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+      },
+    } as const;
+
+    const info =
+      statusMap[status as keyof typeof statusMap] ||
+      statusMap.payment_completed;
+
     return (
-      <Badge className={statusInfo.color}>
-        {statusInfo.label}
+      <Badge className={`flex items-center ${info.color}`}>
+        {info.icon}
+        {info.label}
       </Badge>
     );
   };
@@ -261,9 +312,7 @@ export default function MyPageSupabase() {
             </p>
             <div className="space-y-3">
               <Link href="/login">
-                <Button className="w-full">
-                  로그인하기
-                </Button>
+                <Button className="w-full">로그인하기</Button>
               </Link>
               <Link href="/register">
                 <Button variant="outline" className="w-full">
@@ -295,7 +344,10 @@ export default function MyPageSupabase() {
                   {userInfo.email}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  가입일: {formatDate(currentUser?.created_at || new Date().toISOString())}
+                  가입일:{" "}
+                  {formatDate(
+                    currentUser?.created_at || new Date().toISOString(),
+                  )}
                 </p>
               </div>
             </div>
@@ -316,7 +368,9 @@ export default function MyPageSupabase() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">내가 쓴 글</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    내가 쓴 글
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {myPosts?.length || 0}
                   </p>
@@ -325,12 +379,14 @@ export default function MyPageSupabase() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">찜한 상품</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    찜한 상품
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {myFavorites?.length || 0}
                   </p>
@@ -339,12 +395,14 @@ export default function MyPageSupabase() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">주문 내역</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    주문 내역
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {myOrders?.length || 0}
                   </p>
@@ -363,7 +421,7 @@ export default function MyPageSupabase() {
             <TabsTrigger value="orders">주문 내역</TabsTrigger>
             <TabsTrigger value="refunds">환불 요청</TabsTrigger>
           </TabsList>
-          
+
           {/* 내가 쓴 글 */}
           <TabsContent value="posts" className="space-y-4">
             <Card>
@@ -377,7 +435,10 @@ export default function MyPageSupabase() {
                 {postsLoading ? (
                   <div className="space-y-4">
                     {[...Array(3)].map((_, i) => (
-                      <div key={i} className="border rounded-lg p-4 animate-pulse">
+                      <div
+                        key={i}
+                        className="border rounded-lg p-4 animate-pulse"
+                      >
                         <div className="h-4 bg-gray-200 dark:bg-[#1a1a1a] rounded w-3/4 mb-2"></div>
                         <div className="h-3 bg-gray-200 dark:bg-[#1a1a1a] rounded w-1/2"></div>
                       </div>
@@ -386,7 +447,10 @@ export default function MyPageSupabase() {
                 ) : myPosts && myPosts.length > 0 ? (
                   <div className="space-y-4">
                     {myPosts.map((post: CommunityPost) => (
-                      <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div
+                        key={post.id}
+                        className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <h3 className="font-medium text-gray-900 dark:text-white mb-2">
@@ -420,16 +484,14 @@ export default function MyPageSupabase() {
                       아직 작성한 글이 없습니다.
                     </p>
                     <Link href="/community/write">
-                      <Button>
-                        첫 글 작성하기
-                      </Button>
+                      <Button>첫 글 작성하기</Button>
                     </Link>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* 찜한 상품 */}
           <TabsContent value="favorites" className="space-y-4">
             <Card>
@@ -443,7 +505,10 @@ export default function MyPageSupabase() {
                 {favoritesLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="border rounded-lg p-4 animate-pulse">
+                      <div
+                        key={i}
+                        className="border rounded-lg p-4 animate-pulse"
+                      >
                         <div className="h-40 bg-gray-200 dark:bg-[#1a1a1a] rounded mb-4"></div>
                         <div className="h-4 bg-gray-200 dark:bg-[#1a1a1a] rounded w-3/4 mb-2"></div>
                         <div className="h-3 bg-gray-200 dark:bg-[#1a1a1a] rounded w-1/2"></div>
@@ -453,11 +518,20 @@ export default function MyPageSupabase() {
                 ) : myFavorites && myFavorites.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {myFavorites.map((favorite: FavoriteProduct) => (
-                      <div key={favorite.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div
+                        key={favorite.id}
+                        className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                      >
                         <div className="relative">
-                          <img 
-                            src={favorite.products.image_url || '/api/placeholder/200/200'} 
-                            alt={favorite.products.name_ko || favorite.products.name}
+                          <img
+                            src={
+                              favorite.products.image_url ||
+                              "/api/placeholder/200/200"
+                            }
+                            alt={
+                              favorite.products.name_ko ||
+                              favorite.products.name
+                            }
                             className="w-full h-40 object-cover rounded mb-4"
                           />
                           <Button
@@ -480,7 +554,11 @@ export default function MyPageSupabase() {
                         </p>
                         <div className="flex space-x-2">
                           <Link href={`/product/${favorite.products.id}`}>
-                            <Button variant="outline" size="sm" className="flex-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                            >
                               상품 보기
                             </Button>
                           </Link>
@@ -498,16 +576,14 @@ export default function MyPageSupabase() {
                       아직 찜한 상품이 없습니다.
                     </p>
                     <Link href="/category/acrylic">
-                      <Button>
-                        상품 둘러보기
-                      </Button>
+                      <Button>상품 둘러보기</Button>
                     </Link>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* 주문 내역 */}
           <TabsContent value="orders" className="space-y-4">
             <Card>
@@ -521,7 +597,10 @@ export default function MyPageSupabase() {
                 {ordersLoading ? (
                   <div className="space-y-4">
                     {[...Array(3)].map((_, i) => (
-                      <div key={i} className="border rounded-lg p-4 animate-pulse">
+                      <div
+                        key={i}
+                        className="border rounded-lg p-4 animate-pulse"
+                      >
                         <div className="h-4 bg-gray-200 dark:bg-[#1a1a1a] rounded w-1/4 mb-2"></div>
                         <div className="h-3 bg-gray-200 dark:bg-[#1a1a1a] rounded w-1/2 mb-2"></div>
                         <div className="h-3 bg-gray-200 dark:bg-[#1a1a1a] rounded w-1/3"></div>
@@ -531,7 +610,10 @@ export default function MyPageSupabase() {
                 ) : myOrders && myOrders.length > 0 ? (
                   <div className="space-y-4">
                     {myOrders.map((order: UserOrder) => (
-                      <div key={order.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div
+                        key={order.id}
+                        className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
                         <div className="flex items-start justify-between mb-4">
                           <div>
                             <h3 className="font-medium text-gray-900 dark:text-white mb-2">
@@ -563,7 +645,7 @@ export default function MyPageSupabase() {
                             />
                           </div>
                         </div>
-                        
+
                         {/* 주문 상품 목록 */}
                         {order.order_items && order.order_items.length > 0 && (
                           <div className="border-t pt-4">
@@ -571,16 +653,22 @@ export default function MyPageSupabase() {
                               주문 상품 ({order.order_items.length}개)
                             </h4>
                             <div className="space-y-2">
-                              {order.order_items.slice(0, 3).map((item: any, index: number) => (
-                                <div key={index} className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600 dark:text-gray-300">
-                                    {item.productName || `상품 ${index + 1}`}
-                                  </span>
-                                  <span className="text-gray-900 dark:text-white">
-                                    {item.quantity}개 × {formatPrice(item.price)}
-                                  </span>
-                                </div>
-                              ))}
+                              {order.order_items
+                                .slice(0, 3)
+                                .map((item: any, index: number) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center justify-between text-sm"
+                                  >
+                                    <span className="text-gray-600 dark:text-gray-300">
+                                      {item.productName || `상품 ${index + 1}`}
+                                    </span>
+                                    <span className="text-gray-900 dark:text-white">
+                                      {item.quantity}개 ×{" "}
+                                      {formatPrice(item.price)}
+                                    </span>
+                                  </div>
+                                ))}
                               {order.order_items.length > 3 && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                   외 {order.order_items.length - 3}개 상품
@@ -599,16 +687,14 @@ export default function MyPageSupabase() {
                       아직 주문한 상품이 없습니다.
                     </p>
                     <Link href="/category/acrylic">
-                      <Button>
-                        쇼핑 시작하기
-                      </Button>
+                      <Button>쇼핑 시작하기</Button>
                     </Link>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* 환불 요청 */}
           <TabsContent value="refunds" className="space-y-4">
             <Card>
@@ -625,7 +711,7 @@ export default function MyPageSupabase() {
           </TabsContent>
         </Tabs>
       </div>
-      
+
       {/* Refund Request Modal */}
       {selectedOrder && (
         <RefundRequestModal
