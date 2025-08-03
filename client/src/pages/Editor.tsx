@@ -643,10 +643,29 @@ export default function Editor() {
           <div className="w-full max-w-md">
             {/* Canvas */}
             <div className="relative mx-auto mb-6">
+              {/* Canvas Container with proper positioning context */}
               <div
-                className="relative bg-white border-2 border-gray-300 rounded-lg shadow-lg overflow-hidden"
-                style={{ width: CANVAS_SIZE.width, height: CANVAS_SIZE.height }}
+                className="relative bg-white border-2 border-gray-300 rounded-lg shadow-lg"
+                style={{ 
+                  width: CANVAS_SIZE.width, 
+                  height: CANVAS_SIZE.height,
+                  position: "relative", // Ensures absolute positioned children are relative to this container
+                  overflow: "visible" // Allow selection handles to extend outside
+                }}
               >
+                {/* Canvas background pattern (optional) */}
+                <div 
+                  className="absolute inset-0 opacity-5"
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
+                    `,
+                    backgroundSize: "20px 20px"
+                  }}
+                />
+                
+                {/* Canvas Elements */}
                 {elements
                   .filter(el => el.visible)
                   .sort((a, b) => a.zIndex - b.zIndex)
@@ -661,13 +680,26 @@ export default function Editor() {
                       canvasBounds={CANVAS_SIZE}
                     />
                   ))}
+                
+                {/* Empty state */}
                 {elements.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
                     <div className="text-center">
                       <Plus className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">요소를 추가해보세요</p>
+                      <p className="text-sm font-medium">요소를 추가해보세요</p>
+                      <p className="text-xs mt-1">이미지, 텍스트, 도형을 드래그하여 디자인을 만들어보세요</p>
                     </div>
                   </div>
+                )}
+              </div>
+              
+              {/* Canvas Info */}
+              <div className="text-center mt-2 text-xs text-gray-500">
+                캔버스 크기: {CANVAS_SIZE.width} × {CANVAS_SIZE.height}px
+                {selectedElement && (
+                  <span className="ml-2 text-[#00C19D]">
+                    • 선택된 요소: {elements.find(el => el.id === selectedElement)?.type}
+                  </span>
                 )}
               </div>
             </div>

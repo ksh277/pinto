@@ -179,13 +179,8 @@ export function DraggableElement({
 
   const renderElement = () => {
     const commonStyle = {
-      position: "absolute" as const,
-      left: element.x,
-      top: element.y,
-      width: element.width,
-      height: element.height,
-      transform: `rotate(${element.rotation}deg)`,
-      transformOrigin: "center center",
+      width: "100%",
+      height: "100%",
       cursor: isDragging ? "grabbing" : "grab",
       touchAction: "none",
     };
@@ -196,7 +191,7 @@ export function DraggableElement({
           src={element.src}
           alt="Canvas element"
           style={commonStyle}
-          className="object-contain select-none"
+          className="object-contain select-none w-full h-full"
           draggable={false}
         />
       );
@@ -261,96 +256,100 @@ export function DraggableElement({
   };
 
   return (
-    <>
-      <div
-        ref={elementRef}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className={cn(
-          "absolute select-none",
-          isSelected && "ring-2 ring-[#00C19D] ring-opacity-50"
-        )}
-        style={{
-          left: element.x,
-          top: element.y,
-          width: element.width,
-          height: element.height,
-          transform: `rotate(${element.rotation}deg)`,
-          transformOrigin: "center center",
-          zIndex: element.zIndex + 10,
-        }}
-      >
+    <div
+      ref={elementRef}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className={cn(
+        "absolute select-none group",
+        isSelected && "ring-2 ring-[#00C19D] ring-opacity-50"
+      )}
+      style={{
+        left: element.x,
+        top: element.y,
+        width: element.width,
+        height: element.height,
+        transform: `rotate(${element.rotation}deg)`,
+        transformOrigin: "center center",
+        zIndex: element.zIndex + 10,
+      }}
+    >
+      {/* Element Content */}
+      <div className="relative w-full h-full">
         {renderElement()}
-
-        {/* Selection Handles */}
-        {isSelected && (
-          <>
-            {/* Corner resize handles */}
-            <div
-              className="absolute -top-1 -left-1 w-3 h-3 bg-[#00C19D] border border-white rounded-full cursor-nw-resize"
-              onMouseDown={(e) => handleResizeStart(e, "top-left")}
-            />
-            <div
-              className="absolute -top-1 -right-1 w-3 h-3 bg-[#00C19D] border border-white rounded-full cursor-ne-resize"
-              onMouseDown={(e) => handleResizeStart(e, "top-right")}
-            />
-            <div
-              className="absolute -bottom-1 -left-1 w-3 h-3 bg-[#00C19D] border border-white rounded-full cursor-sw-resize"
-              onMouseDown={(e) => handleResizeStart(e, "bottom-left")}
-            />
-            <div
-              className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#00C19D] border border-white rounded-full cursor-se-resize"
-              onMouseDown={(e) => handleResizeStart(e, "bottom-right")}
-            />
-
-            {/* Side resize handles */}
-            <div
-              className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#00C19D] border border-white rounded-full cursor-n-resize"
-              onMouseDown={(e) => handleResizeStart(e, "top")}
-            />
-            <div
-              className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#00C19D] border border-white rounded-full cursor-s-resize"
-              onMouseDown={(e) => handleResizeStart(e, "bottom")}
-            />
-            <div
-              className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-[#00C19D] border border-white rounded-full cursor-w-resize"
-              onMouseDown={(e) => handleResizeStart(e, "left")}
-            />
-            <div
-              className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-[#00C19D] border border-white rounded-full cursor-e-resize"
-              onMouseDown={(e) => handleResizeStart(e, "right")}
-            />
-
-            {/* Action buttons */}
-            <div className="absolute -top-10 left-0 flex space-x-1">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpdate(element.id, { rotation: (element.rotation + 90) % 360 });
-                }}
-                className="h-6 w-6 p-0 bg-white hover:bg-gray-100 border border-gray-300"
-              >
-                <RotateCw className="w-3 h-3" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(element.id);
-                }}
-                className="h-6 w-6 p-0 bg-white hover:bg-red-50 border border-gray-300 text-red-500"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-          </>
-        )}
       </div>
-    </>
+
+      {/* Selection Handles - Only visible when selected */}
+      {isSelected && (
+        <>
+          {/* Selection outline */}
+          <div className="absolute inset-0 border-2 border-[#00C19D] border-dashed pointer-events-none opacity-50" />
+          
+          {/* Corner resize handles */}
+          <div
+            className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-[#00C19D] border-2 border-white rounded-full cursor-nw-resize shadow-sm"
+            onMouseDown={(e) => handleResizeStart(e, "top-left")}
+          />
+          <div
+            className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-[#00C19D] border-2 border-white rounded-full cursor-ne-resize shadow-sm"
+            onMouseDown={(e) => handleResizeStart(e, "top-right")}
+          />
+          <div
+            className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-[#00C19D] border-2 border-white rounded-full cursor-sw-resize shadow-sm"
+            onMouseDown={(e) => handleResizeStart(e, "bottom-left")}
+          />
+          <div
+            className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-[#00C19D] border-2 border-white rounded-full cursor-se-resize shadow-sm"
+            onMouseDown={(e) => handleResizeStart(e, "bottom-right")}
+          />
+
+          {/* Side resize handles */}
+          <div
+            className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#00C19D] border-2 border-white rounded-full cursor-n-resize shadow-sm"
+            onMouseDown={(e) => handleResizeStart(e, "top")}
+          />
+          <div
+            className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#00C19D] border-2 border-white rounded-full cursor-s-resize shadow-sm"
+            onMouseDown={(e) => handleResizeStart(e, "bottom")}
+          />
+          <div
+            className="absolute -left-1.5 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-[#00C19D] border-2 border-white rounded-full cursor-w-resize shadow-sm"
+            onMouseDown={(e) => handleResizeStart(e, "left")}
+          />
+          <div
+            className="absolute -right-1.5 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-[#00C19D] border-2 border-white rounded-full cursor-e-resize shadow-sm"
+            onMouseDown={(e) => handleResizeStart(e, "right")}
+          />
+
+          {/* Action buttons - positioned relative to the container */}
+          <div className="absolute -top-10 left-0 flex space-x-1 z-50">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdate(element.id, { rotation: (element.rotation + 90) % 360 });
+              }}
+              className="h-6 w-6 p-0 bg-white hover:bg-gray-100 border border-gray-300 shadow-sm"
+            >
+              <RotateCw className="w-3 h-3" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(element.id);
+              }}
+              className="h-6 w-6 p-0 bg-white hover:bg-red-50 border border-gray-300 text-red-500 shadow-sm"
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
