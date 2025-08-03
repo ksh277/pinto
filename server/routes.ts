@@ -6,6 +6,8 @@ import {
   insertUserSchema,
   insertProductSchema,
   insertProductReviewSchema,
+  insertReviewCommentSchema,
+  insertReviewLikeSchema,
   insertProductLikeSchema,
   insertCartItemSchema,
   insertOrderSchema,
@@ -904,6 +906,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in orders endpoint:", error);
       res.status(500).json({ message: "Failed to update order" });
+    }
+  });
+
+  // Review comments routes
+  app.get("/api/reviews/:reviewId/comments", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.reviewId);
+      const { data: comments, error } = await supabase
+        .from("review_comments")
+        .select(`
+          *,
+          users!review_comments_user_id_fkey (
+            id, username, first_name, last_name
+          )
+        `)
+        .eq("review_id", reviewId)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching review comments:", error);
+        return res.status(500).json({ message: "Failed to fetch comments" });
+      }
+
+      res.json(comments || []);
+    } catch (error) {
+      console.error("Error in review comments endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/reviews/:reviewId/comments", authenticateToken, async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.reviewId);
+      const { content } = req.body;
+      const userId = req.user.id;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: "댓글 내용을 입력해주세요." });
+      }
+
+      const { data: comment, error } = await supabase
+        .from("review_comments")
+        .insert([{
+          review_id: reviewId,
+          user_id: userId,
+          content: content.trim()
+        }])
+        .select(`
+          *,
+          users!review_comments_user_id_fkey (
+            id, username, first_name, last_name
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error creating comment:", error);
+        return res.status(500).json({ message: "댓글 작성 중 오류가 발생했습니다." });
+      }
+
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error in comment creation endpoint:", error);
+      res.status(500).json({ message: "댓글 작성 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Review likes routes
+  app.get("/api/reviews/:reviewId/likes", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.reviewId);
+      const { data: likes, error } = await supabase
+        .from("review_likes")
+        .select("user_id")
+        .eq("review_id", reviewId);
+
+      if (error) {
+        console.error("Error fetching review likes:", error);
+        return res.status(500).json({ message: "Failed to fetch likes" });
+      }
+
+      res.json({
+        count: likes?.length || 0,
+        userIds: likes?.map(like => like.user_id) || []
+      });
+    } catch (error) {
+      console.error("Error in review likes endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch likes" });
+    }
+  });
+
+  app.post("/api/reviews/:reviewId/like", authenticateToken, async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.reviewId);
+      const userId = req.user.id;
+
+      // Check if user already liked this review
+      const { data: existingLike } = await supabase
+        .from("review_likes")
+        .select("id")
+        .eq("review_id", reviewId)
+        .eq("user_id", userId)
+        .single();
+
+      if (existingLike) {
+        // Unlike - remove the like
+        const { error } = await supabase
+          .from("review_likes")
+          .delete()
+          .eq("review_id", reviewId)
+          .eq("user_id", userId);
+
+        if (error) {
+          console.error("Error removing like:", error);
+          return res.status(500).json({ message: "좋아요 제거 중 오류가 발생했습니다." });
+        }
+
+        // Get updated count
+        const { data: likes } = await supabase
+          .from("review_likes")
+          .select("user_id")
+          .eq("review_id", reviewId);
+
+        res.json({
+          liked: false,
+          count: likes?.length || 0,
+          userIds: likes?.map(like => like.user_id) || []
+        });
+      } else {
+        // Like - add the like
+        const { error } = await supabase
+          .from("review_likes")
+          .insert([{
+            review_id: reviewId,
+            user_id: userId
+          }]);
+
+        if (error) {
+          console.error("Error adding like:", error);
+          return res.status(500).json({ message: "좋아요 추가 중 오류가 발생했습니다." });
+        }
+
+        // Get updated count
+        const { data: likes } = await supabase
+          .from("review_likes")
+          .select("user_id")
+          .eq("review_id", reviewId);
+
+        res.json({
+          liked: true,
+          count: likes?.length || 0,
+          userIds: likes?.map(like => like.user_id) || []
+        });
+      }
+    } catch (error) {
+      console.error("Error in review like endpoint:", error);
+      res.status(500).json({ message: "좋아요 처리 중 오류가 발생했습니다." });
     }
   });
 
