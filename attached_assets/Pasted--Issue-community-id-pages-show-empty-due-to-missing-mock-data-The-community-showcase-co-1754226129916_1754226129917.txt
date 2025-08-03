@@ -1,0 +1,92 @@
+🛠️ Issue: /community/[id] pages show empty due to missing mock data
+
+The community showcase (`/community`) currently displays cards,
+but when I try to visit `/community/[id]`, it shows nothing — no post exists in the database.
+
+Please create and inject at least 6 mock community post entries for testing.
+
+✅ Requirements for each post:
+- id (e.g. 1, 2, 3, ...)
+- title
+- username (masked)
+- like count
+- review count
+- image URL (use placeholder for now: https://via.placeholder.com/300)
+- short description
+
+Suggested sample posts:
+
+1.
+- id: 1
+- title: "나만의 캐릭터 키링 완성!"
+- username: "네기다***"
+- likes: 245
+- reviews: 18
+- image: placeholder
+- desc: "홀로그램 효과가 너무 예뻐요! 친구들한테도 추천했습니다."
+
+2.
+- id: 2
+- title: "홀로그램 스티커 대박!"
+- username: "모토***"
+- likes: 189
+- reviews: 24
+- image: placeholder
+- desc: "제작 퀄리티가 기대 이상이었어요. 다음에 또 만들 거예요."
+
+3.
+- id: 3
+- title: "투명 아크릴 스탠드 후기"
+- username: "짱구***"
+- likes: 167
+- reviews: 12
+- image: placeholder
+- desc: "각인도 선명하고 부드럽고 선물용으로 완벽합니다."
+
+4.
+- id: 4
+- title: "레진 키링 DIY 성공!"
+- username: "토루***"
+- likes: 134
+- reviews: 15
+- image: placeholder
+- desc: "퀄리티가 정말 만족스러워요. 다시 주문할 예정입니다."
+
+5.
+- id: 5
+- title: "내 굿즈 첫 제작 후기"
+- username: "dlwlrma***"
+- likes: 112
+- reviews: 8
+- image: placeholder
+- desc: "처음인데도 너무 잘 만들어져서 감동이었습니다."
+
+6.
+- id: 6
+- title: "연인 선물로 딱이에요!"
+- username: "yeonwoo***"
+- likes: 198
+- reviews: 20
+- image: placeholder
+- desc: "포장도 고급스럽고 퀄리티도 매우 만족합니다."
+
+---
+
+Make sure each of these can be accessed via:
+- `/community/[id]` route (e.g. `/community/1`, `/community/2`, ...)
+
+---
+
+🚨 Additional Functional Requirements:
+
+1. The data must be fully stored in the database (e.g., Supabase or backend API).
+2. On each detail page (`/community/[id]`), enable:
+   - 🗨️ **Comment input & list** (linked to that post)
+   - ❤️ **Like button** that works per user (toggle)
+3. These interactions must persist (not frontend-only).
+   - Comments should be stored in a `community_comments` table
+   - Likes should be stored in a `community_likes` table (one per user per post)
+4. All like and comment data must reflect in the frontend on page load.
+5. The card list on `/community` must reflect the updated like/review count for each post.
+
+Once implemented, I will be able to fully test the routing, data integration, comment/like logic, and
