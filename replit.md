@@ -1,8 +1,8 @@
-# pixelgoods E-commerce Platform
+# Pinto E-commerce Platform
 
 ## Overview
 
-pixelgoods is a full-stack Korean-style e-commerce web application for custom printing services. The platform allows users to create personalized merchandise including acrylic keychains, stickers, t-shirts, phone cases, and other custom printed items. Built with React, TypeScript, and modern web technologies, it provides a comprehensive solution for both customers and administrators.
+Pinto is a full-stack Korean-style e-commerce web application for custom printing services. The platform allows users to create personalized merchandise including acrylic keychains, stickers, t-shirts, phone cases, and other custom printed items. Built with React, TypeScript, and modern web technologies, it provides a comprehensive solution for both customers and administrators.
 
 ## User Preferences
 
@@ -118,6 +118,18 @@ Preferred communication style: Simple, everyday language.
 - **Performance**: Optimized builds and lazy loading for fast page loads
 
 ## Recent Changes
+
+### 2025-01-12: Site Rebranding to "Pinto"
+- **Brand Update**: Changed site name from "PixelGoods" to "Pinto"
+- **Configuration Updates**: Updated APP_CONFIG constants:
+  - name: "PixelGoods" → "Pinto"
+  - nameKo: "픽셀굿즈" → "핀토"
+  - Social media handles updated to @pinto
+  - Email updated to info@pinto.co.kr
+- **Header Component**: Updated logo text display to "Pinto"
+- **Documentation**: Updated replit.md title and overview section
+
+## Previous Changes
 
 ### 2025-01-11: Complete Korean-Style Homepage Implementation
 - **Hero Section**: Reduced height to 50% (h-[50vh] with min-h-[500px]) while maintaining visual appeal and mobile responsiveness

@@ -134,7 +134,7 @@ export const Header = () => {
               <Package className="w-4 h-4 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900 dark:text-white">
-              pixelgoods
+              Pinto
             </span>
           </div>
         </Link>
@@ -616,10 +616,6 @@ export const Header = () => {
       <SearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
-        onSearch={(query) => {
-          setLocation(`/search?q=${encodeURIComponent(query)}`);
-          setIsSearchModalOpen(false);
-        }}
       />
     </header>
   );
