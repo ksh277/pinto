@@ -333,6 +333,32 @@ body.dark {
   border-color: #374151 !important;
 }
 
+/* Pinto Editor Colors */
+:root {
+  --mint: 172 100% 38%;
+  --mint-foreground: 0 0% 100%;
+}
+
+.mint {
+  background-color: #00C19D;
+}
+
+.bg-mint {
+  background-color: #00C19D;
+}
+
+.text-mint {
+  color: #00C19D;
+}
+
+.border-mint {
+  border-color: #00C19D;
+}
+
+.ring-mint {
+  --tw-ring-color: #00C19D;
+}
+
 .dark .border-gray-300 {
   border-color: #4b5563 !important;
 }

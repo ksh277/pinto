@@ -61,6 +61,14 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
+        mint: {
+          DEFAULT: "#00C19D",
+          50: "#F0FDFA",
+          100: "#CCFBF1",
+          500: "#00C19D",
+          600: "#00A082",
+          700: "#008066",
+        },
       },
       keyframes: {
         "accordion-down": {
