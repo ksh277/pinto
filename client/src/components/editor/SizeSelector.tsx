@@ -87,6 +87,11 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
     }
   };
 
+  const handleModeChange = (newMode: "preset" | "custom") => {
+    setMode(newMode);
+    setSelectedPreset(""); // Clear preset selection when switching modes
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -95,7 +100,7 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
           <Button
             variant={mode === "preset" ? "default" : "outline"}
             size="sm"
-            onClick={() => setMode("preset")}
+            onClick={() => handleModeChange("preset")}
             className="flex-1 text-xs"
           >
             프리셋
@@ -103,7 +108,7 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
           <Button
             variant={mode === "custom" ? "default" : "outline"}
             size="sm"
-            onClick={() => setMode("custom")}
+            onClick={() => handleModeChange("custom")}
             className="flex-1 text-xs"
           >
             직접입력
@@ -114,7 +119,11 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
       {mode === "preset" ? (
         <div className="space-y-3">
           <Label className="text-xs text-gray-300">제품 크기 선택</Label>
-          <Select value={selectedPreset} onValueChange={handlePresetSelect}>
+          <Select 
+            value={selectedPreset} 
+            onValueChange={handlePresetSelect}
+            disabled={mode !== "preset"}
+          >
             <SelectTrigger className="bg-gray-700 border-gray-600 text-white text-xs">
               <SelectValue placeholder="크기를 선택하세요" />
             </SelectTrigger>
@@ -136,10 +145,12 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
               <Input
                 type="number"
                 value={customWidth}
-                onChange={(e) => setCustomWidth(Number(e.target.value))}
+                onChange={(e) => setCustomWidth(Number(e.target.value) || 0)}
                 min="10"
                 max="500"
-                className="bg-gray-700 border-gray-600 text-white text-xs"
+                disabled={mode !== "custom"}
+                className="bg-gray-700 border-gray-600 text-white text-xs disabled:opacity-50"
+                placeholder="가로 (mm)"
               />
             </div>
             <div>
@@ -147,10 +158,12 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
               <Input
                 type="number"
                 value={customHeight}
-                onChange={(e) => setCustomHeight(Number(e.target.value))}
+                onChange={(e) => setCustomHeight(Number(e.target.value) || 0)}
                 min="10"
                 max="500"
-                className="bg-gray-700 border-gray-600 text-white text-xs"
+                disabled={mode !== "custom"}
+                className="bg-gray-700 border-gray-600 text-white text-xs disabled:opacity-50"
+                placeholder="세로 (mm)"
               />
             </div>
           </div>
@@ -158,8 +171,8 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             variant="outline"
             size="sm"
             onClick={handleCustomSize}
-            disabled={customWidth <= 0 || customHeight <= 0}
-            className="w-full text-xs"
+            disabled={mode !== "custom" || customWidth <= 0 || customHeight <= 0}
+            className="w-full text-xs disabled:opacity-50"
           >
             크기 적용
           </Button>
@@ -172,9 +185,14 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             선택된 크기: {presets.find(p => p.name === selectedPreset)?.width}×{presets.find(p => p.name === selectedPreset)?.height}mm
           </div>
         )}
-        {mode === "custom" && (
+        {mode === "custom" && customWidth > 0 && customHeight > 0 && (
           <div>
             설정될 크기: {customWidth}×{customHeight}mm
+          </div>
+        )}
+        {mode === "custom" && (customWidth <= 0 || customHeight <= 0) && (
+          <div className="text-yellow-400">
+            가로와 세로 크기를 입력하세요 (10-500mm)
           </div>
         )}
       </div>
