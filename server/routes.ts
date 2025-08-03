@@ -269,6 +269,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Review likes and comments
+  app.post("/api/reviews/:id/like", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.id);
+      const like = await storage.createReviewLike({
+        reviewId,
+        userId: req.body.userId
+      });
+      res.status(201).json(like);
+    } catch (error) {
+      console.error("Error liking review:", error);
+      res.status(500).json({ message: "Failed to like review" });
+    }
+  });
+
+  app.post("/api/reviews/:id/comments", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.id);
+      const comment = await storage.createReviewComment({
+        ...req.body,
+        reviewId
+      });
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating review comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Community likes
+  app.post("/api/community-posts/:id/like", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.likeCommunityPost(postId);
+      res.json(post);
+    } catch (error) {
+      console.error("Error liking community post:", error);
+      res.status(500).json({ message: "Failed to like post" });
+    }
+  });
+
+  // Cart operations
+  app.patch("/api/cart/:id", async (req, res) => {
+    try {
+      const cartItemId = parseInt(req.params.id);
+      const cartItem = await storage.updateCartItem(cartItemId, req.body);
+      res.json(cartItem);
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ message: "Failed to update cart item" });
+    }
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    try {
+      const cartItemId = parseInt(req.params.id);
+      const success = await storage.deleteCartItem(cartItemId);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error deleting cart item:", error);
+      res.status(500).json({ message: "Failed to delete cart item" });
+    }
+  });
+
+  // Admin product management
+  app.patch("/api/admin/products/:id", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const product = await storage.updateProduct(productId, req.body);
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(500).json({ message: "Failed to update product" });
+    }
+  });
+
+  // Admin order management
+  app.get("/api/admin/orders", async (req, res) => {
+    try {
+      const orders = await storage.getOrders();
+      res.json(orders || []);
+    } catch (error) {
+      console.error("Error fetching admin orders:", error);
+      res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  });
+
+  app.patch("/api/admin/orders/:id", async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.updateOrder(orderId, req.body);
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating order:", error);
+      res.status(500).json({ message: "Failed to update order" });
+    }
+  });
+
   // Debug database connection
   app.get("/api/test-db", async (req, res) => {
     try {
