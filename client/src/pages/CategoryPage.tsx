@@ -20,23 +20,17 @@ const categoryData = {
     id: "acrylic",
     name: { ko: "아크릴굿즈", en: "Acrylic Goods", ja: "アクリルグッズ", zh: "亚克力商品" },
     subcategories: [
-      { id: "keyring", name: { ko: "아크릴키링", en: "Acrylic Keyring", ja: "アクリルキーリング", zh: "亚克力钥匙扣" }, slug: "keyring", count: 120 },
       { id: "korotto", name: { ko: "코롯토", en: "Korotto", ja: "コロット", zh: "Korotto" }, slug: "korotto", count: 85 },
-      { id: "smarttok", name: { ko: "스마트톡", en: "Smart Tok", ja: "スマートトーク", zh: "智能支架" }, slug: "smarttok", count: 67 },
-      { id: "stand", name: { ko: "스탠드/디오라마", en: "Stand/Diorama", ja: "スタンド/ジオラマ", zh: "支架/立体模型" }, slug: "stand", count: 94 },
       { id: "holder", name: { ko: "포카홀더", en: "Card Holder", ja: "カードホルダー", zh: "卡片夹" }, slug: "holder", count: 78 },
-      { id: "shaker", name: { ko: "아크릴쉐이커", en: "Acrylic Shaker", ja: "アクリルシェーカー", zh: "亚克力摇摇杯" }, slug: "shaker", count: 52 }
+      { id: "shaker", name: { ko: "아크릴쉐이커", en: "Acrylic Shaker", ja: "アクリルシェーカー", zh: "亚크力摇摇杯" }, slug: "shaker", count: 52 }
     ]
   },
   wood: {
     id: "wood",
     name: { ko: "우드굿즈", en: "Wood Goods", ja: "ウッドグッズ", zh: "木制商品" },
     subcategories: [
-      { id: "keyring", name: { ko: "우드키링", en: "Wood Keyring", ja: "ウッドキーリング", zh: "木制钥匙扣" }, slug: "keyring", count: 45 },
-      { id: "stand", name: { ko: "우드스탠드", en: "Wood Stand", ja: "ウッドスタンド", zh: "木制支架" }, slug: "stand", count: 32 },
       { id: "coaster", name: { ko: "코스터", en: "Coaster", ja: "コースター", zh: "杯垫" }, slug: "coaster", count: 38 },
-      { id: "magnet", name: { ko: "마그넷", en: "Magnet", ja: "マグネット", zh: "磁铁" }, slug: "magnet", count: 29 },
-      { id: "badge", name: { ko: "우드뱃지", en: "Wood Badge", ja: "ウッドバッジ", zh: "木制徽章" }, slug: "badge", count: 18 }
+      { id: "magnet", name: { ko: "마그넷", en: "Magnet", ja: "マグネット", zh: "磁铁" }, slug: "magnet", count: 29 }
     ]
   },
   lanyard: {
