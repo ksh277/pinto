@@ -73,16 +73,11 @@ import SellerDashboard from "@/pages/SellerDashboard";
 function Router() {
   const [location] = useLocation();
 
-  // Determine if we should show community navigation
-  const showCommunityNav =
-    location.startsWith("/community") ||
-    location === "/resources" ||
-    location === "/events" ||
-    location === "/showcase" ||
-    location === "/doan" ||
-    location === "/event" ||
-    location.startsWith("/community/qna") ||
-    location.startsWith("/community/question");
+  // Show community navigation on all pages except login/register/admin
+  const showCommunityNav = !location.startsWith("/login") && 
+                          !location.startsWith("/register") && 
+                          !location.startsWith("/admin") && 
+                          !location.startsWith("/find-");
 
   return (
     <Layout showCommunityNav={showCommunityNav}>
