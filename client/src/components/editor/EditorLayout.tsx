@@ -230,7 +230,16 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
     });
   }, [canvasSize, shapeType, shapeFill, elements, addElement, toast]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
+    if (!elements.length && !canvasSize) {
+      toast({
+        title: "저장할 디자인이 없습니다",
+        description: "캔버스에 요소를 추가한 후 저장해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const designData = {
       elements,
       canvasSize,
@@ -238,11 +247,30 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
       productType: productType || params.type,
     };
 
-    localStorage.setItem("pinto-design", JSON.stringify(designData));
-    toast({
-      title: "디자인 저장됨",
-      description: "디자인이 성공적으로 저장되었습니다.",
-    });
+    try {
+      // Save to localStorage as backup
+      localStorage.setItem("pinto-design", JSON.stringify(designData));
+      
+      // TODO: Save to database (Supabase)
+      // This would be implemented with actual API call
+      // await fetch('/api/designs', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(designData)
+      // });
+
+      toast({
+        title: "디자인 저장됨",
+        description: `${elements.length}개의 요소가 포함된 디자인이 저장되었습니다.`,
+      });
+    } catch (error) {
+      console.error("Design save error:", error);
+      toast({
+        title: "저장 실패",
+        description: "디자인 저장 중 오류가 발생했습니다. 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   }, [elements, canvasSize, productType, params.type, toast]);
 
   const handleExport = useCallback(async (format: "png" | "pdf") => {
@@ -483,7 +511,12 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                   size="sm"
                   onClick={handleAddShape}
                   disabled={!isEditorEnabled}
-                  className="w-full text-xs"
+                  className={cn(
+                    "w-full text-xs",
+                    isEditorEnabled 
+                      ? "hover:bg-green-600 hover:text-white border-green-400 text-green-400" 
+                      : "disabled:opacity-30 disabled:cursor-not-allowed"
+                  )}
                 >
                   도형 추가
                 </Button>

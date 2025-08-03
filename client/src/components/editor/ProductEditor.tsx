@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import { CanvasElement, CanvasSize } from "./EditorLayout";
 import { DraggableElement } from "@/components/DraggableElement";
+import { DraggableShape } from "./DraggableShape";
 
 interface ProductEditorProps {
   canvasSize: CanvasSize;
@@ -81,17 +82,52 @@ export function ProductEditor({
           {elements
             .filter(el => el.visible)
             .sort((a, b) => a.zIndex - b.zIndex)
-            .map((element) => (
-              <DraggableElement
-                key={element.id}
-                element={element}
-                isSelected={selectedElement === element.id}
-                onSelect={onSelectElement}
-                onUpdate={onUpdateElement}
-                onDelete={onDeleteElement}
-                canvasBounds={canvasSize}
-              />
-            ))}
+            .map((element) => {
+              if (element.type === "shape") {
+                return (
+                  <DraggableShape
+                    key={element.id}
+                    id={element.id}
+                    shapeType={element.shapeType || "rectangle"}
+                    fill={element.fill || "#FF0000"}
+                    position={{ x: element.x, y: element.y }}
+                    size={{ width: element.width, height: element.height }}
+                    rotation={element.rotation}
+                    isSelected={selectedElement === element.id}
+                    onSelect={onSelectElement}
+                    onMove={(id, deltaX, deltaY) => {
+                      onUpdateElement(id, {
+                        x: element.x + deltaX,
+                        y: element.y + deltaY,
+                      });
+                    }}
+                    onResize={(id, newWidth, newHeight) => {
+                      onUpdateElement(id, {
+                        width: newWidth,
+                        height: newHeight,
+                      });
+                    }}
+                    onRotate={(id, rotation) => {
+                      onUpdateElement(id, { rotation });
+                    }}
+                    onDelete={onDeleteElement}
+                    canvasBounds={canvasSize}
+                  />
+                );
+              } else {
+                return (
+                  <DraggableElement
+                    key={element.id}
+                    element={element}
+                    isSelected={selectedElement === element.id}
+                    onSelect={onSelectElement}
+                    onUpdate={onUpdateElement}
+                    onDelete={onDeleteElement}
+                    canvasBounds={canvasSize}
+                  />
+                );
+              }
+            })}
 
           {/* Empty State */}
           {elements.length === 0 && (

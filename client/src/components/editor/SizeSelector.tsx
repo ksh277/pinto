@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,7 +150,11 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
                 min="10"
                 max="500"
                 disabled={mode !== "custom"}
-                className="bg-gray-700 border-gray-600 text-white text-xs disabled:opacity-50"
+                className={cn(
+                  "bg-gray-700 border-gray-600 text-white text-xs",
+                  mode !== "custom" && "disabled:opacity-30 disabled:cursor-not-allowed",
+                  mode === "custom" && "focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                )}
                 placeholder="가로 (mm)"
               />
             </div>
@@ -162,7 +167,11 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
                 min="10"
                 max="500"
                 disabled={mode !== "custom"}
-                className="bg-gray-700 border-gray-600 text-white text-xs disabled:opacity-50"
+                className={cn(
+                  "bg-gray-700 border-gray-600 text-white text-xs",
+                  mode !== "custom" && "disabled:opacity-30 disabled:cursor-not-allowed",
+                  mode === "custom" && "focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                )}
                 placeholder="세로 (mm)"
               />
             </div>
@@ -172,7 +181,12 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             size="sm"
             onClick={handleCustomSize}
             disabled={mode !== "custom" || customWidth <= 0 || customHeight <= 0}
-            className="w-full text-xs disabled:opacity-50"
+            className={cn(
+              "w-full text-xs",
+              mode !== "custom" || customWidth <= 0 || customHeight <= 0 
+                ? "disabled:opacity-30 disabled:cursor-not-allowed" 
+                : "hover:bg-blue-600 hover:text-white border-blue-400 text-blue-400"
+            )}
           >
             크기 적용
           </Button>
