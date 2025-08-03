@@ -1077,9 +1077,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (error) {
         console.error("Error fetching community posts:", error);
-        // If table doesn't exist, return empty array for now
+        // If table doesn't exist, return sample data for demo
         if (error.code === '42P01') {
-          return res.json([]);
+          const samplePosts = [
+            {
+              id: 1,
+              title: "나만의 캐릭터 키링 완성!",
+              content: "홀로그램 효과가 너무 예뻐요! 친구들한테도 추천했습니다.",
+              description: "홀로그램 효과가 너무 예뻐요! 친구들한테도 추천했습니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 245,
+              user_id: 1,
+              username: "네기다***",
+              created_at: new Date().toISOString()
+            },
+            {
+              id: 2,
+              title: "홀로그램 스티커 대박!",
+              content: "제작 퀄리티가 기대 이상이었어요. 다음에 또 만들 거예요.",
+              description: "제작 퀄리티가 기대 이상이었어요. 다음에 또 만들 거예요.",
+              image_url: "/api/placeholder/300/300",
+              likes: 189,
+              user_id: 2,
+              username: "모토***",
+              created_at: new Date().toISOString()
+            },
+            {
+              id: 3,
+              title: "투명 아크릴 스탠드 후기",
+              content: "각인도 선명하고 부드럽고 선물용으로 완벽합니다.",
+              description: "각인도 선명하고 부드럽고 선물용으로 완벽합니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 167,
+              user_id: 3,
+              username: "짱구***",
+              created_at: new Date().toISOString()
+            },
+            {
+              id: 4,
+              title: "레진 키링 DIY 성공!",
+              content: "퀄리티가 정말 만족스러워요. 다시 주문할 예정입니다.",
+              description: "퀄리티가 정말 만족스러워요. 다시 주문할 예정입니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 134,
+              user_id: 1,
+              username: "토루***",
+              created_at: new Date().toISOString()
+            },
+            {
+              id: 5,
+              title: "내 굿즈 첫 제작 후기",
+              content: "처음인데도 너무 잘 만들어져서 감동이었습니다.",
+              description: "처음인데도 너무 잘 만들어져서 감동이었습니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 112,
+              user_id: 2,
+              username: "dlwlrma***",
+              created_at: new Date().toISOString()
+            },
+            {
+              id: 6,
+              title: "연인 선물로 딱이에요!",
+              content: "포장도 고급스럽고 퀄리티도 매우 만족합니다.",
+              description: "포장도 고급스럽고 퀄리티도 매우 만족합니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 198,
+              user_id: 3,
+              username: "yeonwoo***",
+              created_at: new Date().toISOString()
+            }
+          ];
+          return res.json(samplePosts);
         }
         return res
           .status(500)
@@ -1105,19 +1173,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (error) {
         console.error("Error fetching community post:", error);
-        // If table doesn't exist, return a mock post for demo
+        // If table doesn't exist, return sample post data
         if (error.code === '42P01') {
-          return res.json({
-            id: postId,
-            title: "샘플 커뮤니티 게시글",
-            content: "실제 데이터베이스 연결을 위해 Supabase 설정이 필요합니다.",
-            description: "이는 샘플 게시글입니다.",
-            image_url: "/api/placeholder/300/300",
-            likes: 0,
-            user_id: 1,
-            username: "사용자",
-            created_at: new Date().toISOString()
-          });
+          const samplePosts = {
+            1: {
+              id: 1,
+              title: "나만의 캐릭터 키링 완성!",
+              content: "홀로그램 효과가 너무 예뻐요! 친구들한테도 추천했습니다. 배송도 빠르고 퀄리티도 만족스러워서 다음에 또 주문할 예정입니다.",
+              description: "홀로그램 효과가 너무 예뻐요! 친구들한테도 추천했습니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 245,
+              user_id: 1,
+              username: "네기다***",
+              created_at: new Date().toISOString()
+            },
+            2: {
+              id: 2,
+              title: "홀로그램 스티커 대박!",
+              content: "제작 퀄리티가 기대 이상이었어요. 다음에 또 만들 거예요. 색감도 선명하고 접착력도 좋아서 정말 만족합니다.",
+              description: "제작 퀄리티가 기대 이상이었어요. 다음에 또 만들 거예요.",
+              image_url: "/api/placeholder/300/300",
+              likes: 189,
+              user_id: 2,
+              username: "모토***",
+              created_at: new Date().toISOString()
+            },
+            3: {
+              id: 3,
+              title: "투명 아크릴 스탠드 후기",
+              content: "각인도 선명하고 부드럽고 선물용으로 완벽합니다. 받는 사람도 너무 좋아해서 뿌듯했어요.",
+              description: "각인도 선명하고 부드럽고 선물용으로 완벽합니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 167,
+              user_id: 3,
+              username: "짱구***",
+              created_at: new Date().toISOString()
+            },
+            4: {
+              id: 4,
+              title: "레진 키링 DIY 성공!",
+              content: "퀄리티가 정말 만족스러워요. 다시 주문할 예정입니다. 처음 만들어봤는데 생각보다 결과물이 좋아서 놀랐습니다.",
+              description: "퀄리티가 정말 만족스러워요. 다시 주문할 예정입니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 134,
+              user_id: 1,
+              username: "토루***",
+              created_at: new Date().toISOString()
+            },
+            5: {
+              id: 5,
+              title: "내 굿즈 첫 제작 후기",
+              content: "처음인데도 너무 잘 만들어져서 감동이었습니다. 디자인 상담도 친절하게 해주셔서 감사했어요.",
+              description: "처음인데도 너무 잘 만들어져서 감동이었습니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 112,
+              user_id: 2,
+              username: "dlwlrma***",
+              created_at: new Date().toISOString()
+            },
+            6: {
+              id: 6,
+              title: "연인 선물로 딱이에요!",
+              content: "포장도 고급스럽고 퀄리티도 매우 만족합니다. 특별한 날 선물로 정말 추천드려요.",
+              description: "포장도 고급스럽고 퀄리티도 매우 만족합니다.",
+              image_url: "/api/placeholder/300/300",
+              likes: 198,
+              user_id: 3,
+              username: "yeonwoo***",
+              created_at: new Date().toISOString()
+            }
+          };
+          
+          const samplePost = samplePosts[postId];
+          if (samplePost) {
+            return res.json(samplePost);
+          }
         }
         return res.status(404).json({ message: "Post not found" });
       }
@@ -1135,20 +1265,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = parseInt(req.params.postId);
       const { data: comments, error } = await supabase
         .from("community_comments")
-        .select(`
-          *,
-          users (
-            id, username, first_name, last_name
-          )
-        `)
+        .select("*")
         .eq("post_id", postId)
         .order("created_at", { ascending: true });
 
       if (error) {
         console.error("Error fetching community comments:", error);
-        // Return empty array if table doesn't exist
+        // Return sample comments if table doesn't exist
         if (error.code === '42P01' || error.code === 'PGRST200') {
-          return res.json([]);
+          const sampleComments = {
+            1: [
+              { id: 1, user_id: 2, comment: "정말 예쁘게 나왔네요! 저도 만들어보고 싶어요.", created_at: new Date().toISOString(), username: "모토***" },
+              { id: 2, user_id: 3, comment: "홀로그램 효과가 진짜 좋네요. 어디서 제작하셨나요?", created_at: new Date().toISOString(), username: "짱구***" },
+              { id: 3, user_id: 1, comment: "감사합니다! 다음에 다른 디자인으로도 만들어볼게요.", created_at: new Date().toISOString(), username: "네기다***" }
+            ],
+            2: [
+              { id: 4, user_id: 1, comment: "스티커 퀄리티가 정말 좋아보여요!", created_at: new Date().toISOString(), username: "네기다***" },
+              { id: 5, user_id: 3, comment: "저도 홀로그램 스티커 주문하려고 하는데 팁 있나요?", created_at: new Date().toISOString(), username: "짱구***" }
+            ],
+            3: [
+              { id: 6, user_id: 2, comment: "투명 아크릴 정말 깔끔하네요. 선물로 딱일 것 같아요.", created_at: new Date().toISOString(), username: "모토***" }
+            ]
+          };
+          
+          return res.json(sampleComments[postId] || []);
         }
         return res.status(500).json({ message: "Failed to fetch comments" });
       }
