@@ -66,8 +66,8 @@ export function CategoryNav({ className }: CategoryNavProps) {
     <div className={cn("bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-600 relative", className)}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
-        <div className="flex justify-center">
-          <div className="flex space-x-8 overflow-x-auto">
+        <div className="flex justify-center w-full">
+          <div className="flex space-x-8 overflow-x-auto justify-center">
             {categories.map((category) => (
               <div
                 key={category.id}
