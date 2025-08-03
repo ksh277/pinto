@@ -593,59 +593,6 @@ export const Header = () => {
         </div>
       )}
 
-      {/* Category Navigation Bar */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex items-center space-x-10 py-3 overflow-x-auto">
-            <Link href="/reviews/all">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white whitespace-nowrap"
-              >
-                사용후기
-              </Button>
-            </Link>
-            <Link href="/collections">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white whitespace-nowrap"
-              >
-                모음전
-              </Button>
-            </Link>
-            <Link href="/resources">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white whitespace-nowrap"
-              >
-                자료실
-              </Button>
-            </Link>
-            <Link href="/events">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white whitespace-nowrap"
-              >
-                이벤트
-              </Button>
-            </Link>
-            <Link href="/rewards">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white whitespace-nowrap"
-              >
-                회원등급혜택
-              </Button>
-            </Link>
-          </nav>
-        </div>
-      </div>
-
       {/* Search Modal */}
       <SearchModal
         isOpen={isSearchModalOpen}
