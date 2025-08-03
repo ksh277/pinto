@@ -126,7 +126,7 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center">
         {/* Logo */}
         <Link href="/">
           <div className="flex items-center space-x-2">
@@ -139,8 +139,8 @@ export const Header = () => {
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
+        {/* Desktop Navigation - Center aligned */}
+        <nav className="hidden md:flex items-center space-x-8 flex-1 justify-center">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <Button
@@ -238,10 +238,30 @@ export const Header = () => {
               </div>
             </SelectTrigger>
             <SelectContent className="bg-gray-50 dark:bg-gray-50 border border-gray-200">
-              <SelectItem value="ko" className="hover:bg-gray-100 text-gray-900">한국어</SelectItem>
-              <SelectItem value="en" className="hover:bg-gray-100 text-gray-900">English</SelectItem>
-              <SelectItem value="ja" className="hover:bg-gray-100 text-gray-900">日本語</SelectItem>
-              <SelectItem value="zh" className="hover:bg-gray-100 text-gray-900">中文</SelectItem>
+              <SelectItem
+                value="ko"
+                className="hover:bg-gray-100 text-gray-900"
+              >
+                한국어
+              </SelectItem>
+              <SelectItem
+                value="en"
+                className="hover:bg-gray-100 text-gray-900"
+              >
+                English
+              </SelectItem>
+              <SelectItem
+                value="ja"
+                className="hover:bg-gray-100 text-gray-900"
+              >
+                日本語
+              </SelectItem>
+              <SelectItem
+                value="zh"
+                className="hover:bg-gray-100 text-gray-900"
+              >
+                中文
+              </SelectItem>
             </SelectContent>
           </Select>
 
@@ -257,7 +277,11 @@ export const Header = () => {
                 </span>
                 {localUser?.isAdmin && (
                   <Link href="/admin/products">
-                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-700"
+                    >
                       {t({
                         ko: "상품관리",
                         en: "Products",
@@ -537,10 +561,30 @@ export const Header = () => {
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-gray-50 dark:bg-gray-50 border border-gray-200">
-                    <SelectItem value="ko" className="hover:bg-gray-100 text-gray-900">한국어</SelectItem>
-                    <SelectItem value="en" className="hover:bg-gray-100 text-gray-900">English</SelectItem>
-                    <SelectItem value="ja" className="hover:bg-gray-100 text-gray-900">日本語</SelectItem>
-                    <SelectItem value="zh" className="hover:bg-gray-100 text-gray-900">中文</SelectItem>
+                    <SelectItem
+                      value="ko"
+                      className="hover:bg-gray-100 text-gray-900"
+                    >
+                      한국어
+                    </SelectItem>
+                    <SelectItem
+                      value="en"
+                      className="hover:bg-gray-100 text-gray-900"
+                    >
+                      English
+                    </SelectItem>
+                    <SelectItem
+                      value="ja"
+                      className="hover:bg-gray-100 text-gray-900"
+                    >
+                      日本語
+                    </SelectItem>
+                    <SelectItem
+                      value="zh"
+                      className="hover:bg-gray-100 text-gray-900"
+                    >
+                      中文
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -553,58 +597,48 @@ export const Header = () => {
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center space-x-8 py-3 overflow-x-auto">
-            <Link href="/category/keychains/all">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
-                키링
-              </Button>
-            </Link>
-            <Link href="/category/stands/all">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
-                스탠드
-              </Button>
-            </Link>
-            <Link href="/category/smarttok/all">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
-                스마트톡
-              </Button>
-            </Link>
-            <Link href="/category/badges/all">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
-                뱃지
-              </Button>
-            </Link>
-            <Link href="/category/wood/all">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
-                우드굿즈
-              </Button>
-            </Link>
-            <Link href="/category/lanyards/all">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
-                렌야드
-              </Button>
-            </Link>
             <Link href="/reviews/all">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white whitespace-nowrap"
+              >
                 사용후기
               </Button>
             </Link>
             <Link href="/collections">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white whitespace-nowrap"
+              >
                 모음전
               </Button>
             </Link>
             <Link href="/resources">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white whitespace-nowrap"
+              >
                 자료실
               </Button>
             </Link>
             <Link href="/events">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white whitespace-nowrap"
+              >
                 이벤트
               </Button>
             </Link>
             <Link href="/rewards">
-              <Button variant="ghost" size="sm" className="text-white whitespace-nowrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white whitespace-nowrap"
+              >
                 회원등급혜택
               </Button>
             </Link>
