@@ -24,6 +24,7 @@ import OrderComplete from "@/pages/OrderComplete";
 import Community from "@/pages/Community";
 import Editor from "@/pages/Editor";
 import EditorSelect from "@/pages/EditorSelect";
+import ReviewsPage from "@/pages/ReviewsPage";
 import Inquiry from "@/pages/Inquiry";
 import ReviewDetail from "@/pages/ReviewDetail";
 import Resources from "@/pages/Resources";
@@ -196,7 +197,7 @@ function Router() {
         <Route path="/inquiry" component={Inquiry} />
         <Route path="/support" component={Inquiry} />
         <Route path="/rewards" component={Rewards} />
-        <Route path="/reviews/all" component={ReviewsAll} />
+        <Route path="/reviews/all" component={ReviewsPage} />
         <Route path="/design-service" component={DesignServiceProduct} />
         <Route path="/additional-services" component={AdditionalServices} />
 
