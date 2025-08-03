@@ -236,7 +236,7 @@ function Router() {
         {/* Category and section routes */}
         <Route path="/popular" component={Products} />
         <Route path="/new" component={Products} />
-        <Route path="/reviews" component={ReviewsAll} />
+        <Route path="/reviews" component={ReviewsPage} />
         <Route path="/showcase" component={Community} />
         <Route path="/material" component={Products} />
         <Route path="/trending" component={Products} />

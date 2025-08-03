@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -251,10 +252,11 @@ export default function ReviewsPage() {
 
       {/* Reviews Grid */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {currentReviews.map((review) => (
-            <Card key={review.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <CardContent className="p-0">
+            <Link key={review.id} href={`/reviews/${review.id}`}>
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-0">
                 {/* Review Image */}
                 <div className="relative aspect-square">
                   <img
@@ -333,8 +335,9 @@ export default function ReviewsPage() {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 
