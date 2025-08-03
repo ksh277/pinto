@@ -85,21 +85,21 @@ const OrdersPage = () => {
       case "canceled":
         return "주문 취소";
       default:
-        rreturn '결제 완료';
+        return "결제 완료";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'payment_completed':
+      case "payment_completed":
         return "bg-yellow-600";
       case "processing":
         return "bg-blue-600";
-      case 'shipping':
-        return 'bg-purple-600';
-      case 'delivered':
+      case "shipping":
+        return "bg-purple-600";
+      case "delivered":
         return "bg-green-600";
-      case 'canceled':
+      case "canceled":
         return "bg-red-600";
       default:
         return "bg-gray-600";
@@ -538,7 +538,7 @@ const OrdersPage = () => {
                                 </div>
                               </DialogContent>
                             </Dialog>
-                            {order.status === 'payment_completed' && (
+                            {order.status === "payment_completed" && (
                               <Button
                                 variant="outline"
                                 size="sm"

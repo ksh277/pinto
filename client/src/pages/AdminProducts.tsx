@@ -404,9 +404,10 @@ export const AdminProducts = () => {
       <div className="container mx-auto py-8">
         <div className="text-center">상품 목록을 불러오는 중...</div>
       </div>
+            );
     );
   }
-
+            
   return (
     <div className="container mx-auto py-8">
       <div className="flex items-center justify-between mb-6">
