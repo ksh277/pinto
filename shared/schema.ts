@@ -1,512 +1,378 @@
 import {
-  pgTable,
+  mysqlTable,
+  int,
   text,
-  serial,
-  integer,
   boolean,
   timestamp,
   decimal,
   json,
-} from "drizzle-orm/pg-core";
+  index,
+  varchar,
+} from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  phone: text("phone"),
+// User storage table
+export const users = mysqlTable("users", {
+  id: int("id").primaryKey().autoincrement(),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
+  phone: varchar("phone", { length: 20 }),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const categories = pgTable("categories", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  nameKo: text("name_ko").notNull(),
+export const categories = mysqlTable("categories", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  nameKo: varchar("name_ko", { length: 255 }).notNull(),
   description: text("description"),
   descriptionKo: text("description_ko"),
-  imageUrl: text("image_url"),
+  imageUrl: varchar("image_url", { length: 500 }),
   isActive: boolean("is_active").default(true).notNull(),
 });
 
-export const sellers = pgTable("sellers", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
+export const sellers = mysqlTable("sellers", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id")
     .references(() => users.id)
     .notNull(),
-  shopName: text("shop_name").notNull(),
-  businessNumber: text("business_number"),
-  contactEmail: text("contact_email"),
-  contactPhone: text("contact_phone"),
+  shopName: varchar("shop_name", { length: 255 }).notNull(),
+  businessNumber: varchar("business_number", { length: 100 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 20 }),
   address: text("address"),
-  bankAccount: text("bank_account"),
-  bankName: text("bank_name"),
+  bankAccount: varchar("bank_account", { length: 100 }),
+  bankName: varchar("bank_name", { length: 100 }),
   isApproved: boolean("is_approved").default(false).notNull(),
-  status: text("status").default("pending").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const shippingCompanies = pgTable("shipping_companies", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  code: text("code").notNull().unique(),
-  trackingUrl: text("tracking_url"),
+export const shippingCompanies = mysqlTable("shipping_companies", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  trackingUrl: varchar("tracking_url", { length: 500 }),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const products = pgTable("products", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  nameKo: text("name_ko").notNull(),
+export const products = mysqlTable("products", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  nameKo: varchar("name_ko", { length: 255 }).notNull(),
   description: text("description"),
   descriptionKo: text("description_ko"),
   basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
-  categoryId: integer("category_id")
+  categoryId: int("category_id")
     .references(() => categories.id)
     .notNull(),
-  sellerId: integer("seller_id").references(() => sellers.id),
-  imageUrl: text("image_url").notNull(),
-  stock: integer("stock").default(0).notNull(),
+  sellerId: int("seller_id").references(() => sellers.id),
+  imageUrl: varchar("image_url", { length: 500 }).notNull(),
+  stock: int("stock").default(0).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isApproved: boolean("is_approved").default(false).notNull(),
-  status: text("status").default("pending").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
   approvalDate: timestamp("approval_date"),
   customizationOptions: json("customization_options"),
   options: json("options"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const productReviews = pgTable("product_reviews", {
-  id: serial("id").primaryKey(),
-  productId: integer("product_id")
+export const productReviews = mysqlTable("product_reviews", {
+  id: int("id").primaryKey().autoincrement(),
+  productId: int("product_id")
     .references(() => products.id)
     .notNull(),
-  userId: integer("user_id")
+  userId: int("user_id")
     .references(() => users.id)
     .notNull(),
-  title: text("title").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
   content: text("content").notNull(),
-  rating: integer("rating").notNull(),
+  rating: int("rating").notNull(),
   images: json("images"),
   isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const reviewComments = pgTable("review_comments", {
-  id: serial("id").primaryKey(),
-  reviewId: integer("review_id")
+export const reviewComments = mysqlTable("review_comments", {
+  id: int("id").primaryKey().autoincrement(),
+  reviewId: int("review_id")
     .references(() => productReviews.id)
     .notNull(),
-  userId: integer("user_id")
+  userId: int("user_id")
     .references(() => users.id)
     .notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const reviewLikes = pgTable("review_likes", {
-  id: serial("id").primaryKey(),
-  reviewId: integer("review_id")
+export const reviewLikes = mysqlTable("review_likes", {
+  id: int("id").primaryKey().autoincrement(),
+  reviewId: int("review_id")
     .references(() => productReviews.id)
     .notNull(),
-  userId: integer("user_id")
+  userId: int("user_id")
     .references(() => users.id)
     .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const productLikes = pgTable("product_likes", {
-  id: serial("id").primaryKey(),
-  productId: integer("product_id")
+export const productLikes = mysqlTable("product_likes", {
+  id: int("id").primaryKey().autoincrement(),
+  productId: int("product_id")
     .references(() => products.id)
     .notNull(),
-  userId: integer("user_id")
+  userId: int("user_id")
     .references(() => users.id)
     .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const favorites = pgTable("favorites", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
+export const favorites = mysqlTable("favorites", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id")
     .references(() => users.id)
     .notNull(),
-  productId: integer("product_id")
+  productId: int("product_id")
     .references(() => products.id)
     .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const productImages = pgTable("product_images", {
-  id: serial("id").primaryKey(),
-  productId: integer("product_id")
+export const cartItems = mysqlTable("cart_items", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id")
+    .references(() => users.id)
+    .notNull(),
+  productId: int("product_id")
     .references(() => products.id)
     .notNull(),
-  imageUrl: text("image_url").notNull(),
-  altText: text("alt_text"),
-  displayOrder: integer("display_order").default(0).notNull(),
+  quantity: int("quantity").notNull(),
+  customOptions: json("custom_options"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const goodsEditorDesigns = pgTable("goods_editor_designs", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
+export const orders = mysqlTable("orders", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id")
     .references(() => users.id)
     .notNull(),
-  title: text("title").notNull(),
-  productType: text("product_type").notNull(),
-  canvasData: json("canvas_data").notNull(),
-  thumbnailUrl: text("thumbnail_url"),
-  isPublic: boolean("is_public").default(false).notNull(),
-  isSaved: boolean("is_saved").default(true).notNull(),
-  tags: json("tags"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const inquiries = pgTable("inquiries", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id)
-    .notNull(),
-  type: text("type").notNull(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  contactEmail: text("contact_email"),
-  contactPhone: text("contact_phone"),
-  attachmentUrls: json("attachment_urls"),
-  status: text("status").default("pending").notNull(),
-  adminResponse: text("admin_response"),
-  adminUserId: integer("admin_user_id").references(() => users.id),
-  priority: text("priority").default("normal").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const cartItems = pgTable("cart_items", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id)
-    .notNull(),
-  productId: integer("product_id")
-    .references(() => products.id)
-    .notNull(),
-  quantity: integer("quantity").notNull(),
-  customization: json("customization"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id)
-    .notNull(),
-  status: text("status").notNull(),
+  status: varchar("status", { length: 50 }).notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   shippingAddress: json("shipping_address").notNull(),
   orderItems: json("order_items").notNull(),
-  trackingNumber: text("tracking_number"),
-  shippingCompanyId: integer("shipping_company_id").references(
-    () => shippingCompanies.id,
-  ),
+  trackingNumber: varchar("tracking_number", { length: 100 }),
+  shippingCompanyId: int("shipping_company_id").references(() => shippingCompanies.id),
   shippedAt: timestamp("shipped_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id")
+export const orderItems = mysqlTable("order_items", {
+  id: int("id").primaryKey().autoincrement(),
+  orderId: int("order_id")
     .references(() => orders.id)
     .notNull(),
-  productId: integer("product_id")
+  productId: int("product_id")
     .references(() => products.id)
     .notNull(),
-  designId: integer("design_id").references(() => goodsEditorDesigns.id),
-  quantity: integer("quantity").notNull(),
+  quantity: int("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  customOptions: json("custom_options"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const payments = pgTable("payments", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id")
+export const payments = mysqlTable("payments", {
+  id: int("id").primaryKey().autoincrement(),
+  orderId: int("order_id")
     .references(() => orders.id)
     .notNull(),
-  paymentMethod: text("payment_method").notNull(), // 카드, 계좌이체 등
-  status: text("status").notNull(), // pending, success, failed
-  transactionId: text("transaction_id"),
-  paidAt: timestamp("paid_at"),
+  method: varchar("method", { length: 50 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  transactionId: varchar("transaction_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const refundRequests = pgTable("refund_requests", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id")
-    .references(() => orders.id)
-    .notNull(),
-  userId: integer("user_id")
-    .references(() => users.id)
-    .notNull(),
-  reason: text("reason").notNull(),
-  status: text("status").default("pending").notNull(), // pending, approved, rejected
-  requestedAt: timestamp("requested_at").defaultNow().notNull(),
-  resolvedAt: timestamp("resolved_at"),
-  adminNote: text("admin_note"),
-});
-
-export const coupons = pgTable("coupons", {
-  id: serial("id").primaryKey(),
-  code: text("code").notNull().unique(),
-  discountType: text("discount_type").notNull(), // percent, fixed
-  discountValue: decimal("discount_value", {
-    precision: 10,
-    scale: 2,
-  }).notNull(),
-  expiresAt: timestamp("expires_at"),
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const adminLogs = pgTable("admin_logs", {
-  id: serial("id").primaryKey(),
-  adminId: integer("admin_id")
-    .references(() => users.id)
-    .notNull(),
-  action: text("action").notNull(), // 예: "상품 삭제"
-  targetTable: text("target_table").notNull(),
-  targetId: integer("target_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const communityPosts = pgTable("community_posts", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id)
-    .notNull(),
-  title: text("title").notNull(),
+export const coupons = mysqlTable("coupons", {
+  id: int("id").primaryKey().autoincrement(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  imageUrl: text("image_url").notNull(),
-  likes: integer("likes").default(0).notNull(),
-  productId: integer("product_id").references(() => products.id),
+  type: varchar("type", { length: 20 }).notNull(),
+  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+  minAmount: decimal("min_amount", { precision: 10, scale: 2 }),
+  maxDiscount: decimal("max_discount", { precision: 10, scale: 2 }),
+  usageLimit: int("usage_limit"),
+  usageCount: int("usage_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const communityComments = pgTable("community_comments", {
-  id: serial("id").primaryKey(),
-  postId: integer("post_id")
+export const adminLogs = mysqlTable("admin_logs", {
+  id: int("id").primaryKey().autoincrement(),
+  adminId: int("admin_id")
+    .references(() => users.id)
+    .notNull(),
+  action: varchar("action", { length: 255 }).notNull(),
+  targetType: varchar("target_type", { length: 50 }),
+  targetId: int("target_id"),
+  details: json("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const communityPosts = mysqlTable("community_posts", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id")
+    .references(() => users.id)
+    .notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  imageUrl: varchar("image_url", { length: 500 }),
+  likes: int("likes").default(0).notNull(),
+  views: int("views").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const communityComments = mysqlTable("community_comments", {
+  id: int("id").primaryKey().autoincrement(),
+  postId: int("post_id")
     .references(() => communityPosts.id)
     .notNull(),
-  userId: integer("user_id")
+  userId: int("user_id")
     .references(() => users.id)
     .notNull(),
-  comment: text("comment").notNull(),
+  content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id)
-    .notNull(),
-  type: text("type").notNull(), // 'comment', 'like', 'order', 'system'
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  isRead: boolean("is_read").default(false).notNull(),
-  relatedPostId: integer("related_post_id").references(() => communityPosts.id),
-  relatedOrderId: integer("related_order_id").references(() => orders.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const belugaTemplates = pgTable("beluga_templates", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  titleKo: text("title_ko").notNull(),
+export const belugaTemplates = mysqlTable("beluga_templates", {
+  id: int("id").primaryKey().autoincrement(),
+  title: varchar("title", { length: 255 }).notNull(),
+  titleKo: varchar("title_ko", { length: 255 }).notNull(),
   description: text("description").notNull(),
   descriptionKo: text("description_ko").notNull(),
-  size: text("size").notNull(),
-  format: text("format").notNull(),
-  downloads: integer("downloads").default(0).notNull(),
-  tags: text("tags"), // MySQL does not support native arrays
-  status: text("status"),
-  imageUrl: text("image_url"),
+  size: varchar("size", { length: 50 }).notNull(),
+  format: varchar("format", { length: 20 }).notNull(),
+  downloads: int("downloads").default(0).notNull(),
+  tags: text("tags").notNull(),
+  status: varchar("status", { length: 20 }),
+  imageUrl: varchar("image_url", { length: 500 }),
   isActive: boolean("is_active").default(true).notNull(),
-  sortOrder: integer("sort_order").default(0).notNull(),
+  sortOrder: int("sort_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  isAdmin: true,
+export const goodsEditorDesigns = mysqlTable("goods_editor_designs", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id")
+    .references(() => users.id)
+    .notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  productType: varchar("product_type", { length: 100 }).notNull(),
+  designData: json("design_data").notNull(),
+  thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
+  isPublic: boolean("is_public").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertCategorySchema = createInsertSchema(categories).omit({
-  id: true,
+export const inquiries = mysqlTable("inquiries", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").references(() => users.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  adminResponse: text("admin_response"),
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertProductSchema = createInsertSchema(products).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertProductReviewSchema = createInsertSchema(
-  productReviews,
-).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertReviewCommentSchema = createInsertSchema(reviewComments).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertReviewLikeSchema = createInsertSchema(reviewLikes).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertProductLikeSchema = createInsertSchema(productLikes).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertCartItemSchema = createInsertSchema(cartItems).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertOrderSchema = createInsertSchema(orders).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertPaymentSchema = createInsertSchema(payments).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertCouponSchema = createInsertSchema(coupons).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertAdminLogSchema = createInsertSchema(adminLogs).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertCommunityPostSchema = createInsertSchema(
-  communityPosts,
-).omit({
-  id: true,
-  createdAt: true,
-  likes: true,
-});
-
-export const insertCommunityCommentSchema = createInsertSchema(
-  communityComments,
-).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertCommentSchema = createInsertSchema(communityComments).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertBelugaTemplateSchema = createInsertSchema(
-  belugaTemplates,
-).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertGoodsEditorDesignSchema = createInsertSchema(
-  goodsEditorDesigns,
-).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertInquirySchema = createInsertSchema(inquiries).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertNotificationSchema = createInsertSchema(notifications).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertRefundRequestSchema = createInsertSchema(
-  refundRequests,
-).omit({
-  id: true,
-  requestedAt: true,
-  resolvedAt: true,
-});
-
-// Types
+// Type exports for TypeScript usage
 export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type RefundRequest = typeof refundRequests.$inferSelect;
-export type InsertRefundRequest = z.infer<typeof insertRefundRequestSchema>;
+export type InsertUser = typeof users.$inferInsert;
+
 export type Category = typeof categories.$inferSelect;
-export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type InsertCategory = typeof categories.$inferInsert;
+
+export type Seller = typeof sellers.$inferSelect;
+export type InsertSeller = typeof sellers.$inferInsert;
+
 export type Product = typeof products.$inferSelect;
-export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertProduct = typeof products.$inferInsert;
+
 export type ProductReview = typeof productReviews.$inferSelect;
-export type InsertProductReview = z.infer<typeof insertProductReviewSchema>;
+export type InsertProductReview = typeof productReviews.$inferInsert;
+
 export type ReviewComment = typeof reviewComments.$inferSelect;
-export type InsertReviewComment = z.infer<typeof insertReviewCommentSchema>;
+export type InsertReviewComment = typeof reviewComments.$inferInsert;
+
 export type ReviewLike = typeof reviewLikes.$inferSelect;
-export type InsertReviewLike = z.infer<typeof insertReviewLikeSchema>;
+export type InsertReviewLike = typeof reviewLikes.$inferInsert;
+
 export type ProductLike = typeof productLikes.$inferSelect;
-export type InsertProductLike = z.infer<typeof insertProductLikeSchema>;
+export type InsertProductLike = typeof productLikes.$inferInsert;
+
+export type Favorite = typeof favorites.$inferSelect;
+export type InsertFavorite = typeof favorites.$inferInsert;
+
 export type CartItem = typeof cartItems.$inferSelect;
-export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
+export type InsertCartItem = typeof cartItems.$inferInsert;
+
 export type Order = typeof orders.$inferSelect;
-export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type InsertOrder = typeof orders.$inferInsert;
+
 export type OrderItem = typeof orderItems.$inferSelect;
-export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+export type InsertOrderItem = typeof orderItems.$inferInsert;
+
 export type Payment = typeof payments.$inferSelect;
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type InsertPayment = typeof payments.$inferInsert;
+
 export type Coupon = typeof coupons.$inferSelect;
-export type InsertCoupon = z.infer<typeof insertCouponSchema>;
+export type InsertCoupon = typeof coupons.$inferInsert;
+
 export type AdminLog = typeof adminLogs.$inferSelect;
-export type InsertAdminLog = z.infer<typeof insertAdminLogSchema>;
+export type InsertAdminLog = typeof adminLogs.$inferInsert;
+
 export type CommunityPost = typeof communityPosts.$inferSelect;
-export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
+export type InsertCommunityPost = typeof communityPosts.$inferInsert;
+
 export type CommunityComment = typeof communityComments.$inferSelect;
-export type InsertCommunityComment = z.infer<
-  typeof insertCommunityCommentSchema
->;
+export type InsertCommunityComment = typeof communityComments.$inferInsert;
+
 export type BelugaTemplate = typeof belugaTemplates.$inferSelect;
-export type InsertBelugaTemplate = z.infer<typeof insertBelugaTemplateSchema>;
+export type InsertBelugaTemplate = typeof belugaTemplates.$inferInsert;
+
 export type GoodsEditorDesign = typeof goodsEditorDesigns.$inferSelect;
-export type InsertGoodsEditorDesign = z.infer<
-  typeof insertGoodsEditorDesignSchema
->;
+export type InsertGoodsEditorDesign = typeof goodsEditorDesigns.$inferInsert;
+
 export type Inquiry = typeof inquiries.$inferSelect;
-export type InsertInquiry = z.infer<typeof insertInquirySchema>;
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type InsertInquiry = typeof inquiries.$inferInsert;
+
+// Zod schemas for validation
+export const insertUserSchema = createInsertSchema(users);
+export const insertCategorySchema = createInsertSchema(categories);
+export const insertProductSchema = createInsertSchema(products);
+export const insertProductReviewSchema = createInsertSchema(productReviews);
+export const insertCartItemSchema = createInsertSchema(cartItems);
+export const insertOrderSchema = createInsertSchema(orders);
+export const insertOrderItemSchema = createInsertSchema(orderItems);
+export const insertPaymentSchema = createInsertSchema(payments);
+export const insertCouponSchema = createInsertSchema(coupons);
+export const insertAdminLogSchema = createInsertSchema(adminLogs);
+export const insertCommunityPostSchema = createInsertSchema(communityPosts);
+export const insertCommunityCommentSchema = createInsertSchema(communityComments);
+export const insertBelugaTemplateSchema = createInsertSchema(belugaTemplates);
+export const insertGoodsEditorDesignSchema = createInsertSchema(goodsEditorDesigns);
+export const insertInquirySchema = createInsertSchema(inquiries);

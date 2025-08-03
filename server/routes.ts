@@ -21,7 +21,7 @@ import {
   insertBelugaTemplateSchema,
   insertGoodsEditorDesignSchema,
   insertInquirySchema,
-  insertNotificationSchema,
+
 } from "@shared/schema";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -109,38 +109,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug Supabase tables and data
-  app.get("/api/test-supabase", async (req, res) => {
+  // Add missing essential API endpoints for e-commerce functionality
+
+  // Product details API
+  app.get("/api/products/:id", async (req, res) => {
     try {
-      const results = {};
-
-      // Test categories  
-      const { data: categories, error: catError } = await supabase
-        .from("categories")
-        .select("*")
-        .limit(3);
+      const productId = parseInt(req.params.id);
+      const product = await storage.getProduct(productId);
       
-      results['categories'] = { 
-        success: !catError,
-        error: catError?.message,
-        count: categories?.length || 0,
-        data: categories?.slice(0, 2)
-      };
-
-      // Test products
-      const { data: products, error: prodError } = await supabase
-        .from("products")
-        .select("id, name, nameKo, basePrice")
-        .limit(3);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
       
-      results['products'] = {
-        success: !prodError,
-        error: prodError?.message,
-        count: products?.length || 0,
-        data: products?.slice(0, 2)
-      };
-        
-      res.json(results);
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+
+  // Cart management API
+  app.get("/api/cart/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const cartItems = await storage.getCartItems(userId);
+      res.json(cartItems || []);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      res.status(500).json({ message: "Failed to fetch cart" });
+    }
+  });
+
+  app.post("/api/cart", async (req, res) => {
+    try {
+      const cartItem = await storage.addToCart(req.body);
+      res.status(201).json(cartItem);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ message: "Failed to add to cart" });
+    }
+  });
+
+  // Orders API
+  app.get("/api/orders/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const orders = await storage.getUserOrders(userId);
+      res.json(orders || []);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  });
+
+  app.post("/api/orders", async (req, res) => {
+    try {
+      const order = await storage.createOrder(req.body);
+      res.status(201).json(order);
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ message: "Failed to create order" });
+    }
+  });
+
+  // Reviews management API  
+  app.get("/api/reviews/:productId", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const reviews = await storage.getProductReviews(productId);
+      res.json(reviews || []);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  app.post("/api/reviews", async (req, res) => {
+    try {
+      const review = await storage.createProductReview(req.body);
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+
+  // Community management API
+  app.get("/api/community-posts/:id", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getCommunityPost(postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      res.json(post);
+    } catch (error) {
+      console.error("Error fetching community post:", error);
+      res.status(500).json({ message: "Failed to fetch post" });
+    }
+  });
+
+  app.post("/api/community-posts", async (req, res) => {
+    try {
+      const post = await storage.createCommunityPost(req.body);
+      res.status(201).json(post);
+    } catch (error) {
+      console.error("Error creating community post:", error);
+      res.status(500).json({ message: "Failed to create post" });
+    }
+  });
+
+  // Debug database connection
+  app.get("/api/test-db", async (req, res) => {
+    try {
+      const categories = await storage.getCategories();
+      const products = await storage.getProducts();
+      const communityPosts = await storage.getCommunityPosts();
+      
+      res.json({
+        categories: { count: categories.length, sample: categories.slice(0, 2) },
+        products: { count: products.length, sample: products.slice(0, 2) },
+        communityPosts: { count: communityPosts.length, sample: communityPosts.slice(0, 2) }
+      });
     } catch (error) {
       res.json({ 
         success: false,
