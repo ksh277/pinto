@@ -221,6 +221,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add community comments API
+  app.post("/api/community-posts/:id/comments", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const comment = await storage.createCommunityComment({
+        ...req.body,
+        postId
+      });
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  app.get("/api/community-posts/:id/comments", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const comments = await storage.getCommunityComments(postId);
+      res.json(comments || []);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  // Add design saving functionality
+  app.post("/api/designs", async (req, res) => {
+    try {
+      const design = await storage.createGoodsEditorDesign(req.body);
+      res.status(201).json(design);
+    } catch (error) {
+      console.error("Error saving design:", error);
+      res.status(500).json({ message: "Failed to save design" });
+    }
+  });
+
+  app.get("/api/designs/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const designs = await storage.getGoodsEditorDesigns(userId);
+      res.json(designs || []);
+    } catch (error) {
+      console.error("Error fetching designs:", error);
+      res.status(500).json({ message: "Failed to fetch designs" });
+    }
+  });
+
   // Debug database connection
   app.get("/api/test-db", async (req, res) => {
     try {
