@@ -1475,7 +1475,7 @@ export const createOrder = async (userId: string, cartItems: any[]) => {
       product_id: item.product_id,
       quantity: item.quantity,
       status: "pending",
-      options: item.optionss
+      options: item.options,
       created_at: new Date().toISOString(),
     }));
 

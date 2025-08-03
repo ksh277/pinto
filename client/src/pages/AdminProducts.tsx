@@ -35,29 +35,7 @@ import { Plus, Edit, Trash2, Package, Eye, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { apiRequest } from "@/lib/queryClient";
-
-interface Product {
-  id: number;
-  name: string;
-  nameKo: string;
-  description: string;
-  descriptionKo: string;
-  price: number;
-  originalPrice: number;
-  categoryId: number;
-  imageUrl: string;
-  isActive: boolean;
-  isFeatured: boolean;
-  stockQuantity: number;
-  tags: string[];
-  createdAt: string;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  nameKo: string;
-}
+import { Product, Category } from "@shared/schema";
 
 export const AdminProducts = () => {
   const { t } = useLanguage();
@@ -174,14 +152,12 @@ export const AdminProducts = () => {
       nameKo: product?.nameKo || "",
       description: product?.description || "",
       descriptionKo: product?.descriptionKo || "",
-      price: product?.price || 0,
-      originalPrice: product?.originalPrice || 0,
+      basePrice: product?.basePrice || "0",
       categoryId: product?.categoryId || 1,
       imageUrl: product?.imageUrl || "",
       isActive: product?.isActive ?? true,
       isFeatured: product?.isFeatured ?? false,
-      stockQuantity: product?.stockQuantity || 0,
-      tags: product?.tags?.join(", ") || "",
+      stock: product?.stock || 0,
       options: product?.options ? JSON.stringify(product.options, null, 2) : "",
     });
 
@@ -202,10 +178,6 @@ export const AdminProducts = () => {
       }
       onSubmit({
         ...formData,
-        tags: formData.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean),
         options: parsedOptions,
       });
     };
@@ -261,43 +233,29 @@ export const AdminProducts = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="price">판매가격 (원)</Label>
+            <Label htmlFor="basePrice">가격 (원)</Label>
             <Input
-              id="price"
+              id="basePrice"
               type="number"
-              value={formData.price}
+              value={formData.basePrice}
               onChange={(e) =>
-                setFormData({ ...formData, price: Number(e.target.value) })
+                setFormData({ ...formData, basePrice: e.target.value })
               }
               required
             />
           </div>
           <div>
-            <Label htmlFor="originalPrice">정가 (원)</Label>
+            <Label htmlFor="stock">재고수량</Label>
             <Input
-              id="originalPrice"
+              id="stock"
               type="number"
-              value={formData.originalPrice}
+              value={formData.stock}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  originalPrice: Number(e.target.value),
-                })
-              }
-            />
-          </div>
-          <div>
-            <Label htmlFor="stockQuantity">재고수량</Label>
-            <Input
-              id="stockQuantity"
-              type="number"
-              value={formData.stockQuantity}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  stockQuantity: Number(e.target.value),
+                  stock: Number(e.target.value),
                 })
               }
             />
@@ -336,27 +294,21 @@ export const AdminProducts = () => {
               placeholder="https://example.com/image.jpg"
             />
           </div>
-          <div>
-            <div className="md:col-span-2">
-              <Label htmlFor="options">옵션 JSON</Label>
-              <Textarea
-                id="options"
-                value={formData.options}
-                onChange={(e) =>
-                  setFormData({ ...formData, options: e.target.value })
-                }
-                rows={3}
-              />
-            </div>
-          <div>
-            <Label htmlFor="tags">태그 (쉼표로 구분)</Label>
-          <Input
-            id="tags"
-            value={formData.tags}
-            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-            placeholder="키링, 아크릴, 투명"
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="options">옵션 JSON</Label>
+          <Textarea
+            id="options"
+            value={formData.options}
+            onChange={(e) =>
+              setFormData({ ...formData, options: e.target.value })
+            }
+            rows={3}
           />
         </div>
+
+
 
         <div className="flex items-center space-x-4">
           <label className="flex items-center space-x-2">
@@ -396,6 +348,7 @@ export const AdminProducts = () => {
             {isLoading ? "저장 중..." : product ? "수정" : "추가"}
           </Button>
         </div>
+      </form>
     );
   };
 
@@ -404,7 +357,6 @@ export const AdminProducts = () => {
       <div className="container mx-auto py-8">
         <div className="text-center">상품 목록을 불러오는 중...</div>
       </div>
-            );
     );
   }
             
@@ -497,34 +449,14 @@ export const AdminProducts = () => {
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
                       <span className="font-bold text-lg">
-                        ₩{(product.price || 0).toLocaleString()}
+                        ₩{parseFloat(product.basePrice || "0").toLocaleString()}
                       </span>
-                      {(product.originalPrice || 0) > (product.price || 0) && (
-                        <span className="text-sm text-gray-500 line-through">
-                          ₩{(product.originalPrice || 0).toLocaleString()}
-                        </span>
-                      )}
                     </div>
                     <div className="text-xs text-gray-500">
-                      재고: {product.stockQuantity || 0}개
+                      재고: {product.stock || 0}개
                     </div>
                   </div>
                 </div>
-
-                {product.tags && product.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {product.tags.slice(0, 3).map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                    {product.tags.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{product.tags.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-between items-center mt-4 pt-4 border-t">
