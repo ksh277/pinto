@@ -21,13 +21,26 @@ import { formatDistance } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { CommunityPost, CommunityComment } from "@shared/schema";
 
-interface CommentWithUser extends CommunityComment {
+interface CommentWithUser {
+  id: number;
+  post_id: number;
+  user_id: number;
+  comment: string;
+  created_at: string;
   username: string;
   first_name?: string;
   last_name?: string;
 }
 
-interface PostWithUser extends CommunityPost {
+interface PostWithUser {
+  id: number;
+  title: string;
+  content?: string;
+  description?: string;
+  image_url?: string;
+  likes: number;
+  user_id: number;
+  created_at: string;
   username: string;
   first_name?: string;
   last_name?: string;
@@ -191,7 +204,7 @@ export default function CommunityPostDetail() {
                   <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                     <Calendar className="w-4 h-4" />
                     <span>
-                      {formatDistance(new Date(post.createdAt), new Date(), {
+                      {formatDistance(new Date(post.created_at), new Date(), {
                         addSuffix: true,
                         locale: ko,
                       })}
@@ -222,10 +235,10 @@ export default function CommunityPostDetail() {
                 </p>
               )}
             </div>
-            {post.imageUrl && (
+            {post.image_url && (
               <div className="mb-4">
                 <img
-                  src={post.imageUrl}
+                  src={post.image_url}
                   alt="Post image"
                   className="w-full max-w-2xl mx-auto rounded-lg shadow-md"
                 />
@@ -327,7 +340,7 @@ export default function CommunityPostDetail() {
                               </span>
                               <span className="text-sm text-gray-500 dark:text-gray-400">
                                 {formatDistance(
-                                  new Date(comment.createdAt),
+                                  new Date(comment.created_at),
                                   new Date(),
                                   {
                                     addSuffix: true,
@@ -336,7 +349,7 @@ export default function CommunityPostDetail() {
                                 )}
                               </span>
                             </div>
-                            {user && user.id === comment.userId && (
+                            {user && String(user.id) === String(comment.user_id) && (
                               <Button
                                 variant="ghost"
                                 size="sm"

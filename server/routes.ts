@@ -917,7 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from("review_comments")
         .select(`
           *,
-          users!review_comments_user_id_fkey (
+          users (
             id, username, first_name, last_name
           )
         `)
@@ -955,7 +955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }])
         .select(`
           *,
-          users!review_comments_user_id_fkey (
+          users (
             id, username, first_name, last_name
           )
         `)
@@ -1085,6 +1085,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in community posts endpoint:", error);
       res.status(500).json({ message: "Failed to fetch community posts" });
+    }
+  });
+
+  // Get single community post
+  app.get("/api/community/posts/:postId", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { data: post, error } = await supabase
+        .from("community_posts")
+        .select("*")
+        .eq("id", postId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching community post:", error);
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      res.json(post);
+    } catch (error) {
+      console.error("Error in community post endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch post" });
+    }
+  });
+
+  // Community post comments routes
+  app.get("/api/community/posts/:postId/comments", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { data: comments, error } = await supabase
+        .from("community_comments")
+        .select(`
+          *,
+          users (
+            id, username, first_name, last_name
+          )
+        `)
+        .eq("post_id", postId)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching community comments:", error);
+        return res.status(500).json({ message: "Failed to fetch comments" });
+      }
+
+      res.json(comments || []);
+    } catch (error) {
+      console.error("Error in community comments endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/community/posts/:postId/comments", authenticateToken, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { content } = req.body;
+      const userId = req.user.id;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: "댓글 내용을 입력해주세요." });
+      }
+
+      const { data: comment, error } = await supabase
+        .from("community_comments")
+        .insert([{
+          post_id: postId,
+          user_id: userId,
+          comment: content.trim()
+        }])
+        .select(`
+          *,
+          users (
+            id, username, first_name, last_name
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error creating community comment:", error);
+        return res.status(500).json({ message: "댓글 작성 중 오류가 발생했습니다." });
+      }
+
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error in community comment creation endpoint:", error);
+      res.status(500).json({ message: "댓글 작성 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Community post likes routes
+  app.get("/api/community/posts/:postId/likes", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { data: likes, error } = await supabase
+        .from("community_likes")
+        .select("user_id")
+        .eq("post_id", postId);
+
+      if (error) {
+        console.error("Error fetching community likes:", error);
+        return res.status(500).json({ message: "Failed to fetch likes" });
+      }
+
+      res.json({
+        count: likes?.length || 0,
+        userIds: likes?.map(like => like.user_id) || []
+      });
+    } catch (error) {
+      console.error("Error in community likes endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch likes" });
+    }
+  });
+
+  app.post("/api/community/posts/:postId/like", authenticateToken, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const userId = req.user.id;
+
+      // Check if user already liked this post
+      const { data: existingLike } = await supabase
+        .from("community_likes")
+        .select("id")
+        .eq("post_id", postId)
+        .eq("user_id", userId)
+        .single();
+
+      if (existingLike) {
+        // Unlike - remove the like
+        const { error } = await supabase
+          .from("community_likes")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", userId);
+
+        if (error) {
+          console.error("Error removing community like:", error);
+          return res.status(500).json({ message: "좋아요 제거 중 오류가 발생했습니다." });
+        }
+
+        // Get updated count
+        const { data: likes } = await supabase
+          .from("community_likes")
+          .select("user_id")
+          .eq("post_id", postId);
+
+        res.json({
+          liked: false,
+          count: likes?.length || 0,
+          userIds: likes?.map(like => like.user_id) || []
+        });
+      } else {
+        // Like - add the like
+        const { error } = await supabase
+          .from("community_likes")
+          .insert([{
+            post_id: postId,
+            user_id: userId
+          }]);
+
+        if (error) {
+          console.error("Error adding community like:", error);
+          return res.status(500).json({ message: "좋아요 추가 중 오류가 발생했습니다." });
+        }
+
+        // Get updated count
+        const { data: likes } = await supabase
+          .from("community_likes")
+          .select("user_id")
+          .eq("post_id", postId);
+
+        res.json({
+          liked: true,
+          count: likes?.length || 0,
+          userIds: likes?.map(like => like.user_id) || []
+        });
+      }
+    } catch (error) {
+      console.error("Error in community like endpoint:", error);
+      res.status(500).json({ message: "좋아요 처리 중 오류가 발생했습니다." });
     }
   });
 
