@@ -23,6 +23,7 @@ import Checkout from "@/pages/Checkout";
 import OrderComplete from "@/pages/OrderComplete";
 import Community from "@/pages/Community";
 import Editor from "@/pages/Editor";
+import EditorSelect from "@/pages/EditorSelect";
 import Inquiry from "@/pages/Inquiry";
 import ReviewDetail from "@/pages/ReviewDetail";
 import Resources from "@/pages/Resources";
@@ -189,7 +190,9 @@ function Router() {
         {/* Shortcut routes */}
         <Route path="/doan" component={CommunityDesignShare} />
         <Route path="/event" component={Events} />
-        <Route path="/editor" component={Editor} />
+        <Route path="/editor/select" component={EditorSelect} />
+        <Route path="/editor/:type" component={Editor} />
+        <Route path="/editor" component={EditorSelect} />
         <Route path="/inquiry" component={Inquiry} />
         <Route path="/support" component={Inquiry} />
         <Route path="/rewards" component={Rewards} />

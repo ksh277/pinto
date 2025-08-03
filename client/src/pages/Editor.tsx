@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useParams, useLocation } from "wouter";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -77,108 +78,117 @@ interface CanvasElement {
 }
 
 const CANVAS_SIZE = { width: 300, height: 300 };
-const FONT_FAMILIES = [
-  { value: "Pretendard", label: "Pretendard" },
-  { value: "Noto Sans KR", label: "Noto Sans KR" },
-  { value: "Arial", label: "Arial" },
-  { value: "Times New Roman", label: "Times" },
-];
 
 const PRESET_COLORS = [
-  "#000000", "#333333", "#666666", "#999999", "#CCCCCC", "#FFFFFF",
-  "#FF0000", "#FF6B6B", "#FF9999", "#FFC0C0", "#FFE0E0",
-  "#00C19D", "#4ECDC4", "#7ED3C7", "#ADEACB", "#DCF2EA",
-  "#0A84FF", "#5BA7FF", "#7DB8FF", "#9FC9FF", "#C1DAFF",
-  "#FFD93D", "#FFE066", "#FFE799", "#FFEEBB", "#FFF5DD",
+  "#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF",
+  "#00FFFF", "#FFA500", "#800080", "#FFC0CB", "#A52A2A", "#808080",
+  "#FF69B4", "#32CD32", "#87CEEB", "#DDA0DD", "#F0E68C", "#FA8072",
+  "#40E0D0", "#EE82EE", "#90EE90", "#FFB6C1", "#20B2AA", "#87CEFA",
+  "#778899", "#B0C4DE", "#FFFFE0", "#00FF7F", "#4682B4", "#D2691E",
+];
+
+const FONT_FAMILIES = [
+  { value: "Arial", label: "Arial" },
+  { value: "Helvetica", label: "Helvetica" },
+  { value: "Georgia", label: "Georgia" },
+  { value: "Times New Roman", label: "Times New Roman" },
+  { value: "Courier New", label: "Courier New" },
+  { value: "Verdana", label: "Verdana" },
+  { value: "Impact", label: "Impact" },
+  { value: "Comic Sans MS", label: "Comic Sans MS" },
+  { value: "Trebuchet MS", label: "Trebuchet MS" },
+  { value: "Lucida Grande", label: "Lucida Grande" },
+  { value: "Pretendard", label: "Pretendard" },
+  { value: "Noto Sans KR", label: "Noto Sans KR" },
+];
+
+const TOOL_TABS = [
+  { id: "upload", label: "업로드", icon: Camera },
+  { id: "text", label: "텍스트", icon: Type },
+  { id: "shape", label: "도형", icon: Square },
+  { id: "layers", label: "레이어", icon: Layers },
 ];
 
 export default function Editor() {
-  const { t } = useLanguage();
-  const isMobile = useIsMobile();
+  const params = useParams();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
-  const [elements, setElements] = useState<CanvasElement[]>([]);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"upload" | "text" | "shape" | "layers">("upload");
-  const [showCustomization, setShowCustomization] = useState(false);
+  const isMobile = useIsMobile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Text editor states
-  const [newText, setNewText] = useState("텍스트를 입력하세요");
+  // Canvas state
+  const [elements, setElements] = useState<CanvasElement[]>([]);
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string | null>(isMobile ? null : "upload");
+
+  // Text state
+  const [newText, setNewText] = useState("텍스트");
   const [fontSize, setFontSize] = useState(24);
-  const [fontFamily, setFontFamily] = useState("Pretendard");
+  const [fontFamily, setFontFamily] = useState("Arial");
   const [fontWeight, setFontWeight] = useState<"normal" | "bold">("normal");
   const [fontStyle, setFontStyle] = useState<"normal" | "italic">("normal");
   const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
   const [textColor, setTextColor] = useState("#000000");
 
-  // Shape editor states
+  // Shape state
   const [shapeType, setShapeType] = useState<"rectangle" | "circle">("rectangle");
-  const [shapeFill, setShapeFill] = useState("#00C19D");
+  const [shapeFill, setShapeFill] = useState("#FF0000");
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const selectedElementData = selectedElement 
+    ? elements.find(el => el.id === selectedElement) 
+    : null;
 
-  const generateId = () => `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast({
-        title: "오류",
-        description: "이미지 파일만 업로드할 수 있습니다.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "오류",
-        description: "파일 크기는 10MB 이하여야 합니다.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const src = e.target?.result as string;
-      const newElement: CanvasElement = {
-        id: generateId(),
-        type: "image",
-        x: 50,
-        y: 50,
-        width: 100,
-        height: 100,
-        rotation: 0,
-        visible: true,
-        zIndex: elements.length,
-        src,
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const aspectRatio = img.width / img.height;
+        let width = 100;
+        let height = 100;
+
+        if (aspectRatio > 1) {
+          height = width / aspectRatio;
+        } else {
+          width = height * aspectRatio;
+        }
+
+        const newElement: CanvasElement = {
+          id: `img-${Date.now()}`,
+          type: "image",
+          x: (CANVAS_SIZE.width - width) / 2,
+          y: (CANVAS_SIZE.height - height) / 2,
+          width,
+          height,
+          rotation: 0,
+          visible: true,
+          zIndex: elements.length,
+          src: event.target?.result as string,
+        };
+
+        setElements(prev => [...prev, newElement]);
+        setSelectedElement(newElement.id);
+        toast({
+          title: "이미지 추가됨",
+          description: "이미지가 캔버스에 추가되었습니다.",
+        });
       };
-      setElements(prev => [...prev, newElement]);
-      setSelectedElement(newElement.id);
-      toast({
-        title: "성공",
-        description: "이미지가 추가되었습니다.",
-      });
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
-    
-    if (event.target) {
-      event.target.value = "";
-    }
-  }, [elements.length, toast]);
+  }, [elements, toast]);
 
   const addTextElement = useCallback(() => {
+    if (!newText.trim()) return;
+
     const newElement: CanvasElement = {
-      id: generateId(),
+      id: `text-${Date.now()}`,
       type: "text",
       x: 50,
-      y: 100,
+      y: 50,
       width: 150,
       height: 40,
       rotation: 0,
@@ -192,17 +202,19 @@ export default function Editor() {
       textAlign,
       color: textColor,
     };
+
     setElements(prev => [...prev, newElement]);
     setSelectedElement(newElement.id);
+    setNewText("텍스트");
     toast({
-      title: "성공",
-      description: "텍스트가 추가되었습니다.",
+      title: "텍스트 추가됨",
+      description: "텍스트가 캔버스에 추가되었습니다.",
     });
-  }, [elements.length, newText, fontSize, fontFamily, fontWeight, fontStyle, textAlign, textColor, toast]);
+  }, [newText, fontSize, fontFamily, fontWeight, fontStyle, textAlign, textColor, elements, toast]);
 
   const addShapeElement = useCallback(() => {
     const newElement: CanvasElement = {
-      id: generateId(),
+      id: `shape-${Date.now()}`,
       type: "shape",
       x: 75,
       y: 75,
@@ -215,16 +227,19 @@ export default function Editor() {
       fill: shapeFill,
       stroke: "#000000",
     };
+
     setElements(prev => [...prev, newElement]);
     setSelectedElement(newElement.id);
     toast({
-      title: "성공",
-      description: "도형이 추가되었습니다.",
+      title: "도형 추가됨",
+      description: "도형이 캔버스에 추가되었습니다.",
     });
-  }, [elements.length, shapeType, shapeFill, toast]);
+  }, [shapeType, shapeFill, elements, toast]);
 
   const updateElement = useCallback((id: string, updates: Partial<CanvasElement>) => {
-    setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
+    setElements(prev => prev.map(el => 
+      el.id === id ? { ...el, ...updates } : el
+    ));
   }, []);
 
   const deleteElement = useCallback((id: string) => {
@@ -234,277 +249,169 @@ export default function Editor() {
     }
   }, [selectedElement]);
 
-  const moveElementLayer = useCallback((id: string, direction: "up" | "down") => {
-    setElements(prev => {
-      const elementIndex = prev.findIndex(el => el.id === id);
-      if (elementIndex === -1) return prev;
-      
-      const newElements = [...prev];
-      if (direction === "up" && elementIndex < newElements.length - 1) {
-        [newElements[elementIndex], newElements[elementIndex + 1]] = [newElements[elementIndex + 1], newElements[elementIndex]];
-      } else if (direction === "down" && elementIndex > 0) {
-        [newElements[elementIndex], newElements[elementIndex - 1]] = [newElements[elementIndex - 1], newElements[elementIndex]];
-      }
-      
-      return newElements.map((el, index) => ({ ...el, zIndex: index }));
-    });
-  }, []);
-
   const clearCanvas = useCallback(() => {
     setElements([]);
     setSelectedElement(null);
     toast({
-      title: "성공",
-      description: "캔버스가 초기화되었습니다.",
+      title: "캔버스 초기화",
+      description: "모든 요소가 삭제되었습니다.",
     });
   }, [toast]);
+
+  const moveElementLayer = useCallback((id: string, direction: "up" | "down") => {
+    setElements(prev => {
+      const index = prev.findIndex(el => el.id === id);
+      if (index === -1) return prev;
+
+      const newElements = [...prev];
+      if (direction === "up" && index > 0) {
+        [newElements[index], newElements[index - 1]] = [newElements[index - 1], newElements[index]];
+      } else if (direction === "down" && index < newElements.length - 1) {
+        [newElements[index], newElements[index + 1]] = [newElements[index + 1], newElements[index]];
+      }
+
+      return newElements.map((el, i) => ({ ...el, zIndex: i }));
+    });
+  }, []);
 
   const saveDesign = useCallback(() => {
     const designData = {
       elements,
-      canvasSize: CANVAS_SIZE,
-      timestamp: new Date().toISOString(),
+      canvas: CANVAS_SIZE,
+      timestamp: Date.now(),
     };
-    
-    localStorage.setItem("pinto_design", JSON.stringify(designData));
+
+    // Save to localStorage
+    localStorage.setItem("pinto-design", JSON.stringify(designData));
+
     toast({
-      title: "저장 완료",
-      description: "디자인이 저장되었습니다.",
+      title: "디자인 저장됨",
+      description: "디자인이 성공적으로 저장되었습니다.",
     });
   }, [elements, toast]);
 
-  const selectedElementData = selectedElement ? elements.find(el => el.id === selectedElement) : null;
+  // Load saved design on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("pinto-design");
+    if (saved) {
+      try {
+        const designData = JSON.parse(saved);
+        if (designData.elements) {
+          setElements(designData.elements);
+        }
+      } catch (error) {
+        console.error("Failed to load saved design:", error);
+      }
+    }
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 font-['Pretendard',sans-serif]">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-3">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                돌아가기
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#00C19D] to-[#0A84FF] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
-              <h1 className="text-lg font-bold text-gray-900">Pinto 에디터</h1>
-            </div>
-          </div>
-          <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-            <Share2 className="w-4 h-4 mr-1" />
-            디자인 공유
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex flex-col lg:flex-row">
-        {/* Mobile Toolbar */}
-        {isMobile && (
-          <div className="bg-white border-b border-gray-200 p-3">
-            <div className="flex space-x-2 overflow-x-auto">
-              <Button
-                variant={activeTab === "upload" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("upload")}
-                className="flex-shrink-0"
-              >
-                <Camera className="w-4 h-4 mr-1" />
-                이미지
-              </Button>
-              <Button
-                variant={activeTab === "text" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("text")}
-                className="flex-shrink-0"
-              >
-                <Type className="w-4 h-4 mr-1" />
-                텍스트
-              </Button>
-              <Button
-                variant={activeTab === "shape" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("shape")}
-                className="flex-shrink-0"
-              >
-                <Square className="w-4 h-4 mr-1" />
-                도형
-              </Button>
-              <Button
-                variant={activeTab === "layers" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("layers")}
-                className="flex-shrink-0"
-              >
-                <Layers className="w-4 h-4 mr-1" />
-                레이어
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Desktop Sidebar */}
-        {!isMobile && (
-          <div className="w-80 bg-white border-r border-gray-200 h-[calc(100vh-73px)] overflow-y-auto">
-            <div className="p-4 space-y-4">
-              {/* Tool Tabs */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant={activeTab === "upload" ? "default" : "outline"}
-                  onClick={() => setActiveTab("upload")}
-                  className="justify-start"
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  이미지
+      <div className="border-b bg-white">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <Link href="/editor/select">
+                <Button variant="ghost" size="sm" className="flex items-center">
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  굿즈 선택
                 </Button>
-                <Button
-                  variant={activeTab === "text" ? "default" : "outline"}
-                  onClick={() => setActiveTab("text")}
-                  className="justify-start"
-                >
-                  <Type className="w-4 h-4 mr-2" />
-                  텍스트
-                </Button>
-                <Button
-                  variant={activeTab === "shape" ? "default" : "outline"}
-                  onClick={() => setActiveTab("shape")}
-                  className="justify-start"
-                >
-                  <Square className="w-4 h-4 mr-2" />
-                  도형
-                </Button>
-                <Button
-                  variant={activeTab === "layers" ? "default" : "outline"}
-                  onClick={() => setActiveTab("layers")}
-                  className="justify-start"
-                >
-                  <Layers className="w-4 h-4 mr-2" />
-                  레이어
-                </Button>
-              </div>
-
-              {/* Tool Content */}
-              <Card>
-                <CardContent className="p-4">
-                  {activeTab === "upload" && (
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-gray-900">이미지 업로드</h3>
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full bg-[#00C19D] hover:bg-[#00C19D]/90 text-white"
-                      >
-                        <Camera className="w-4 h-4 mr-2" />
-                        이미지 선택
-                      </Button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                      <p className="text-sm text-gray-500">
-                        JPG, PNG, GIF 파일을 업로드하세요 (최대 10MB)
-                      </p>
-                    </div>
+              </Link>
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">
+                  Pinto 굿즈 에디터
+                  {params.type && (
+                    <span className="ml-2 text-sm text-gray-500">
+                      ({params.type})
+                    </span>
                   )}
+                </h1>
+                <p className="text-sm text-gray-600 hidden sm:block">
+                  원하는 디자인을 만들어보세요
+                </p>
+              </div>
+            </div>
 
-                  {activeTab === "text" && (
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm">
+                <Share2 className="w-4 h-4 mr-1" />
+                공유
+              </Button>
+              <Button variant="outline" size="sm" onClick={clearCanvas}>
+                <RotateCcw className="w-4 h-4 mr-1" />
+                초기화
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto">
+        <div className={cn(
+          "flex",
+          isMobile ? "flex-col" : "h-[calc(100vh-73px)]"
+        )}>
+          {/* Mobile Tool Tabs */}
+          {isMobile && (
+            <div className="bg-white border-b">
+              <div className="flex space-x-0 overflow-x-auto p-2">
+                {TOOL_TABS.map((tab) => (
+                  <Button
+                    key={tab.id}
+                    variant={activeTab === tab.id ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
+                    className={cn(
+                      "flex-shrink-0 mx-1 min-w-0",
+                      activeTab === tab.id ? "bg-[#0A84FF] text-white" : "text-gray-600"
+                    )}
+                  >
+                    <tab.icon className="w-4 h-4 mr-1" />
+                    {tab.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Left Sidebar */}
+          {!isMobile && (
+            <div className="w-80 bg-white border-r border-gray-200 h-full overflow-y-auto">
+              <div className="p-4 space-y-4">
+                <h2 className="text-lg font-semibold text-gray-900">도구</h2>
+                
+                {/* Image Upload */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3">이미지 업로드</h3>
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full bg-[#00C19D] hover:bg-[#00C19D]/90 text-white"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      이미지 선택
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Text Tools */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3">텍스트</h3>
                     <div className="space-y-4">
-                      <h3 className="font-semibold text-gray-900">텍스트 추가</h3>
-                      <div>
-                        <Label htmlFor="text-input">텍스트 내용</Label>
-                        <Input
-                          id="text-input"
-                          value={newText}
-                          onChange={(e) => setNewText(e.target.value)}
-                          placeholder="텍스트를 입력하세요"
-                        />
-                      </div>
-                      <div>
-                        <Label>폰트 크기: {fontSize}px</Label>
-                        <Slider
-                          value={[fontSize]}
-                          onValueChange={(value) => setFontSize(value[0])}
-                          min={12}
-                          max={72}
-                          step={1}
-                          className="mt-2"
-                        />
-                      </div>
-                      <div>
-                        <Label>폰트 선택</Label>
-                        <Select value={fontFamily} onValueChange={setFontFamily}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FONT_FAMILIES.map((font) => (
-                              <SelectItem key={font.value} value={font.value}>
-                                {font.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant={fontWeight === "bold" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setFontWeight(fontWeight === "bold" ? "normal" : "bold")}
-                        >
-                          <Bold className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant={fontStyle === "italic" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setFontStyle(fontStyle === "italic" ? "normal" : "italic")}
-                        >
-                          <Italic className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant={textAlign === "left" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setTextAlign("left")}
-                        >
-                          <AlignLeft className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant={textAlign === "center" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setTextAlign("center")}
-                        >
-                          <AlignCenter className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant={textAlign === "right" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setTextAlign("right")}
-                        >
-                          <AlignRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div>
-                        <Label>텍스트 색상</Label>
-                        <div className="grid grid-cols-6 gap-2 mt-2">
-                          {PRESET_COLORS.slice(0, 12).map((color) => (
-                            <button
-                              key={color}
-                              onClick={() => setTextColor(color)}
-                              className={cn(
-                                "w-8 h-8 rounded border-2",
-                                textColor === color ? "border-gray-900" : "border-gray-200"
-                              )}
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      <Input
+                        value={newText}
+                        onChange={(e) => setNewText(e.target.value)}
+                        placeholder="텍스트를 입력하세요"
+                      />
                       <Button
                         onClick={addTextElement}
                         className="w-full bg-blue-500 hover:bg-blue-600 text-white"
@@ -513,45 +420,29 @@ export default function Editor() {
                         텍스트 추가
                       </Button>
                     </div>
-                  )}
+                  </CardContent>
+                </Card>
 
-                  {activeTab === "shape" && (
+                {/* Shape Tools */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3">도형</h3>
                     <div className="space-y-4">
-                      <h3 className="font-semibold text-gray-900">도형 추가</h3>
-                      <div>
-                        <Label>도형 종류</Label>
-                        <div className="flex space-x-2 mt-2">
-                          <Button
-                            variant={shapeType === "rectangle" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setShapeType("rectangle")}
-                          >
-                            <Square className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant={shapeType === "circle" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setShapeType("circle")}
-                          >
-                            <Circle className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div>
-                        <Label>색상</Label>
-                        <div className="grid grid-cols-6 gap-2 mt-2">
-                          {PRESET_COLORS.slice(6, 18).map((color) => (
-                            <button
-                              key={color}
-                              onClick={() => setShapeFill(color)}
-                              className={cn(
-                                "w-8 h-8 rounded border-2",
-                                shapeFill === color ? "border-gray-900" : "border-gray-200"
-                              )}
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant={shapeType === "rectangle" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setShapeType("rectangle")}
+                        >
+                          <Square className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant={shapeType === "circle" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setShapeType("circle")}
+                        >
+                          <Circle className="w-4 h-4" />
+                        </Button>
                       </div>
                       <Button
                         onClick={addShapeElement}
@@ -561,152 +452,94 @@ export default function Editor() {
                         도형 추가
                       </Button>
                     </div>
-                  )}
-
-                  {activeTab === "layers" && (
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-gray-900">레이어 관리</h3>
-                      <div className="space-y-2">
-                        {[...elements].reverse().map((element, index) => (
-                          <div
-                            key={element.id}
-                            className={cn(
-                              "flex items-center justify-between p-2 rounded border",
-                              selectedElement === element.id ? "border-[#00C19D] bg-[#00C19D]/10" : "border-gray-200"
-                            )}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => updateElement(element.id, { visible: !element.visible })}
-                                className="text-gray-500 hover:text-gray-700"
-                              >
-                                {element.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                              </button>
-                              <span className="text-sm font-medium truncate">
-                                {element.type === "image" ? "이미지" : 
-                                 element.type === "text" ? `텍스트: ${element.text?.slice(0, 10)}...` : 
-                                 "도형"}
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => moveElementLayer(element.id, "up")}
-                                disabled={index === 0}
-                              >
-                                <ChevronLeft className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => moveElementLayer(element.id, "down")}
-                                disabled={index === elements.length - 1}
-                              >
-                                <ChevronRight className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteElement(element.id)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                        {elements.length === 0 && (
-                          <p className="text-sm text-gray-500 text-center py-4">
-                            아직 추가된 요소가 없습니다
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        onClick={clearCanvas}
-                        variant="outline"
-                        className="w-full text-red-500 border-red-200 hover:bg-red-50"
-                      >
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        전체 초기화
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {/* Main Canvas Area */}
-        <div className="flex-1 flex flex-col items-center justify-center p-4 lg:p-8">
-          <div className="w-full max-w-md">
-            {/* Canvas */}
-            <div className="relative mx-auto mb-6">
-              {/* Canvas Container with proper positioning context */}
-              <div
-                className="relative bg-white border-2 border-gray-300 rounded-lg shadow-lg"
-                style={{ 
-                  width: CANVAS_SIZE.width, 
-                  height: CANVAS_SIZE.height,
-                  position: "relative", // Ensures absolute positioned children are relative to this container
-                  overflow: "visible" // Allow selection handles to extend outside
-                }}
-              >
-                {/* Canvas background pattern (optional) */}
-                <div 
-                  className="absolute inset-0 opacity-5"
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
-                    `,
-                    backgroundSize: "20px 20px"
-                  }}
-                />
-                
-                {/* Canvas Elements */}
-                {elements
-                  .filter(el => el.visible)
-                  .sort((a, b) => a.zIndex - b.zIndex)
-                  .map((element) => (
-                    <DraggableElement
-                      key={element.id}
-                      element={element}
-                      isSelected={selectedElement === element.id}
-                      onSelect={setSelectedElement}
-                      onUpdate={updateElement}
-                      onDelete={deleteElement}
-                      canvasBounds={CANVAS_SIZE}
-                    />
-                  ))}
-                
-                {/* Empty state */}
-                {elements.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
-                    <div className="text-center">
-                      <Plus className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm font-medium">요소를 추가해보세요</p>
-                      <p className="text-xs mt-1">이미지, 텍스트, 도형을 드래그하여 디자인을 만들어보세요</p>
-                    </div>
-                  </div>
-                )}
+                  </CardContent>
+                </Card>
               </div>
-              
-              {/* Canvas Info */}
-              <div className="text-center mt-2 text-xs text-gray-500">
-                캔버스 크기: {CANVAS_SIZE.width} × {CANVAS_SIZE.height}px
-                {selectedElement && (
-                  <span className="ml-2 text-[#00C19D]">
-                    • 선택된 요소: {elements.find(el => el.id === selectedElement)?.type}
-                  </span>
-                )}
+            </div>
+          )}
+
+          {/* Main Canvas Area */}
+          <div className="flex-1 flex flex-col items-center justify-center p-4 lg:p-8">
+            {/* Canvas Container with perfect centering */}
+            <div className="flex flex-col items-center justify-center w-full">
+              {/* Canvas */}
+              <div className="relative mb-6">
+                {/* Canvas Container with proper positioning context */}
+                <div
+                  className="relative bg-white border-2 border-gray-300 rounded-lg shadow-lg mx-auto"
+                  style={{ 
+                    width: CANVAS_SIZE.width, 
+                    height: CANVAS_SIZE.height,
+                    position: "relative",
+                    overflow: "visible"
+                  }}
+                >
+                  {/* Canvas background pattern */}
+                  <div 
+                    className="absolute inset-0 opacity-5"
+                    style={{
+                      backgroundImage: `
+                        linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
+                      `,
+                      backgroundSize: "20px 20px"
+                    }}
+                  />
+                  
+                  {/* Canvas Elements */}
+                  {elements
+                    .filter(el => el.visible)
+                    .sort((a, b) => a.zIndex - b.zIndex)
+                    .map((element) => (
+                      <DraggableElement
+                        key={element.id}
+                        element={element}
+                        isSelected={selectedElement === element.id}
+                        onSelect={setSelectedElement}
+                        onUpdate={updateElement}
+                        onDelete={deleteElement}
+                        canvasBounds={CANVAS_SIZE}
+                      />
+                    ))}
+                  
+                  {/* Empty state */}
+                  {elements.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                      <div className="text-center">
+                        <Plus className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm font-medium">요소를 추가해보세요</p>
+                        <p className="text-xs mt-1">이미지, 텍스트, 도형을 드래그하여 디자인을 만들어보세요</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Canvas Info */}
+                <div className="text-center mt-2 text-xs text-gray-500">
+                  캔버스 크기: {CANVAS_SIZE.width} × {CANVAS_SIZE.height}px
+                  {selectedElement && (
+                    <span className="ml-2 text-[#00C19D]">
+                      • 선택된 요소: {elements.find(el => el.id === selectedElement)?.type}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Save Button - Perfectly centered under canvas */}
+              <div className="w-full max-w-md flex justify-center">
+                <Button
+                  onClick={saveDesign}
+                  className="w-full max-w-xs bg-gradient-to-r from-[#00C19D] to-[#0A84FF] hover:from-[#00C19D]/90 hover:to-[#0A84FF]/90 text-white font-semibold py-3 px-8 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
+                >
+                  <Save className="w-5 h-5 mr-2" />
+                  디자인 저장
+                </Button>
               </div>
             </div>
 
             {/* Mobile Tools */}
             {isMobile && activeTab && (
-              <Card className="mb-4">
+              <Card className="mt-4 w-full max-w-md">
                 <CardContent className="p-4">
                   {activeTab === "upload" && (
                     <div className="space-y-3">
@@ -734,36 +567,6 @@ export default function Editor() {
                         onChange={(e) => setNewText(e.target.value)}
                         placeholder="텍스트를 입력하세요"
                       />
-                      <div className="flex space-x-2">
-                        <Button
-                          variant={fontWeight === "bold" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setFontWeight(fontWeight === "bold" ? "normal" : "bold")}
-                        >
-                          <Bold className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant={fontStyle === "italic" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setFontStyle(fontStyle === "italic" ? "normal" : "italic")}
-                        >
-                          <Italic className="w-4 h-4" />
-                        </Button>
-                        <div className="flex-1">
-                          <Select value={fontFamily} onValueChange={setFontFamily}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {FONT_FAMILIES.map((font) => (
-                                <SelectItem key={font.value} value={font.value}>
-                                  {font.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
                       <Button
                         onClick={addTextElement}
                         className="w-full bg-blue-500 hover:bg-blue-600 text-white"
@@ -838,185 +641,8 @@ export default function Editor() {
                 </CardContent>
               </Card>
             )}
-
-            {/* Save Button */}
-            <Button
-              onClick={saveDesign}
-              className="w-full bg-gradient-to-r from-[#00C19D] to-[#0A84FF] hover:from-[#00C19D]/90 hover:to-[#0A84FF]/90 text-white font-semibold py-3 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
-            >
-              <Save className="w-5 h-5 mr-2" />
-              디자인 저장
-            </Button>
           </div>
         </div>
-
-        {/* Right Customization Panel (Desktop) */}
-        {!isMobile && selectedElementData && (
-          <div className="w-80 bg-white border-l border-gray-200 h-[calc(100vh-73px)] overflow-y-auto">
-            <div className="p-4 space-y-4">
-              <h3 className="font-semibold text-gray-900">속성 편집</h3>
-              
-              {selectedElementData.type === "text" && (
-                <Card>
-                  <CardContent className="p-4 space-y-4">
-                    <div>
-                      <Label>텍스트 내용</Label>
-                      <Input
-                        value={selectedElementData.text || ""}
-                        onChange={(e) => updateElement(selectedElementData.id, { text: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label>폰트 크기: {selectedElementData.fontSize}px</Label>
-                      <Slider
-                        value={[selectedElementData.fontSize || 24]}
-                        onValueChange={(value) => updateElement(selectedElementData.id, { fontSize: value[0] })}
-                        min={12}
-                        max={72}
-                        step={1}
-                        className="mt-2"
-                      />
-                    </div>
-                    <div>
-                      <Label>폰트</Label>
-                      <Select
-                        value={selectedElementData.fontFamily}
-                        onValueChange={(value) => updateElement(selectedElementData.id, { fontFamily: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {FONT_FAMILIES.map((font) => (
-                            <SelectItem key={font.value} value={font.value}>
-                              {font.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant={selectedElementData.fontWeight === "bold" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateElement(selectedElementData.id, { 
-                          fontWeight: selectedElementData.fontWeight === "bold" ? "normal" : "bold" 
-                        })}
-                      >
-                        <Bold className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant={selectedElementData.fontStyle === "italic" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateElement(selectedElementData.id, { 
-                          fontStyle: selectedElementData.fontStyle === "italic" ? "normal" : "italic" 
-                        })}
-                      >
-                        <Italic className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div>
-                      <Label>텍스트 색상</Label>
-                      <div className="grid grid-cols-5 gap-2 mt-2">
-                        {PRESET_COLORS.slice(0, 15).map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => updateElement(selectedElementData.id, { color })}
-                            className={cn(
-                              "w-8 h-8 rounded border-2",
-                              selectedElementData.color === color ? "border-gray-900" : "border-gray-200"
-                            )}
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {selectedElementData.type === "shape" && (
-                <Card>
-                  <CardContent className="p-4 space-y-4">
-                    <div>
-                      <Label>도형 종류</Label>
-                      <div className="flex space-x-2 mt-2">
-                        <Button
-                          variant={selectedElementData.shapeType === "rectangle" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => updateElement(selectedElementData.id, { shapeType: "rectangle" })}
-                        >
-                          <Square className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant={selectedElementData.shapeType === "circle" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => updateElement(selectedElementData.id, { shapeType: "circle" })}
-                        >
-                          <Circle className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div>
-                      <Label>채우기 색상</Label>
-                      <div className="grid grid-cols-5 gap-2 mt-2">
-                        {PRESET_COLORS.slice(5, 20).map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => updateElement(selectedElementData.id, { fill: color })}
-                            className={cn(
-                              "w-8 h-8 rounded border-2",
-                              selectedElementData.fill === color ? "border-gray-900" : "border-gray-200"
-                            )}
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Common Transform Controls */}
-              <Card>
-                <CardContent className="p-4 space-y-4">
-                  <h4 className="font-medium text-gray-900">변형</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateElement(selectedElementData.id, { 
-                        rotation: (selectedElementData.rotation + 90) % 360 
-                      })}
-                    >
-                      <RotateCw className="w-4 h-4 mr-1" />
-                      회전
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateElement(selectedElementData.id, { 
-                        width: selectedElementData.height,
-                        height: selectedElementData.width
-                      })}
-                    >
-                      <FlipHorizontal className="w-4 h-4 mr-1" />
-                      뒤집기
-                    </Button>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => deleteElement(selectedElementData.id)}
-                    className="w-full text-red-500 border-red-200 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    삭제
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
