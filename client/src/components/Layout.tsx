@@ -23,38 +23,37 @@ interface CommunityNavItem {
 
 const communityNavItems: CommunityNavItem[] = [
   {
-    id: "showcase",
-    label: { ko: "내가만든거보여줄게", en: "My Works", ja: "私の作品", zh: "我的作品" },
-    href: "/community",
-    icon: Users,
+    id: "reviews",
+    label: { ko: "사용후기", en: "Reviews", ja: "レビュー", zh: "评价" },
+    href: "/reviews",
+    icon: MessageCircle,
     badge: "HOT"
   },
   {
-    id: "design-share",
-    label: { ko: "도안공유", en: "Design Sharing", ja: "デザイン共有", zh: "设计分享" },
-    href: "/community/design-share",
-    icon: Share2,
-    isNew: true
+    id: "collections",
+    label: { ko: "모음전", en: "Collections", ja: "コレクション", zh: "合集" },
+    href: "/collections",
+    icon: Puzzle
+  },
+  {
+    id: "resources",
+    label: { ko: "자료실", en: "Resources", ja: "資料室", zh: "资源" },
+    href: "/resources",
+    icon: FileText
   },
   {
     id: "events",
-    label: { ko: "이벤트", en: "Events & Contests", ja: "イベント・コンテスト", zh: "活动与比赛" },
-    href: "/community/events",
+    label: { ko: "이벤트", en: "Events", ja: "イベント", zh: "活动" },
+    href: "/events",
     icon: Calendar,
     badge: "3"
   },
   {
-    id: "resources",
-    label: { ko: "자료실", en: "AllThat Note", ja: "オールザット・ノート", zh: "AllThat笔记" },
-    href: "/community/resources",
-    icon: FileText,
+    id: "membership",
+    label: { ko: "회원등급혜택", en: "Membership Benefits", ja: "会員特典", zh: "会员福利" },
+    href: "/rewards",
+    icon: Users,
     isNew: true
-  },
-  {
-    id: "qa",
-    label: { ko: "궁금햄물어바", en: "Q&A", ja: "質問・回答", zh: "问答" },
-    href: "/community/qna",
-    icon: MessageSquare
   }
 ];
 
@@ -63,20 +62,20 @@ function CommunityTopNav() {
   const [location] = useLocation();
 
   const isItemActive = (item: CommunityNavItem) => {
-    if (item.href === '/community') {
-      return location === '/community';
+    if (item.href === '/reviews') {
+      return location === '/reviews' || location.startsWith('/reviews/');
     }
-    if (item.href === '/community/design-share') {
-      return location === '/community/design-share' || location === '/doan';
+    if (item.href === '/collections') {
+      return location === '/collections' || location.startsWith('/collections/');
     }
-    if (item.href === '/community/events') {
-      return location === '/community/events' || location === '/event';
+    if (item.href === '/resources') {
+      return location === '/resources' || location.startsWith('/resources/');
     }
-    if (item.href === '/community/resources') {
-      return location === '/community/resources' || location === '/resources';
+    if (item.href === '/events') {
+      return location === '/events' || location.startsWith('/events/');
     }
-    if (item.href === '/community/qna') {
-      return location === '/community/qna' || location === '/community/question';
+    if (item.href === '/rewards') {
+      return location === '/rewards' || location.startsWith('/rewards/');
     }
     return location.startsWith(item.href);
   };
@@ -84,7 +83,7 @@ function CommunityTopNav() {
   return (
     <div className="sticky top-0 z-50 bg-white dark:bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-center h-14">
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {communityNavItems.map((item) => {
@@ -124,7 +123,7 @@ function CommunityTopNav() {
           </div>
 
           {/* Mobile Navigation */}
-          <div className="md:hidden flex items-center space-x-1 overflow-x-auto">
+          <div className="md:hidden flex items-center justify-center space-x-1 overflow-x-auto">
             {communityNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = isItemActive(item);
