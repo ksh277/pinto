@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { supabase } from "./lib/supabase";
+import { db } from "./db";
 import {
   insertUserSchema,
   insertProductSchema,
@@ -59,6 +60,181 @@ const requireAdmin = (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware
   app.use(cookieParser());
+
+  // Populate Supabase with sample data
+  app.post("/api/populate-data", async (req, res) => {
+    try {
+      const results = {};
+
+      // 1. Insert simple categories first
+      const { data: categories, error: catError } = await supabase
+        .from("categories")
+        .insert([
+          { name: 'Acrylic Keychains', nameKo: '아크릴 키링' },
+          { name: 'Phone Cases', nameKo: '폰케이스' },
+          { name: 'T-Shirts', nameKo: '티셔츠' }
+        ])
+        .select();
+
+      results['categories'] = { 
+        success: !catError,
+        error: catError?.message,
+        count: categories?.length || 0
+      };
+
+      if (categories && categories.length > 0) {
+        // 2. Insert products with category references
+        const { data: products, error: prodError } = await supabase
+          .from("products")
+          .insert([
+            { name: 'Transparent Acrylic Keychain', nameKo: '투명 아크릴 키링', categoryId: categories[0].id, basePrice: 6000.00 },
+            { name: 'Custom Phone Case', nameKo: '맞춤형 핸드폰 케이스', categoryId: categories[1].id, basePrice: 15000.00 },
+            { name: 'Basic Cotton T-Shirt', nameKo: '베이직 코튼 티셔츠', categoryId: categories[2].id, basePrice: 18000.00 }
+          ])
+          .select();
+
+        results['products'] = {
+          success: !prodError,
+          error: prodError?.message,
+          count: products?.length || 0
+        };
+      }
+        
+      res.json(results);
+    } catch (error) {
+      res.json({ 
+        success: false,
+        error: (error as Error).message 
+      });
+    }
+  });
+
+  // Debug Supabase tables and data
+  app.get("/api/test-supabase", async (req, res) => {
+    try {
+      const results = {};
+
+      // Test categories  
+      const { data: categories, error: catError } = await supabase
+        .from("categories")
+        .select("*")
+        .limit(3);
+      
+      results['categories'] = { 
+        success: !catError,
+        error: catError?.message,
+        count: categories?.length || 0,
+        data: categories?.slice(0, 2)
+      };
+
+      // Test products
+      const { data: products, error: prodError } = await supabase
+        .from("products")
+        .select("id, name, nameKo, basePrice")
+        .limit(3);
+      
+      results['products'] = {
+        success: !prodError,
+        error: prodError?.message,
+        count: products?.length || 0,
+        data: products?.slice(0, 2)
+      };
+        
+      res.json(results);
+    } catch (error) {
+      res.json({ 
+        success: false,
+        error: (error as Error).message 
+      });
+    }
+  });
+
+  // Products routes (using Neon DB with real data)
+  app.get("/api/products", async (req, res) => {
+    try {
+      const { category, featured } = req.query;
+      
+      // Use drizzle for querying products table
+      const products = await storage.getProducts();
+      res.json(products || []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/products/:id", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const { data: product, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", productId)
+        .single();
+
+      if (error || !product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+
+  // Reviews routes
+  app.get("/api/reviews", async (req, res) => {
+    try {
+      const { data: reviews, error } = await supabase
+        .from("product_reviews")
+        .select(`*`)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching reviews:", error);
+        return res.status(500).json({ message: "Failed to fetch reviews" });
+      }
+
+      res.json(reviews || []);
+    } catch (error) {
+      console.error("Error in reviews endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  app.get("/api/products/:productId/reviews", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const { data: reviews, error } = await supabase
+        .from("product_reviews")
+        .select("*")
+        .eq("product_id", productId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching product reviews:", error);
+        return res.status(500).json({ message: "Failed to fetch reviews" });
+      }
+
+      res.json(reviews || []);
+    } catch (error) {
+      console.error("Error in product reviews endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  // Categories route (using Neon DB with real data)
+  app.get("/api/categories", async (req, res) => {
+    try {
+      // Use storage method for categories
+      const categories = await storage.getCategories();
+      res.json(categories || []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
 
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {

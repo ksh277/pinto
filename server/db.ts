@@ -9,7 +9,7 @@ if (!databaseUrl) {
   throw new Error("MYSQL_DATABASE_URL or DATABASE_URL must be set.");
 }
 
-// Create MySQL connection pool
+// Create MySQL connection pool  
 const pool = mysql.createPool({
   uri: databaseUrl,
   waitForConnections: true,
