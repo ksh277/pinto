@@ -14,13 +14,15 @@ export const useCart = () => {
 
   // Fetch cart items for the logged in user
   const fetchCartItems = async () => {
-    if (!user) return [];
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = user?.id || authData.user?.id;
+    if (!userId) return [];
     const { data, error } = await supabase
       .from("cart_items")
       .select(
-        `*, products(id, name, name_ko, base_price, image_url, is_available)`,
+        `*, products(id, name, name_ko, base_price, image_url, is_available, product_images(image_url, display_order), product_options(*))`,
       )
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -63,7 +65,7 @@ export const useCart = () => {
           user_id: user.id,
           product_id: productId,
           quantity,
-          customization_options: options,
+          options,
         });
 
         if (error) throw error;
@@ -75,13 +77,13 @@ export const useCart = () => {
   });
 
   const removeFromCartMutation = useMutation({
-    mutationFn: async (productId: string) => {
+    mutationFn: async (cartItemId: string) => {
       if (!user) throw new Error("로그인이 필요합니다");
       const { error } = await supabase
         .from("cart_items")
         .delete()
         .eq("user_id", user.id)
-        .eq("product_id", productId);
+        .eq("id", cartItemId);
 
       if (error) throw error;
     },

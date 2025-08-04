@@ -10,6 +10,7 @@ interface ProductEditorProps {
   onSelectElement: (id: string | null) => void;
   onUpdateElement: (id: string, updates: Partial<CanvasElement>) => void;
   onDeleteElement: (id: string) => void;
+  canvasRef?: React.RefObject<HTMLDivElement>;
 }
 
 export function ProductEditor({
@@ -19,15 +20,20 @@ export function ProductEditor({
   onSelectElement,
   onUpdateElement,
   onDeleteElement,
+  canvasRef: externalRef,
 }: ProductEditorProps) {
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const internalRef = useRef<HTMLDivElement>(null);
+  const canvasRef = externalRef ?? internalRef;
 
   // Click outside to deselect
-  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === canvasRef.current) {
-      onSelectElement(null);
-    }
-  }, [onSelectElement]);
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === canvasRef.current) {
+        onSelectElement(null);
+      }
+    },
+    [onSelectElement, canvasRef],
+  );
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -80,7 +86,7 @@ export function ProductEditor({
 
           {/* Canvas Elements */}
           {elements
-            .filter(el => el.visible)
+            .filter((el) => el.visible)
             .sort((a, b) => a.zIndex - b.zIndex)
             .map((element) => {
               if (element.type === "shape") {
@@ -147,8 +153,8 @@ export function ProductEditor({
         {/* Canvas Info */}
         <div className="absolute -bottom-8 left-0 right-0 text-center">
           <div className="text-xs text-gray-500">
-            캔버스: {canvasSize.widthMM}mm × {canvasSize.heightMM}mm
-            ({canvasSize.width}px × {canvasSize.height}px)
+            캔버스: {canvasSize.widthMM}mm × {canvasSize.heightMM}mm (
+            {canvasSize.width}px × {canvasSize.height}px)
           </div>
         </div>
 

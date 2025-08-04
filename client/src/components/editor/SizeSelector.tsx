@@ -62,10 +62,12 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
   const [customHeight, setCustomHeight] = useState<number>(50);
   const [mode, setMode] = useState<"preset" | "custom">("preset");
 
-  const presets = PRODUCT_PRESETS[productType as keyof typeof PRODUCT_PRESETS] || PRODUCT_PRESETS.keyring;
+  const presets =
+    PRODUCT_PRESETS[productType as keyof typeof PRODUCT_PRESETS] ||
+    PRODUCT_PRESETS.keyring;
 
   const handlePresetSelect = (presetName: string) => {
-    const preset = presets.find(p => p.name === presetName);
+    const preset = presets.find((p) => p.name === presetName);
     if (preset) {
       setSelectedPreset(presetName);
       onSizeSet({
@@ -102,7 +104,11 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             variant={mode === "preset" ? "default" : "outline"}
             size="sm"
             onClick={() => handleModeChange("preset")}
-            className="flex-1 text-xs"
+            onMouseDown={(e) => e.preventDefault()}
+            className={cn(
+              "flex-1 text-xs",
+              mode !== "preset" && "border-gray-600 text-gray-300",
+            )}
           >
             프리셋
           </Button>
@@ -110,7 +116,11 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             variant={mode === "custom" ? "default" : "outline"}
             size="sm"
             onClick={() => handleModeChange("custom")}
-            className="flex-1 text-xs"
+            onMouseDown={(e) => e.preventDefault()}
+            className={cn(
+              "flex-1 text-xs",
+              mode !== "custom" && "border-gray-600 text-gray-300",
+            )}
           >
             직접입력
           </Button>
@@ -120,15 +130,15 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
       {mode === "preset" ? (
         <div className="space-y-3">
           <Label className="text-xs text-gray-300">제품 크기 선택</Label>
-          <Select 
-            value={selectedPreset} 
+          <Select
+            value={selectedPreset}
             onValueChange={handlePresetSelect}
             disabled={mode !== "preset"}
           >
             <SelectTrigger className="bg-gray-700 border-gray-600 text-white text-xs">
               <SelectValue placeholder="크기를 선택하세요" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-gray-800 text-white border border-gray-600">
               {presets.map((preset) => (
                 <SelectItem key={preset.name} value={preset.name}>
                   {preset.name} ({preset.width}×{preset.height}mm)
@@ -152,8 +162,10 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
                 disabled={mode !== "custom"}
                 className={cn(
                   "bg-gray-700 border-gray-600 text-white text-xs",
-                  mode !== "custom" && "disabled:opacity-30 disabled:cursor-not-allowed",
-                  mode === "custom" && "focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                  mode !== "custom" &&
+                    "disabled:opacity-30 disabled:cursor-not-allowed",
+                  mode === "custom" &&
+                    "focus:border-blue-400 focus:ring-1 focus:ring-blue-400",
                 )}
                 placeholder="가로 (mm)"
               />
@@ -169,8 +181,10 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
                 disabled={mode !== "custom"}
                 className={cn(
                   "bg-gray-700 border-gray-600 text-white text-xs",
-                  mode !== "custom" && "disabled:opacity-30 disabled:cursor-not-allowed",
-                  mode === "custom" && "focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                  mode !== "custom" &&
+                    "disabled:opacity-30 disabled:cursor-not-allowed",
+                  mode === "custom" &&
+                    "focus:border-blue-400 focus:ring-1 focus:ring-blue-400",
                 )}
                 placeholder="세로 (mm)"
               />
@@ -180,12 +194,14 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             variant="outline"
             size="sm"
             onClick={handleCustomSize}
-            disabled={mode !== "custom" || customWidth <= 0 || customHeight <= 0}
+            disabled={
+              mode !== "custom" || customWidth <= 0 || customHeight <= 0
+            }
             className={cn(
               "w-full text-xs",
-              mode !== "custom" || customWidth <= 0 || customHeight <= 0 
-                ? "disabled:opacity-30 disabled:cursor-not-allowed" 
-                : "hover:bg-blue-600 hover:text-white border-blue-400 text-blue-400"
+              mode !== "custom" || customWidth <= 0 || customHeight <= 0
+                ? "disabled:opacity-30 disabled:cursor-not-allowed"
+                : "hover:bg-blue-600 hover:text-white border-blue-400 text-blue-400",
             )}
           >
             크기 적용
@@ -196,7 +212,8 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
       <div className="text-xs text-gray-400 mt-2">
         {mode === "preset" && selectedPreset && (
           <div>
-            선택된 크기: {presets.find(p => p.name === selectedPreset)?.width}×{presets.find(p => p.name === selectedPreset)?.height}mm
+            선택된 크기: {presets.find((p) => p.name === selectedPreset)?.width}
+            ×{presets.find((p) => p.name === selectedPreset)?.height}mm
           </div>
         )}
         {mode === "custom" && customWidth > 0 && customHeight > 0 && (

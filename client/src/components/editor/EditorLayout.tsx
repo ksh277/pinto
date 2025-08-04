@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { ProductEditor } from "@/components/editor/ProductEditor";
 import { SizeSelector } from "@/components/editor/SizeSelector";
 import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 interface EditorLayoutProps {
   productType?: string;
@@ -65,6 +67,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
   const params = useParams();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Canvas and size state
   const [canvasSize, setCanvasSize] = useState<CanvasSize | null>(null);
@@ -79,25 +82,33 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState("Pretendard");
   const [textColor, setTextColor] = useState("#000000");
-  const [shapeType, setShapeType] = useState<"rectangle" | "circle">("rectangle");
+  const [shapeType, setShapeType] = useState<"rectangle" | "circle">(
+    "rectangle",
+  );
   const [shapeFill, setShapeFill] = useState("#FF0000");
 
   const isEditorEnabled = canvasSize !== null;
 
-  const handleSizeSet = useCallback((size: CanvasSize) => {
-    setCanvasSize(size);
-    toast({
-      title: "캔버스 크기 설정됨",
-      description: `${size.widthMM}mm × ${size.heightMM}mm (${size.width}px × ${size.height}px)`,
-    });
-  }, [toast]);
+  const handleSizeSet = useCallback(
+    (size: CanvasSize) => {
+      setCanvasSize(size);
+      toast({
+        title: "캔버스 크기 설정됨",
+        description: `${size.widthMM}mm × ${size.heightMM}mm (${size.width}px × ${size.height}px)`,
+      });
+    },
+    [toast],
+  );
 
-  const saveToHistory = useCallback((newElements: CanvasElement[]) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push([...newElements]);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, [history, historyIndex]);
+  const saveToHistory = useCallback(
+    (newElements: CanvasElement[]) => {
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push([...newElements]);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    },
+    [history, historyIndex],
+  );
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -113,70 +124,82 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
     }
   }, [history, historyIndex]);
 
-  const updateElement = useCallback((id: string, updates: Partial<CanvasElement>) => {
-    const newElements = elements.map(el => 
-      el.id === id ? { ...el, ...updates } : el
-    );
-    setElements(newElements);
-    saveToHistory(newElements);
-  }, [elements, saveToHistory]);
+  const updateElement = useCallback(
+    (id: string, updates: Partial<CanvasElement>) => {
+      const newElements = elements.map((el) =>
+        el.id === id ? { ...el, ...updates } : el,
+      );
+      setElements(newElements);
+      saveToHistory(newElements);
+    },
+    [elements, saveToHistory],
+  );
 
-  const addElement = useCallback((element: CanvasElement) => {
-    const newElements = [...elements, element];
-    setElements(newElements);
-    setSelectedElement(element.id);
-    saveToHistory(newElements);
-  }, [elements, saveToHistory]);
+  const addElement = useCallback(
+    (element: CanvasElement) => {
+      const newElements = [...elements, element];
+      setElements(newElements);
+      setSelectedElement(element.id);
+      saveToHistory(newElements);
+    },
+    [elements, saveToHistory],
+  );
 
-  const deleteElement = useCallback((id: string) => {
-    const newElements = elements.filter(el => el.id !== id);
-    setElements(newElements);
-    if (selectedElement === id) {
-      setSelectedElement(null);
-    }
-    saveToHistory(newElements);
-  }, [elements, selectedElement, saveToHistory]);
+  const deleteElement = useCallback(
+    (id: string) => {
+      const newElements = elements.filter((el) => el.id !== id);
+      setElements(newElements);
+      if (selectedElement === id) {
+        setSelectedElement(null);
+      }
+      saveToHistory(newElements);
+    },
+    [elements, selectedElement, saveToHistory],
+  );
 
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !canvasSize) return;
+  const handleImageUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !canvasSize) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const aspectRatio = img.width / img.height;
-        let width = Math.min(canvasSize.width * 0.3, 100);
-        let height = width / aspectRatio;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const aspectRatio = img.width / img.height;
+          let width = Math.min(canvasSize.width * 0.3, 100);
+          let height = width / aspectRatio;
 
-        if (height > canvasSize.height * 0.3) {
-          height = canvasSize.height * 0.3;
-          width = height * aspectRatio;
-        }
+          if (height > canvasSize.height * 0.3) {
+            height = canvasSize.height * 0.3;
+            width = height * aspectRatio;
+          }
 
-        const element: CanvasElement = {
-          id: `img-${Date.now()}`,
-          type: "image",
-          x: (canvasSize.width - width) / 2,
-          y: (canvasSize.height - height) / 2,
-          width,
-          height,
-          rotation: 0,
-          visible: true,
-          zIndex: elements.length,
-          src: event.target?.result as string,
+          const element: CanvasElement = {
+            id: `img-${Date.now()}`,
+            type: "image",
+            x: (canvasSize.width - width) / 2,
+            y: (canvasSize.height - height) / 2,
+            width,
+            height,
+            rotation: 0,
+            visible: true,
+            zIndex: elements.length,
+            src: event.target?.result as string,
+          };
+
+          addElement(element);
+          toast({
+            title: "이미지 추가됨",
+            description: "이미지가 캔버스에 추가되었습니다.",
+          });
         };
-
-        addElement(element);
-        toast({
-          title: "이미지 추가됨",
-          description: "이미지가 캔버스에 추가되었습니다.",
-        });
+        img.src = event.target?.result as string;
       };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  }, [canvasSize, elements, addElement, toast]);
+      reader.readAsDataURL(file);
+    },
+    [canvasSize, elements, addElement, toast],
+  );
 
   const handleAddText = useCallback(() => {
     if (!newText.trim() || !canvasSize) return;
@@ -203,7 +226,16 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
       title: "텍스트 추가됨",
       description: "텍스트가 캔버스에 추가되었습니다.",
     });
-  }, [newText, canvasSize, fontSize, fontFamily, textColor, elements, addElement, toast]);
+  }, [
+    newText,
+    canvasSize,
+    fontSize,
+    fontFamily,
+    textColor,
+    elements,
+    addElement,
+    toast,
+  ]);
 
   const handleAddShape = useCallback(() => {
     if (!canvasSize) return;
@@ -250,7 +282,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
     try {
       // Save to localStorage as backup
       localStorage.setItem("pinto-design", JSON.stringify(designData));
-      
+
       // TODO: Save to database (Supabase)
       // This would be implemented with actual API call
       // await fetch('/api/designs', {
@@ -261,7 +293,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
 
       toast({
         title: "디자인 저장됨",
-        description: `${elements.length}개의 요소가 포함된 디자인이 저장되었습니다.`,
+        description: `${elements.length}개의 요fl�가 포함된 디자인이 저장되었습니다.`,
       });
     } catch (error) {
       console.error("Design save error:", error);
@@ -273,23 +305,45 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
     }
   }, [elements, canvasSize, productType, params.type, toast]);
 
-  const handleExport = useCallback(async (format: "png" | "pdf") => {
-    if (!canvasSize) return;
+  const handleExport = useCallback(
+    async (format: "png" | "pdf") => {
+      if (!canvasSize || !canvasRef.current) return;
 
-    // This would be implemented with actual export functionality
-    toast({
-      title: `${format.toUpperCase()} 내보내기`,
-      description: `${format.toUpperCase()} 파일로 내보내기를 시작합니다.`,
-    });
-  }, [canvasSize, toast]);
+      const canvas = await html2canvas(canvasRef.current);
+
+      if (format === "png") {
+        const link = document.createElement("a");
+        link.download = "design.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } else {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({
+          orientation:
+            canvasSize.width > canvasSize.height ? "landscape" : "portrait",
+          unit: "px",
+          format: [canvasSize.width, canvasSize.height],
+        });
+        pdf.addImage(imgData, "PNG", 0, 0, canvasSize.width, canvasSize.height);
+        pdf.save("design.pdf");
+      }
+
+      // This would be implemented with actual export functionality
+      toast({
+        title: `${format.toUpperCase()} 다운로드`,
+        description: `${format.toUpperCase()} 파일이 저장되었습니다.`,
+      });
+    },
+    [canvasSize, canvasRef, toast],
+  );
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col">
       {/* Top Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+      <div className="bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center space-x-2 text-gray-100">
           <span className="text-lg font-bold">ALL THAT PRINTING</span>
-          <span className="text-sm text-gray-500">EDITOR</span>
+          <span className="text-sm text-gray-400">EDITOR</span>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -298,7 +352,9 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
             size="sm"
             onClick={handleUndo}
             disabled={historyIndex <= 0}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="되돌리기"
           >
             <Undo2 className="w-4 h-4" />
             되돌리기
@@ -308,28 +364,34 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
             size="sm"
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="다시실행"
           >
             <Redo2 className="w-4 h-4" />
             다시실행
           </Button>
-          <div className="w-px h-6 bg-gray-300" />
+          <div className="w-px h-6 bg-gray-700" />
           <Button
             variant="ghost"
             size="sm"
             onClick={() => selectedElement && deleteElement(selectedElement)}
             disabled={!selectedElement}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="삭제"
           >
             <Trash2 className="w-4 h-4" />
             삭제
           </Button>
-          <div className="w-px h-6 bg-gray-300" />
+          <div className="w-px h-6 bg-gray700" />
           <Button
             variant="ghost"
             size="sm"
             onClick={handleSave}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="저장"
           >
             <Save className="w-4 h-4" />
             저장
@@ -339,7 +401,9 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
             size="sm"
             onClick={() => handleExport("png")}
             disabled={!isEditorEnabled}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="PNG 다운로드"
           >
             <Download className="w-4 h-4" />
             PNG 다운로드
@@ -349,14 +413,18 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
             size="sm"
             onClick={() => handleExport("pdf")}
             disabled={!isEditorEnabled}
-            className="bg-black text-white hover:bg-gray-800"
+            onMouseDown={(e) => e.preventDefault()}
+            className="bg-gray-700 text-white hover:bg-gray-600"
+            title="PDF 다운로드"
           >
             PDF 다운로드
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="닫기"
           >
             <X className="w-4 h-4" />
             닫기
@@ -384,6 +452,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => setCanvasSize(null)}
+                  onMouseDown={(e) => e.preventDefault()}
                   className="w-full text-xs"
                 >
                   크기 변경
@@ -405,6 +474,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!isEditorEnabled}
+                onMouseDown={(e) => e.preventDefault()}
                 className="w-full text-xs"
               >
                 이미지 업로드
@@ -432,7 +502,11 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                   disabled={!isEditorEnabled}
                   className="bg-gray-700 border-gray-600 text-white text-xs"
                 />
-                <Select value={fontFamily} onValueChange={setFontFamily} disabled={!isEditorEnabled}>
+                <Select
+                  value={fontFamily}
+                  onValueChange={setFontFamily}
+                  disabled={!isEditorEnabled}
+                >
                   <SelectTrigger className="bg-gray-700 border-gray-600 text-white text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -465,6 +539,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                   size="sm"
                   onClick={handleAddText}
                   disabled={!isEditorEnabled || !newText.trim()}
+                  onMouseDown={(e) => e.preventDefault()}
                   className="w-full text-xs"
                 >
                   텍스트 추가
@@ -485,7 +560,12 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                     size="sm"
                     onClick={() => setShapeType("rectangle")}
                     disabled={!isEditorEnabled}
-                    className="flex-1 text-xs"
+                    onMouseDown={(e) => e.preventDefault()}
+                    className={cn(
+                      "flex-1 text-xs",
+                      shapeType !== "rectangle" &&
+                        "border-gray-600 text-gray-300",
+                    )}
                   >
                     <Square className="w-3 h-3" />
                   </Button>
@@ -494,7 +574,11 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                     size="sm"
                     onClick={() => setShapeType("circle")}
                     disabled={!isEditorEnabled}
-                    className="flex-1 text-xs"
+                    onMouseDown={(e) => e.preventDefault()}
+                    className={cn(
+                      "flex-1 text-xs",
+                      shapeType !== "circle" && "border-gray-600 text-gray-300",
+                    )}
                   >
                     <Circle className="w-3 h-3" />
                   </Button>
@@ -511,11 +595,12 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                   size="sm"
                   onClick={handleAddShape}
                   disabled={!isEditorEnabled}
+                  onMouseDown={(e) => e.preventDefault()}
                   className={cn(
                     "w-full text-xs",
-                    isEditorEnabled 
-                      ? "hover:bg-green-600 hover:text-white border-green-400 text-green-400" 
-                      : "disabled:opacity-30 disabled:cursor-not-allowed"
+                    isEditorEnabled
+                      ? "hover:bg-green-600 hover:text-white border-green-400 text-green-400"
+                      : "disabled:opacity-30 disabled:cursor-not-allowed",
                   )}
                 >
                   도형 추가
@@ -535,12 +620,17 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
               onSelectElement={setSelectedElement}
               onUpdateElement={updateElement}
               onDeleteElement={deleteElement}
+              canvasRef={canvasRef}
             />
           ) : (
             <div className="h-full flex items-center justify-center">
               <div className="text-center text-gray-500">
-                <div className="text-lg font-medium mb-2">캔버스 크기를 설정해주세요</div>
-                <div className="text-sm">왼쪽 사이드바에서 제품 크기를 입력하세요</div>
+                <div className="text-lg font-medium mb-2">
+                  캔버스 크기를 설정해주세요
+                </div>
+                <div className="text-sm">
+                  왼쪽 사이드바에서 제품 크기를 입력하세요
+                </div>
               </div>
             </div>
           )}
