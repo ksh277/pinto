@@ -73,6 +73,7 @@ import OrdersPage from "@/pages/OrdersPage";
 import CommunityPage from "@/pages/CommunityPage";
 import CommunityWritePage from "@/pages/CommunityWritePage";
 import CommunityPostPage from "@/pages/CommunityPostPage";
+import { Chatbot } from "@/components/Chatbot";
 import CommunityPostDetail from "@/pages/CommunityPostDetail";
 import SellerDashboard from "@/pages/SellerDashboard";
 
@@ -274,6 +275,7 @@ function App() {
                 </main>
                 <Footer />
               </div>
+              <Chatbot />
               <Toaster />
             </AuthProvider>
           </SupabaseProvider>

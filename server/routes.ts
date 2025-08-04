@@ -26,6 +26,7 @@ import {
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
+import { getChatbotResponse } from "./lib/openai";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-here";
 
@@ -5474,6 +5475,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  // Chatbot API endpoint
+  app.post("/api/chatbot", async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: "메시지가 필요합니다." });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ 
+          reply: "죄송합니다. 현재 챗봇 서비스가 일시적으로 중단되었습니다. 고객센터(1588-0000)로 직접 문의해주세요." 
+        });
+      }
+
+      const reply = await getChatbotResponse(message);
+      res.json({ reply });
+    } catch (error) {
+      console.error("Chatbot API error:", error);
+      res.status(500).json({ 
+        reply: "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요." 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
