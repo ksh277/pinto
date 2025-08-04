@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Share2, Calendar, FileText, Users, MessageSquare, MessageCircle, Puzzle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BelugaMascot } from "./BelugaMascot";
+import { ChatbotWidget } from "./ChatbotWidget";
 
 interface LayoutProps {
   children: ReactNode;
@@ -177,10 +177,7 @@ export function Layout({ children, showCommunityNav = false }: LayoutProps) {
       </div>
       
       {/* Global Fixed Floating Buttons */}
-      {/* Beluga Mascot Inquiry Button (Bottom-Right) */}
-      <div className="fixed bottom-6 right-6 z-[60] cursor-pointer fab-slide-in-right">
-        <BelugaMascot variant="inquiry" />
-      </div>
+      <ChatbotWidget />
 
       {/* Editor Button (Bottom-Left) */}
       <div className="fixed bottom-6 left-6 z-50 fab-slide-in-left">
