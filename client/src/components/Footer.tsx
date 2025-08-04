@@ -99,29 +99,44 @@ export function Footer() {
             <h4 className="text-lg font-semibold mb-4">고객센터</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <Link
+                  href="/faq"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
                   자주 묻는 질문
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <Link
+                  href="/shipping"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
                   배송 안내
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <Link
+                  href="/returns"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
                   반품/교환
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <Link
+                  href="/terms"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
                   이용약관
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <Link
+                  href="/privacy"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
                   개인정보처리방침
-                </a>
+                </Link>
               </li>
             </ul>
             
