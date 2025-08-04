@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AllThatPrinting - 커스텀 프린팅 서비스</title>
+    <meta name="description" content="아크릴 키링, 스티커, 머그컵 등 다양한 커스텀 프린팅 제품을 만나보세요. AllThatPrinting에서 나만의 굿즈를 제작하세요.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F8EF7',
+                        secondary: '#F8FAFC',
+                        accent: '#FF6B6B',
+                        'korean-blue': '#4F8EF7',
+                        'soft-gray': '#F8FAFC'
+                    },
+                    fontFamily: {
+                        'korean': ['Noto Sans KR', 'sans-serif'],
+                        'english': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="font-korean bg-white dark:bg-gray-900 transition-colors duration-300">
+    <!-- Top Promotional Banner -->
+    <div id="promo-banner" class="bg-primary text-white py-3 px-4 text-center relative">
+        <div class="flex items-center justify-center gap-2">
+            <i class="fas fa-fire text-yellow-300"></i>
+            <span class="font-semibold">🔥 모든 커스텀 프린팅 서비스 20% 할인 이벤트 진행 중!</span>
+        </div>
+        <button onclick="document.getElementById('promo-banner').style.display='none'" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-200">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50 transition-all duration-300" id="header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="#" class="text-2xl font-bold text-gray-900 dark:text-white">
+                        ALL<span class="text-primary">THAT</span>PRINTING
+                    </a>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="#home" class="text-gray-700 dark:text-gray-200 hover:text-primary transition-colors">홈</a>
+                    <a href="#products" class="text-gray-700 dark:text-gray-200 hover:text-primary transition-colors">제품</a>
+                    <a href="#reviews" class="text-gray-700 dark:text-gray-200 hover:text-primary transition-colors">리뷰</a>
+                    <a href="#community" class="text-gray-700 dark:text-gray-200 hover:text-primary transition-colors">커뮤니티</a>
+                    <a href="#login" class="text-gray-700 dark:text-gray-200 hover:text-primary transition-colors">로그인</a>
+                    <a href="#signup" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">회원가입</a>
+                </nav>
+
+                <!-- Right Side Icons -->
+                <div class="flex items-center space-x-4">
+                    <!-- Search -->
+                    <div class="relative hidden sm:block">
+                        <input type="text" placeholder="제품 검색..." class="w-64 pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
+                    
+                    <!-- Language Toggle -->
+                    <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <span class="text-sm font-medium">KR</span>
+                    </button>
+                    
+                    <!-- Cart -->
+                    <button class="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="fas fa-shopping-cart text-gray-600 dark:text-gray-300"></i>
+                        <span class="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 overflow-hidden">
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div class="text-center z-10">
+                <h1 class="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+                    나만의 <span class="text-primary">커스텀</span> 굿즈
+                </h1>
+                <p class="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+                    아크릴 키링, 스티커, 머그컵까지 다양한 제품을 원하는 디자인으로 제작하세요
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button class="bg-primary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors transform hover:scale-105 duration-300">
+                        지금 커스터마이즈하기
+                    </button>
+                    <button class="border-2 border-primary text-primary px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary hover:text-white transition-colors">
+                        템플릿 보기
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Background decorative elements -->
+        <div class="absolute top-20 left-20 w-20 h-20 bg-primary/10 rounded-full animate-pulse"></div>
+        <div class="absolute bottom-20 right-20 w-32 h-32 bg-accent/10 rounded-full animate-pulse delay-1000"></div>
+        <div class="absolute top-1/2 left-10 w-16 h-16 bg-purple-300/20 rounded-full animate-pulse delay-500"></div>
+    </section>
+
+    <!-- Featured Categories -->
+    <section class="py-16 bg-white dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">인기 카테고리</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- T-Shirts -->
+                <div class="group cursor-pointer transform hover:scale-105 transition-all duration-300">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-8 text-center hover:shadow-xl transition-shadow">
+                        <!-- Custom t-shirt printing design with colorful graphics -->
+                        <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Custom T-shirt printing" class="w-full h-48 object-cover rounded-lg mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">커스텀 티셔츠</h3>
+                        <p class="text-gray-600 dark:text-gray-300 mb-4">나만의 디자인으로 제작하는 고품질 티셔츠</p>
+                        <button class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            제품 보기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mugs -->
+                <div class="group cursor-pointer transform hover:scale-105 transition-all duration-300">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-8 text-center hover:shadow-xl transition-shadow">
+                        <!-- Custom mug with personalized design and vibrant colors -->
+                        <img src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Custom printed mug" class="w-full h-48 object-cover rounded-lg mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">커스텀 머그컵</h3>
+                        <p class="text-gray-600 dark:text-gray-300 mb-4">매일 사용하는 머그컵에 특별한 디자인을</p>
+                        <button class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            제품 보기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stickers -->
+                <div class="group cursor-pointer transform hover:scale-105 transition-all duration-300">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-8 text-center hover:shadow-xl transition-shadow">
+                        <!-- Colorful custom sticker designs on laptop -->
+                        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Custom stickers" class="w-full h-48 object-cover rounded-lg mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">커스텀 스티커</h3>
+                        <p class="text-gray-600 dark:text-gray-300 mb-4">어디든 붙일 수 있는 개성 넘치는 스티커</p>
+                        <button class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            제품 보기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Best Sellers -->
+    <section class="py-16 bg-gray-50 dark:bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-fire text-accent mr-2"></i>베스트 셀러
+            </h2>
+            <p class="text-center text-gray-600 dark:text-gray-300 mb-12">가장 인기 있는 커스텀 제품들을 만나보세요</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Product 1 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                    <!-- Cute acrylic keychain with anime character design -->
+                    <img src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Acrylic keychain with custom design" class="w-full h-64 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">아크릴 키링</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-gray-600 dark:text-gray-300 text-sm">(127)</span>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mb-4">₩8,900</p>
+                        <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            커스터마이즈하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 2 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                    <!-- Custom phone case with personalized design -->
+                    <img src="https://pixabay.com/get/g5f2ff77723ba93a457f420ba81c7a67357c3cb079afa42a50f4a8a360787a37fd299b52f06a706c109cf9601cc22556ff42377d8033fde5e6d5dd7d1440502c2_1280.jpg" alt="Custom phone case" class="w-full h-64 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">커스텀 폰케이스</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-gray-600 dark:text-gray-300 text-sm">(89)</span>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mb-4">₩15,900</p>
+                        <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            커스터마이즈하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 3 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                    <!-- Custom tote bag with creative design -->
+                    <img src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Custom tote bag" class="w-full h-64 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">커스텀 에코백</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <span class="text-gray-600 dark:text-gray-300 text-sm">(56)</span>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mb-4">₩12,900</p>
+                        <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            커스터마이즈하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 4 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                    <!-- Custom pin badges with colorful designs -->
+                    <img src="https://images.unsplash.com/photo-1606402179428-a57976d71fa4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Custom pin badges" class="w-full h-64 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">커스텀 뱃지</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-gray-600 dark:text-gray-300 text-sm">(34)</span>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mb-4">₩3,900</p>
+                        <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            커스터마이즈하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 5 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                    <!-- Custom water bottle with personalized graphics -->
+                    <img src="https://images.unsplash.com/photo-1602143407151-7111542de6e8?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Custom water bottle" class="w-full h-64 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">커스텀 텀블러</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <span class="text-gray-600 dark:text-gray-300 text-sm">(78)</span>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mb-4">₩18,900</p>
+                        <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            커스터마이즈하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 6 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                    <!-- Custom notebook with creative cover design -->
+                    <img src="https://images.unsplash.com/photo-1544816155-12df9643f363?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Custom notebook" class="w-full h-64 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">커스텀 노트북</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-gray-600 dark:text-gray-300 text-sm">(92)</span>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mb-4">₩11,900</p>
+                        <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            커스터마이즈하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-16 bg-white dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">제작 과정</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-mouse-pointer text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">1. 제품 선택</h3>
+                    <p class="text-gray-600 dark:text-gray-300">원하는 제품을 선택하고 사이즈와 색상을 정하세요</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-paint-brush text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">2. 디자인 제작</h3>
+                    <p class="text-gray-600 dark:text-gray-300">이미지를 업로드하거나 텍스트를 추가해 디자인을 완성하세요</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-shipping-fast text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">3. 주문 완료</h3>
+                    <p class="text-gray-600 dark:text-gray-300">결제를 완료하면 고품질로 제작해서 빠르게 배송해드려요</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Customer Reviews -->
+    <section class="py-16 bg-gray-50 dark:bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">고객 리뷰</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Review 1 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold mr-4">
+                            김
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 dark:text-white">김민수</h4>
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-300 line-clamp-3">
+                        "아크릴 키링 퀄리티가 정말 좋아요! 디자인도 제가 원하는 대로 나왔고, 배송도 빨랐습니다. 또 주문할 예정이에요."
+                    </p>
+                </div>
+
+                <!-- Review 2 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-accent rounded-full flex items-center justify-center text-white font-bold mr-4">
+                            이
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 dark:text-white">이지은</h4>
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-300 line-clamp-3">
+                        "커스텀 티셔츠 만들어서 친구들과 맞춰 입었는데 반응이 너무 좋았어요. 프린팅 질도 만족스럽습니다!"
+                    </p>
+                </div>
+
+                <!-- Review 3 -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-4">
+                            박
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 dark:text-white">박준호</h4>
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-300 line-clamp-3">
+                        "머그컵에 가족사진을 프린팅해서 선물했는데 너무 예쁘게 나왔어요. 고화질로 인쇄되어서 만족합니다."
+                    </p>
+                </div>
+            </div>
+            <div class="text-center mt-8">
+                <button class="bg-primary text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                    모든 리뷰 보기
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Section -->
+    <section class="py-16 bg-white dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-4">커뮤니티 갤러리</h2>
+            <p class="text-center text-gray-600 dark:text-gray-300 mb-12">사용자들이 제작한 창작물을 구경해보세요</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Community Post 1 -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+                    <!-- Creative custom merchandise design showcase -->
+                    <img src="https://images.unsplash.com/photo-1596464716127-f2a82984de30?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Creative custom design" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">나만의 캐릭터 디자인으로 제작한 아크릴 키링</p>
+                        <div class="flex items-center justify-between">
+                            <button class="flex items-center text-accent hover:text-red-600 transition-colors">
+                                <i class="fas fa-heart mr-1"></i>
+                                <span class="text-sm">24</span>
+                            </button>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-comment mr-1"></i>5
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Community Post 2 -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+                    <!-- Artistic custom printing design -->
+                    <img src="https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Artistic custom design" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">미니멀한 디자인의 커스텀 에코백</p>
+                        <div class="flex items-center justify-between">
+                            <button class="flex items-center text-accent hover:text-red-600 transition-colors">
+                                <i class="fas fa-heart mr-1"></i>
+                                <span class="text-sm">18</span>
+                            </button>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-comment mr-1"></i>3
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Community Post 3 -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+                    <!-- Colorful custom merchandise collection -->
+                    <img src="https://images.unsplash.com/photo-1611048267451-e6ed903d4a38?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Colorful custom merchandise" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">귀여운 일러스트로 제작한 스티커 세트</p>
+                        <div class="flex items-center justify-between">
+                            <button class="flex items-center text-accent hover:text-red-600 transition-colors">
+                                <i class="fas fa-heart mr-1"></i>
+                                <span class="text-sm">31</span>
+                            </button>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-comment mr-1"></i>8
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Community Post 4 -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+                    <!-- Professional custom product photography -->
+                    <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Professional custom product" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">기업 로고로 제작한 고급 머그컵</p>
+                        <div class="flex items-center justify-between">
+                            <button class="flex items-center text-accent hover:text-red-600 transition-colors">
+                                <i class="fas fa-heart mr-1"></i>
+                                <span class="text-sm">15</span>
+                            </button>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-comment mr-1"></i>2
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Brand Info -->
+                <div>
+                    <h3 class="text-2xl font-bold mb-4">ALL<span class="text-primary">THAT</span>PRINTING</h3>
+                    <p class="text-gray-400 mb-4">
+                        나만의 개성을 담은 커스텀 굿즈를 제작하는 전문 플랫폼입니다. 
+                        고품질의 프린팅 서비스로 여러분의 창작물을 현실로 만들어드립니다.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-instagram text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-line text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">메뉴</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">홈</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">제품</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">커뮤니티</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">고객센터</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">이용약관</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">개인정보처리방침</a></li>
+                    </ul>
+                </div>
+
+                <!-- Newsletter -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">뉴스레터</h4>
+                    <p class="text-gray-400 mb-4">최신 제품과 할인 정보를 받아보세요</p>
+                    <div class="flex">
+                        <input type="email" placeholder="이메일 주소" class="flex-1 px-4 py-2 rounded-l-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <button class="bg-primary px-6 py-2 rounded-r-lg hover:bg-blue-600 transition-colors">
+                            구독
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 AllThatPrinting. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+
+        // Initialize dark mode from localStorage
+        (function() {
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+
+        // Header scroll effect
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('header');
+            if (window.scrollY > 0) {
+                header.classList.add('shadow-md');
+            } else {
+                header.classList.remove('shadow-md');
+            }
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // TODO: Implement React component functionality
+        // TODO: Add Supabase authentication
+        // TODO: Implement shopping cart functionality
+        // TODO: Add product customization tools
+        // TODO: Connect to payment processing
+        // TODO: Add admin dashboard functionality
+    </script>
+</body>
+</html>
