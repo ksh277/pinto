@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { ProductEditor } from "@/components/editor/ProductEditor";
 import { SizeSelector } from "@/components/editor/SizeSelector";
 import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 interface EditorLayoutProps {
   productType?: string;
@@ -65,6 +67,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
   const params = useParams();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Canvas and size state
   const [canvasSize, setCanvasSize] = useState<CanvasSize | null>(null);
@@ -273,23 +276,43 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
     }
   }, [elements, canvasSize, productType, params.type, toast]);
 
-  const handleExport = useCallback(async (format: "png" | "pdf") => {
-    if (!canvasSize) return;
+  const handleExport = useCallback(
+    async (format: "png" | "pdf") => {
+      if (!canvasSize || !canvasRef.current) return;
 
-    // This would be implemented with actual export functionality
-    toast({
-      title: `${format.toUpperCase()} 내보내기`,
-      description: `${format.toUpperCase()} 파일로 내보내기를 시작합니다.`,
-    });
-  }, [canvasSize, toast]);
+      const canvas = await html2canvas(canvasRef.current);
+
+      if (format === "png") {
+        const link = document.createElement("a");
+        link.download = "design.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } else {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({
+          orientation: canvasSize.width > canvasSize.height ? "landscape" : "portrait",
+          unit: "px",
+          format: [canvasSize.width, canvasSize.height],
+        });
+        pdf.addImage(imgData, "PNG", 0, 0, canvasSize.width, canvasSize.height);
+        pdf.save("design.pdf");
+      }
+
+      toast({
+        title: `${format.toUpperCase()} 다운로드`,
+        description: `${format.toUpperCase()} 파일이 저장되었습니다.`,
+      });
+    },
+    [canvasSize, canvasRef, toast]
+  );
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col">
       {/* Top Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+      <div className="bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center space-x-2 text-gray-100">
           <span className="text-lg font-bold">ALL THAT PRINTING</span>
-          <span className="text-sm text-gray-500">EDITOR</span>
+          <span className="text-sm text-gray-400">EDITOR</span>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -298,7 +321,9 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
             size="sm"
             onClick={handleUndo}
             disabled={historyIndex <= 0}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="되돌리기"
           >
             <Undo2 className="w-4 h-4" />
             되돌리기
@@ -308,28 +333,34 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
             size="sm"
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="다시실행"
           >
             <Redo2 className="w-4 h-4" />
             다시실행
           </Button>
-          <div className="w-px h-6 bg-gray-300" />
+          <div className="w-px h-6 bg-gray-700" />
           <Button
             variant="ghost"
             size="sm"
             onClick={() => selectedElement && deleteElement(selectedElement)}
             disabled={!selectedElement}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="삭제"
           >
             <Trash2 className="w-4 h-4" />
             삭제
           </Button>
-          <div className="w-px h-6 bg-gray-300" />
+          <div className="w-px h-6 bg-gray-700" />
           <Button
             variant="ghost"
             size="sm"
             onClick={handleSave}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="저장"
           >
             <Save className="w-4 h-4" />
             저장
@@ -339,7 +370,9 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
             size="sm"
             onClick={() => handleExport("png")}
             disabled={!isEditorEnabled}
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="PNG 다운로드"
           >
             <Download className="w-4 h-4" />
             PNG 다운로드
@@ -349,14 +382,18 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
             size="sm"
             onClick={() => handleExport("pdf")}
             disabled={!isEditorEnabled}
-            className="bg-black text-white hover:bg-gray-800"
+            onMouseDown={(e) => e.preventDefault()}
+            className="bg-gray-700 text-white hover:bg-gray-600"
+            title="PDF 다운로드"
           >
             PDF 다운로드
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="text-gray-600"
+            onMouseDown={(e) => e.preventDefault()}
+            className="text-gray-200 hover:bg-gray-700 hover:text-white"
+            title="닫기"
           >
             <X className="w-4 h-4" />
             닫기
@@ -384,6 +421,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => setCanvasSize(null)}
+                  onMouseDown={(e) => e.preventDefault()}
                   className="w-full text-xs"
                 >
                   크기 변경
@@ -405,6 +443,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!isEditorEnabled}
+                onMouseDown={(e) => e.preventDefault()}
                 className="w-full text-xs"
               >
                 이미지 업로드
@@ -465,6 +504,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                   size="sm"
                   onClick={handleAddText}
                   disabled={!isEditorEnabled || !newText.trim()}
+                  onMouseDown={(e) => e.preventDefault()}
                   className="w-full text-xs"
                 >
                   텍스트 추가
@@ -485,7 +525,11 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                     size="sm"
                     onClick={() => setShapeType("rectangle")}
                     disabled={!isEditorEnabled}
-                    className="flex-1 text-xs"
+                    onMouseDown={(e) => e.preventDefault()}
+                    className={cn(
+                      "flex-1 text-xs",
+                      shapeType !== "rectangle" && "border-gray-600 text-gray-300"
+                    )}
                   >
                     <Square className="w-3 h-3" />
                   </Button>
@@ -494,7 +538,11 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                     size="sm"
                     onClick={() => setShapeType("circle")}
                     disabled={!isEditorEnabled}
-                    className="flex-1 text-xs"
+                    onMouseDown={(e) => e.preventDefault()}
+                    className={cn(
+                      "flex-1 text-xs",
+                      shapeType !== "circle" && "border-gray-600 text-gray-300"
+                    )}
                   >
                     <Circle className="w-3 h-3" />
                   </Button>
@@ -511,6 +559,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
                   size="sm"
                   onClick={handleAddShape}
                   disabled={!isEditorEnabled}
+                    onMouseDown={(e) => e.preventDefault()}
                   className={cn(
                     "w-full text-xs",
                     isEditorEnabled 
@@ -535,6 +584,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
               onSelectElement={setSelectedElement}
               onUpdateElement={updateElement}
               onDeleteElement={deleteElement}
+              canvasRef={canvasRef}
             />
           ) : (
             <div className="h-full flex items-center justify-center">

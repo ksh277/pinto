@@ -10,6 +10,7 @@ interface ProductEditorProps {
   onSelectElement: (id: string | null) => void;
   onUpdateElement: (id: string, updates: Partial<CanvasElement>) => void;
   onDeleteElement: (id: string) => void;
+  canvasRef?: React.RefObject<HTMLDivElement>;
 }
 
 export function ProductEditor({
@@ -19,15 +20,20 @@ export function ProductEditor({
   onSelectElement,
   onUpdateElement,
   onDeleteElement,
+  canvasRef: externalRef,
 }: ProductEditorProps) {
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const internalRef = useRef<HTMLDivElement>(null);
+  const canvasRef = externalRef ?? internalRef;
 
   // Click outside to deselect
-  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === canvasRef.current) {
-      onSelectElement(null);
-    }
-  }, [onSelectElement]);
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === canvasRef.current) {
+        onSelectElement(null);
+      }
+    },
+    [onSelectElement, canvasRef]
+  );
 
   // Keyboard shortcuts
   useEffect(() => {
