@@ -13,7 +13,6 @@ import {
   Puzzle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ChatbotWidget } from "./ChatbotWidget";
 
 interface LayoutProps {
   children: ReactNode;
@@ -200,7 +199,6 @@ export function Layout({ children, showCommunityNav = false }: LayoutProps) {
       <div className={cn(showCommunityNav ? "pt-0" : "")}>{children}</div>
 
       {/* Global Fixed Floating Buttons */}
-      <ChatbotWidget />
 
       {/* Editor Button (Bottom-Left) */}
       <div className="fixed bottom-6 left-6 z-50 fab-slide-in-left">
