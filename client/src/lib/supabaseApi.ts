@@ -1079,6 +1079,8 @@ export const fetchCart = async (userId: string) => {
         base_price,
         image_url,
         is_available,
+        product_images(image_url, display_order),
+        product_options(*),
         categories(name, name_ko)
       )
     `,
