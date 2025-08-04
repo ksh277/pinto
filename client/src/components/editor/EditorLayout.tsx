@@ -28,8 +28,8 @@ import { cn } from "@/lib/utils";
 import { ProductEditor } from "@/components/editor/ProductEditor";
 import { SizeSelector } from "@/components/editor/SizeSelector";
 import { useToast } from "@/hooks/use-toast";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+// import html2canvas from "html2canvas";
+// import jsPDF from "jspdf";
 
 interface EditorLayoutProps {
   productType?: string;
@@ -309,7 +309,7 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
     async (format: "png" | "pdf") => {
       if (!canvasSize || !canvasRef.current) return;
 
-      const canvas = await html2canvas(canvasRef.current);
+      // const canvas = await html2canvas(canvasRef.current);
 
       if (format === "png") {
         const link = document.createElement("a");
@@ -317,15 +317,15 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
         link.href = canvas.toDataURL("image/png");
         link.click();
       } else {
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF({
-          orientation:
-            canvasSize.width > canvasSize.height ? "landscape" : "portrait",
-          unit: "px",
-          format: [canvasSize.width, canvasSize.height],
-        });
-        pdf.addImage(imgData, "PNG", 0, 0, canvasSize.width, canvasSize.height);
-        pdf.save("design.pdf");
+        // const imgData = canvas.toDataURL("image/png");
+        // const pdf = new jsPDF({
+        //   orientation:
+        //     canvasSize.width > canvasSize.height ? "landscape" : "portrait",
+        //   unit: "px",
+        //   format: [canvasSize.width, canvasSize.height],
+        // });
+        // pdf.addImage(imgData, "PNG", 0, 0, canvasSize.width, canvasSize.height);
+        // pdf.save("design.pdf");
       }
 
       // This would be implemented with actual export functionality
