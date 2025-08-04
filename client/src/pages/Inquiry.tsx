@@ -1,76 +1,71 @@
-import { useState } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   MessageCircle, 
   Phone, 
   Mail, 
-  Clock, 
-  User, 
-  FileText,
-  Send,
-  ArrowLeft
+  Clock,
+  Bot,
+  ArrowRight
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Inquiry() {
   const { t } = useLanguage();
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    category: '',
-    subject: '',
-    message: ''
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: t({ ko: '문의가 접수되었습니다', en: 'Inquiry Submitted', ja: 'お問い合わせを受け付けました', zh: '咨询已提交' }),
-      description: t({ ko: '빠른 시일 내에 답변드리겠습니다.', en: 'We will respond as soon as possible.', ja: '早急に回答いたします。', zh: '我们会尽快回复您。' }),
-    });
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      category: '',
-      subject: '',
-      message: ''
-    });
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a] py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {t({ ko: '문의하기', en: 'Contact Us', ja: 'お問い合わせ', zh: '联系我们' })}
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {t({ ko: '고객센터', en: 'Customer Service', ja: 'カスタマーサービス', zh: '客户服务' })}
           </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            {t({ ko: '궁금한 점이 있으시면 언제든지 문의해 주세요', en: 'Feel free to contact us with any questions', ja: 'ご質問がございましたらお気軽にお問い合わせください', zh: '如有任何疑问，请随时联系我们' })}
+          <p className="text-gray-600">
+            {t({ ko: '24시간 AI 챗봇과 다양한 연락 방법을 제공합니다', en: '24/7 AI chatbot and various contact methods available', ja: '24時間AIチャットボットと様々な連絡方法を提供します', zh: '提供24小时AI聊天机器人和各种联系方式' })}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* AI Chatbot Section */}
+          <div className="lg:col-span-1">
+            <Card className="bg-gradient-to-br from-[#00C19D] to-[#00A085] text-white border-0">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Bot className="h-6 w-6 mr-2" />
+                  AI 챗봇 상담
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-white/90">
+                    우측 하단의 채팅 버튼을 클릭하여 24시간 즉시 상담을 받아보세요!
+                  </p>
+                  <div className="bg-white/20 rounded-lg p-4">
+                    <h4 className="font-medium mb-2">FAQ 자동 응답 가능:</h4>
+                    <ul className="text-sm space-y-1 text-white/90">
+                      <li>• 운영시간 및 상담 안내</li>
+                      <li>• 배송 관련 문의</li>
+                      <li>• 굿즈 제작 방법</li>
+                      <li>• 결제 및 환불 정책</li>
+                      <li>• 회원가입 방법</li>
+                    </ul>
+                  </div>
+                  <div className="flex items-center justify-center p-4 bg-white/10 rounded-lg">
+                    <ArrowRight className="h-5 w-5 mr-2" />
+                    <span className="text-sm">우측 하단 채팅 버튼 클릭</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Contact Information */}
           <div className="lg:col-span-1">
-            <Card className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
+            <Card className="bg-white border-gray-200">
               <CardHeader>
-                <CardTitle className="flex items-center dark:text-white">
+                <CardTitle className="flex items-center">
                   <MessageCircle className="h-5 w-5 mr-2 text-blue-500" />
-                  {t({ ko: '연락처 정보', en: 'Contact Information', ja: '連絡先情報', zh: '联系信息' })}
+                  직접 연락
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
