@@ -102,7 +102,11 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             variant={mode === "preset" ? "default" : "outline"}
             size="sm"
             onClick={() => handleModeChange("preset")}
-            className="flex-1 text-xs"
+            onMouseDown={(e) => e.preventDefault()}
+            className={cn(
+              "flex-1 text-xs",
+              mode !== "preset" && "border-gray-600 text-gray-300"
+            )}
           >
             프리셋
           </Button>
@@ -110,7 +114,11 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             variant={mode === "custom" ? "default" : "outline"}
             size="sm"
             onClick={() => handleModeChange("custom")}
-            className="flex-1 text-xs"
+            onMouseDown={(e) => e.preventDefault()}
+            className={cn(
+              "flex-1 text-xs",
+              mode !== "custom" && "border-gray-600 text-gray-300"
+            )}
           >
             직접입력
           </Button>
@@ -128,7 +136,7 @@ export function SizeSelector({ productType, onSizeSet }: SizeSelectorProps) {
             <SelectTrigger className="bg-gray-700 border-gray-600 text-white text-xs">
               <SelectValue placeholder="크기를 선택하세요" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-gray-800 text-white border border-gray-600">
               {presets.map((preset) => (
                 <SelectItem key={preset.name} value={preset.name}>
                   {preset.name} ({preset.width}×{preset.height}mm)
