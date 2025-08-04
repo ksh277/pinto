@@ -964,9 +964,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cart routes
-  app.get("/api/cart/:userId", async (req, res) => {
+  app.get("/api/cart/:userId", authenticateToken, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
+      
+      // Verify user can only access their own cart
+      if (req.user.id !== userId.toString()) {
+        return res.status(403).json({ message: "자신의 장바구니만 조회할 수 있습니다." });
+      }
+      
       const { data: cartItems, error } = await supabase
         .from("cart_items")
         .select(
@@ -991,9 +997,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/cart", async (req, res) => {
+  app.post("/api/cart", authenticateToken, async (req, res) => {
     try {
       const { user_id, product_id, quantity, options } = req.body;
+      
+      // Verify user can only add to their own cart
+      if (req.user.id !== user_id.toString()) {
+        return res.status(403).json({ message: "자신의 장바구니에만 추가할 수 있습니다." });
+      }
 
       // Check if item already exists in cart
       const { data: existingItem, error: checkError } = await supabase
@@ -1044,10 +1055,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/cart/:userId/:itemId", async (req, res) => {
+  app.delete("/api/cart/:userId/:itemId", authenticateToken, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const itemId = parseInt(req.params.itemId);
+      
+      // Verify user can only remove from their own cart
+      if (req.user.id !== userId.toString()) {
+        return res.status(403).json({ message: "자신의 장바구니 아이템만 삭제할 수 있습니다." });
+      }
 
       const { error } = await supabase
         .from("cart_items")

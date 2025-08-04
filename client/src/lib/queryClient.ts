@@ -11,10 +11,13 @@ export async function apiRequest(
   url: string,
   options?: RequestInit
 ): Promise<Response> {
+  const token = localStorage.getItem("token");
+  
   const res = await fetch(url, {
     method: options?.method || "GET",
     headers: {
       "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
       ...options?.headers,
     },
     body: options?.body,
@@ -32,7 +35,12 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const token = localStorage.getItem("token");
+    
     const res = await fetch(queryKey.join("/") as string, {
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
       credentials: "include",
     });
 

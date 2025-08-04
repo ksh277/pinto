@@ -5,7 +5,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { supabase } from "@/lib/supabase";
+// JWT-based authentication - no Supabase import needed
 
 interface User {
   id: string;
@@ -42,33 +42,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          const u = session.user;
-          const mappedUser: User = {
-            id: u.id,
-            name: u.user_metadata?.full_name || u.email!,
-            username: u.user_metadata?.username || u.email!,
-            email: u.email!,
-            points: 0,
-            coupons: 0,
-            totalOrders: 0,
-            totalSpent: 0,
-            isAdmin: u.user_metadata?.isAdmin || false,
-            firstName: u.user_metadata?.first_name || "",
-            lastName: u.user_metadata?.last_name || "",
-          };
-          setUser(mappedUser);
-          localStorage.setItem("user", JSON.stringify(mappedUser));
+        // Check for JWT token and stored user data
+        const token = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("user");
+        
+        if (token && storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+          } catch (parseError) {
+            console.error("Error parsing stored user:", parseError);
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            setUser(null);
+          }
         } else {
           setUser(null);
-          localStorage.removeItem("user");
         }
       } catch (error) {
         console.error("Auth check failed:", error);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -77,55 +70,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
       });
 
-      if (error || !data.user) {
-        console.error("로그인 오류:", error, data);
+      const data = await response.json();
+
+      if (response.ok && data) {
+        const mappedUser: User = {
+          id: data.id,
+          name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : data.username,
+          username: data.username,
+          email: data.email,
+          points: 0,
+          coupons: 0,
+          totalOrders: 0,
+          totalSpent: 0,
+          isAdmin: data.isAdmin || false,
+          firstName: data.first_name || "",
+          lastName: data.last_name || "",
+        };
+
+        setUser(mappedUser);
+        localStorage.setItem("user", JSON.stringify(mappedUser));
+        localStorage.setItem("token", data.token);
+        setIsLoading(false);
+        return true;
+      } else {
+        console.error("로그인 오류:", data.message);
         setIsLoading(false);
         return false;
       }
-
-      const u = data.user;
-      const mappedUser: User = {
-        id: u.id,
-        name: u.user_metadata?.full_name || u.email!,
-        username: u.user_metadata?.username || u.email!,
-        email: u.email!,
-        points: 0,
-        coupons: 0,
-        totalOrders: 0,
-        totalSpent: 0,
-        isAdmin: u.user_metadata?.isAdmin || false,
-        firstName: u.user_metadata?.first_name || "",
-        lastName: u.user_metadata?.last_name || "",
-      };
-
-      setUser(mappedUser);
-      localStorage.setItem("user", JSON.stringify(mappedUser));
-      setIsLoading(false);
-      return true;
     } catch (error) {
       console.error("Login failed:", error);
+      setIsLoading(false);
+      return false;
     }
-    setIsLoading(false);
-    return false;
   };
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      // Remove JWT token and user data from localStorage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setUser(null);
+      setRedirectPath(null);
     } catch (error) {
       console.error("Logout failed:", error);
-    } finally {
-      setUser(null);
-      localStorage.removeItem("user");
-      setRedirectPath(null);
     }
   };
 
