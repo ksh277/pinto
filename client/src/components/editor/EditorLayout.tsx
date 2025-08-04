@@ -28,8 +28,9 @@ import { cn } from "@/lib/utils";
 import { ProductEditor } from "@/components/editor/ProductEditor";
 import { SizeSelector } from "@/components/editor/SizeSelector";
 import { useToast } from "@/hooks/use-toast";
-// import html2canvas from "html2canvas";
-// import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { saveAs } from "file-saver";
 
 interface EditorLayoutProps {
   productType?: string;
@@ -307,32 +308,71 @@ export function EditorLayout({ productType }: EditorLayoutProps) {
 
   const handleExport = useCallback(
     async (format: "png" | "pdf") => {
-      if (!canvasSize || !canvasRef.current) return;
-
-      // const canvas = await html2canvas(canvasRef.current);
-
-      if (format === "png") {
-        const link = document.createElement("a");
-        link.download = "design.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      } else {
-        // const imgData = canvas.toDataURL("image/png");
-        // const pdf = new jsPDF({
-        //   orientation:
-        //     canvasSize.width > canvasSize.height ? "landscape" : "portrait",
-        //   unit: "px",
-        //   format: [canvasSize.width, canvasSize.height],
-        // });
-        // pdf.addImage(imgData, "PNG", 0, 0, canvasSize.width, canvasSize.height);
-        // pdf.save("design.pdf");
+      if (!canvasSize || !canvasRef.current) {
+        toast({
+          title: "내보내기 실패",
+          description: "캔버스가 준비되지 않았습니다. 크기를 먼저 설정해주세요.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      // This would be implemented with actual export functionality
-      toast({
-        title: `${format.toUpperCase()} 다운로드`,
-        description: `${format.toUpperCase()} 파일이 저장되었습니다.`,
-      });
+      try {
+        // 캔버스 스크린샷 생성
+        const canvas = await html2canvas(canvasRef.current, {
+          backgroundColor: '#ffffff',
+          scale: 2, // 고해상도를 위해 스케일 증가
+          useCORS: true,
+          allowTaint: true,
+        });
+
+        const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        
+        if (format === "png") {
+          // PNG 다운로드
+          canvas.toBlob((blob) => {
+            if (blob) {
+              saveAs(blob, `design_${timestamp}.png`);
+              toast({
+                title: "PNG 다운로드 완료",
+                description: `design_${timestamp}.png 파일이 저장되었습니다.`,
+              });
+            }
+          }, 'image/png');
+        } else {
+          // PDF 생성 및 다운로드
+          const imgData = canvas.toDataURL("image/png");
+          
+          // PDF 크기 계산 (A4 기준으로 조정)
+          const pdfWidth = canvasSize.widthMM;
+          const pdfHeight = canvasSize.heightMM;
+          
+          const pdf = new jsPDF({
+            orientation: pdfWidth > pdfHeight ? "landscape" : "portrait",
+            unit: "mm",
+            format: [pdfWidth, pdfHeight],
+          });
+          
+          // 이미지를 PDF에 추가
+          pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+          
+          // PDF 저장
+          const pdfBlob = pdf.output('blob');
+          saveAs(pdfBlob, `design_${timestamp}.pdf`);
+          
+          toast({
+            title: "PDF 다운로드 완료",
+            description: `design_${timestamp}.pdf 파일이 저장되었습니다.`,
+          });
+        }
+      } catch (error) {
+        console.error("Export error:", error);
+        toast({
+          title: "내보내기 실패",
+          description: "파일 생성 중 오류가 발생했습니다. 다시 시도해주세요.",
+          variant: "destructive",
+        });
+      }
     },
     [canvasSize, canvasRef, toast],
   );

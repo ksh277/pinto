@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,10 +20,19 @@ export default function Login() {
   const [secureLogin, setSecureLogin] = useState(false);
   const [error, setError] = useState("");
 
-  const { setUser, redirectPath } = useAuth();
+  const { setUser, redirectPath, setRedirectPath } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
+
+  // URL 파라미터에서 redirect_to 읽기
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectTo = urlParams.get('redirect_to');
+    if (redirectTo) {
+      setRedirectPath(decodeURIComponent(redirectTo));
+    }
+  }, [setRedirectPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,8 +61,13 @@ export default function Login() {
         };
         setUser(mappedUser);
         localStorage.setItem("user", JSON.stringify(mappedUser));
+        
+        // 리디렉션 경로가 있으면 해당 경로로, 없으면 홈으로
+        const targetPath = redirectPath || "/";
+        setRedirectPath(null); // 리디렉션 경로 초기화
+        
         setTimeout(() => {
-          setLocation(redirectPath || "/");
+          setLocation(targetPath);
         }, 100);
       } else {
         setError(
