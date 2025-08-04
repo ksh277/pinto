@@ -49,6 +49,11 @@ import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminLogin from "@/pages/admin/Login";
 import { AdminProducts } from "@/pages/AdminProducts";
 import AdditionalServices from "@/pages/AdditionalServices";
+import Faq from "@/pages/Faq";
+import Shipping from "@/pages/Shipping";
+import Returns from "@/pages/Returns";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
 import SearchResults from "@/pages/SearchResults";
 import ProductSearchPage from "@/pages/ProductSearchPage";
 import ProductList from "@/pages/ProductList";
@@ -197,6 +202,12 @@ function Router() {
         <Route path="/reviews" component={ReviewsListPage} />
         <Route path="/design-service" component={DesignServiceProduct} />
         <Route path="/additional-services" component={AdditionalServices} />
+
+        <Route path="/faq" component={Faq} />
+        <Route path="/shipping" component={Shipping} />
+        <Route path="/returns" component={Returns} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
 
         {/* Seller routes */}
         <Route path="/seller">
