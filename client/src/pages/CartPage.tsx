@@ -207,6 +207,11 @@ const CartPage = () => {
                 const product = item.products;
                 const price = item.price || product?.base_price || 0;
                 const subtotal = price * item.quantity;
+                const productImage =
+                  product?.product_images?.[0]?.image_url ||
+                  product?.image_url ||
+                  "/api/placeholder/80/80";
+                const optionData = item.options || item.customization_options;
 
                 return (
                   <Card key={item.id} className="bg-[#1a1a1a] border-gray-700">
@@ -215,7 +220,7 @@ const CartPage = () => {
                         {/* Product Image */}
                         <div className="flex-shrink-0">
                           <img
-                            src={product?.image_url || "/api/placeholder/80/80"}
+                            src={productImage}
                             alt={product?.name || "Product"}
                             className="w-20 h-20 object-cover rounded-md"
                           />
@@ -231,6 +236,11 @@ const CartPage = () => {
                           <p className="text-gray-400 text-sm mt-1">
                             {formatPrice(price)} × {item.quantity}
                           </p>
+                          {optionData && (
+                            <p className="text-gray-400 text-sm mt-1">
+                              옵션: {Object.values(optionData).join(", ")}
+                            </p>
+                          )}
                           {!product?.is_available && (
                             <Badge variant="destructive" className="mt-2">
                               품절
