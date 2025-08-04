@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, Eye, EyeOff, Shield, MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
@@ -40,27 +39,40 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.username,
-        password: formData.password,
+      console.log('로그인 시도:', formData);
+      
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
       });
 
-      if (!error && data.user) {
+      const data = await response.json();
+      console.log('로그인 응답:', data);
+
+      if (response.ok && data) {
         const mappedUser = {
-          id: data.user.id,
-          name: data.user.user_metadata?.full_name || data.user.email!,
-          username: data.user.user_metadata?.username || data.user.email!,
-          email: data.user.email!,
+          id: data.id,
+          name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : data.username,
+          username: data.username,
+          email: data.email,
           points: 0,
           coupons: 0,
           totalOrders: 0,
           totalSpent: 0,
-          isAdmin: data.user.user_metadata?.isAdmin || false,
-          firstName: data.user.user_metadata?.first_name || "",
-          lastName: data.user.user_metadata?.last_name || "",
+          isAdmin: data.isAdmin || false,
+          firstName: data.first_name || "",
+          lastName: data.last_name || "",
         };
+        
         setUser(mappedUser);
         localStorage.setItem("user", JSON.stringify(mappedUser));
+        localStorage.setItem("token", data.token);
         
         // 리디렉션 경로가 있으면 해당 경로로, 없으면 홈으로
         const targetPath = redirectPath || "/";
@@ -70,14 +82,13 @@ export default function Login() {
           setLocation(targetPath);
         }, 100);
       } else {
-        setError(
-          t({
-            ko: "아이디 또는 비밀번호가 잘못되었습니다.",
-            en: "Invalid username or password.",
-          }),
-        );
+        setError(data.message || t({
+          ko: "아이디 또는 비밀번호가 잘못되었습니다.",
+          en: "Invalid username or password.",
+        }));
       }
     } catch (err) {
+      console.error('로그인 오류:', err);
       setError(
         t({
           ko: "로그인 중 오류가 발생했습니다.",
