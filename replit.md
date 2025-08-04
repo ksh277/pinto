@@ -14,8 +14,8 @@ Preferred communication style: Simple, everyday language.
 - **UI Framework**: Tailwind CSS with shadcn/ui components
 - **Routing**: Wouter
 - **State Management**: TanStack Query
-- **Theme System**: Custom theme provider with light/dark mode support, unified to a consistent `#1a1a1a` for dark mode.
-- **UI/UX Decisions**: Korean-first design with responsive, mobile-first approach. Employs a clean white background for light mode and a warm navy tone (`#1a1a1a`) for dark mode. Standardized card designs (`allprint-card`) with specific dimensions, image/text ratios, typography, and badges for visual consistency across the platform. Emphasizes interactive elements, animations, and professional layouts.
+- **Theme System**: Light mode only (dark mode removed for simplified UI).
+- **UI/UX Decisions**: Korean-first design with responsive, mobile-first approach. Employs a clean white background throughout the platform. Standardized card designs (`allprint-card`) with specific dimensions, image/text ratios, typography, and badges for visual consistency across the platform. Emphasizes interactive elements, animations, and professional layouts.
 
 ### Backend Architecture
 - **Server**: Express.js with TypeScript
@@ -93,6 +93,14 @@ Preferred communication style: Simple, everyday language.
   - Real-time data persistence and retrieval across all user interactions
   - Full Korean localization support throughout the platform
   - Admin management capabilities for products, users, and orders
+
+### 2025-08-04: Dark Mode Removal & UI Simplification  
+- **Complete Dark Mode Removal**: Eliminated all dark mode related code for simplified maintenance
+- **Light Mode Only**: Streamlined to use only light theme throughout the application
+- **CSS Cleanup**: Removed 1000+ lines of dark mode styles, keeping only essential light mode CSS
+- **Component Updates**: Updated ThemeProvider, ThemeToggle, and Header components for light mode only
+- **Tailwind Config**: Removed darkMode configuration, simplified color system
+- **User Experience**: Consistent white background with clean, professional appearance
 
 ### 2025-01-12: Complete Pinto Editor UI Redesign & Layout Fix
 - **Fixed Critical Layout Bug**: Completely refactored DraggableElement component to eliminate offset issues

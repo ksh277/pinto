@@ -5,17 +5,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Apply font globally */
+* {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* General layout improvements */
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Mobile touch optimization */
+* {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow selection for text input elements */
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 /* Line clamp utility */
 .line-clamp-2 {
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-}
-
-/* Apply font globally */
-* {
-  font-family: 'Noto Sans KR', sans-serif;
 }
 
 /* Popular Products Swiper Styles */
@@ -71,13 +102,6 @@
   }
 }
 
-/* Community page category text color override */
-.category-list a,
-.category-title,
-.category-text {
-  color: #ffffff !important;
-}
-
 /* Mobile Menu Slide Animation */
 @keyframes slideInFromRight {
   from {
@@ -109,230 +133,6 @@
   animation: slideOutToRight 0.3s ease-in forwards;
 }
 
-/* Mobile touch optimization */
-* {
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-/* Allow selection for text input elements */
-input, textarea, [contenteditable="true"] {
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
-}
-
-/* General layout improvements */
-html {
-  scroll-behavior: smooth;
-  overflow-x: hidden;
-}
-
-body {
-  overflow-x: hidden;
-  max-width: 100vw;
-  background-color: #ffffff;
-  color: #000000;
-  transition: background-color 0.3s ease;
-}
-
-body.dark {
-  background-color: #1a1a1a;
-  color: #ffffff;
-}
-
-/* Unified Grid Layout - PIXELGOODS Style */
-.unified-mobile-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  padding: 0 16px;
-}
-
-@media (min-width: 640px) {
-  .unified-mobile-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .unified-mobile-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-/* Product Card Styling */
-.product-card {
-  width: 100%;
-  height: 100%;
-  min-height: 300px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.dark .product-card {
-  background: #1F2D4A;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.product-card-image {
-  width: 100%;
-  height: 112px;
-  background: #f3f4f6;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dark .product-card-image {
-  background: #1F2D4A;
-}
-
-.product-card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.product-card-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.product-card-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1F2937;
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dark .product-card-title {
-  color: #ffffff;
-}
-
-.product-card-price {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1F2937;
-  margin-bottom: 4px;
-}
-
-.dark .product-card-price {
-  color: #ffffff;
-}
-
-.product-card-stats {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.dark .product-card-stats {
-  color: #9ca3af;
-}
-
-.product-card-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: #ef4444;
-  color: white;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 700;
-  z-index: 10;
-}
-
-.product-card-like {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 12px;
-  color: #6b7280;
-  z-index: 10;
-}
-
-.dark .product-card-like {
-  color: #9ca3af;
-}
-
-/* 전역 다크모드 스타일 */
-.dark {
-  color-scheme: dark;
-}
-
-.dark body {
-  background-color: #1a1a1a;
-  color: #ffffff;
-}
-
-/* 다크모드 카드 및 컴포넌트 스타일 */
-.dark .card, .dark .box, .dark .section {
-  background-color: #1a1a1a;
-  color: #ffffff;
-  border-color: #1a1a1a;
-}
-
-.dark .coupon-box, .dark .coupon-card {
-  background-color: #1a1a1a !important;
-  color: #ffffff !important;
-}
-
-.dark .event-container, .dark .login-panel {
-  background-color: #1a1a1a;
-  color: #ffffff;
-}
-
-.dark .btn {
-  background-color: #1a1a1a;
-  color: #ffffff;
-}
-
-.dark .btn:hover {
-  background-color: #1a1a1a;
-}
-
-/* 다크모드 버튼 및 상호작용 요소 */
-.dark .text-gray-500 {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-600 {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-700 {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-900 {
-  color: #ffffff !important;
-}
-
-/* 다크모드 테두리 */
-.dark .border-gray-200 {
-  border-color: #374151 !important;
-}
-
 /* Pinto Editor Colors */
 :root {
   --mint: 172 100% 38%;
@@ -359,253 +159,7 @@ body.dark {
   --tw-ring-color: #00C19D;
 }
 
-.dark .border-gray-300 {
-  border-color: #4b5563 !important;
-}
-
-/* 다크모드 아이콘 */
-.dark .w-16.h-16.rounded-full.bg-white {
-  background-color: #374151 !important;
-}
-
-/* 다크모드 배지 */
-.dark .badge {
-  background-color: #1f2937;
-  color: #ffffff;
-}
-
-/* 다크모드 카드 제목 */
-.dark .cardTitle {
-  color: #ffffff;
-}
-
-/* 다크모드 링크 */
-.dark a {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-400 {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-300 {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-100 {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-200 {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-800 {
-  color: #ffffff !important;
-}
-
-.dark .text-slate-300 {
-  color: #ffffff !important;
-}
-
-.dark .text-slate-400 {
-  color: #ffffff !important;
-}
-
-.dark .text-slate-500 {
-  color: #ffffff !important;
-}
-
-.dark .text-slate-600 {
-  color: #ffffff !important;
-}
-
-.dark .text-slate-700 {
-  color: #ffffff !important;
-}
-
-.dark .text-slate-800 {
-  color: #ffffff !important;
-}
-
-.dark .text-slate-900 {
-  color: #ffffff !important;
-}
-
-.dark .text-zinc-400 {
-  color: #ffffff !important;
-}
-
-.dark .text-zinc-500 {
-  color: #ffffff !important;
-}
-
-.dark .text-zinc-600 {
-  color: #ffffff !important;
-}
-
-.dark .text-zinc-700 {
-  color: #ffffff !important;
-}
-
-.dark .text-zinc-800 {
-  color: #ffffff !important;
-}
-
-.dark .text-zinc-900 {
-  color: #ffffff !important;
-}
-
-.dark .text-white {
-  color: #ffffff !important;
-}
-
-.dark .text-black {
-  color: #ffffff !important;
-}
-
-/* 다크모드 배경 색상 */
-.dark .bg-gray-50 {
-  background-color: #0f172a !important;
-}
-
-.dark .bg-gray-100 {
-  background-color: #0f172a !important;
-}
-
-.dark .bg-gray-200 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-gray-300 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-gray-400 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-gray-500 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-gray-600 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-gray-700 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-gray-800 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-gray-900 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-white {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-slate-50 {
-  background-color: #0f172a !important;
-}
-
-.dark .bg-slate-100 {
-  background-color: #0f172a !important;
-}
-
-.dark .bg-slate-200 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-slate-300 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-slate-400 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-slate-500 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-slate-600 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-slate-700 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-slate-800 {
-  background-color: #1e2b3c !important;
-}
-
-.dark .bg-slate-900 {
-  background-color: #1e2b3c !important;
-}
-
-/* 다크모드 링크 */
-.dark a {
-  color: #60a5fa;
-}
-
-/* 다크모드 form 요소 */
-.dark input, .dark textarea, .dark select {
-  background-color: #1e2b3c !important;
-  color: #ffffff !important;
-  border-color: #374151 !important;
-}
-
-.dark .form-control {
-  background-color: #1e2b3c !important;
-  color: #ffffff !important;
-  border-color: #374151 !important;
-}
-
-/* 다크모드 버튼 */
-.dark button {
-  color: #ffffff !important;
-}
-
-.dark .btn-primary {
-  background-color: #2563eb !important;
-  color: #ffffff !important;
-}
-
-.dark .btn-secondary {
-  background-color: #6b7280 !important;
-  color: #ffffff !important;
-}
-
-.dark .btn-outline {
-  border-color: #6b7280 !important;
-  color: #ffffff !important;
-}
-
-.dark .btn-outline:hover {
-  background-color: #6b7280 !important;
-  color: #ffffff !important;
-}
-
-/* 다크모드 아이콘 */
-.dark svg {
-  color: #ffffff !important;
-}
-
-.dark .icon {
-  color: #ffffff !important;
-}
-
-.dark a:hover {
-  color: #93c5fd;
-}
-
-/* Scroll button animation */
+/* 애니메이션들 */
 .scroll-button {
   animation: bounce 2s infinite;
 }
@@ -622,7 +176,6 @@ body.dark {
   }
 }
 
-/* Fade in animation */
 .fade-in {
   opacity: 0;
   animation: fadeIn 0.5s ease-in-out forwards;
@@ -637,53 +190,7 @@ body.dark {
   }
 }
 
-/* Floating action button animations */
-.fab-slide-in-right {
-  animation: slideInRight 0.5s ease-out;
-}
-
-.fab-slide-in-left {
-  animation: slideInLeft 0.5s ease-out;
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-100px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Beluga character clip art thumbnails */
-.beluga-thumbnail {
-  background-color: #f5f5f5;
-  background-position: center;
-  background-size: contain;
-  background-repeat: no-repeat;
-  border-radius: 8px;
-}
-
-.product-thumbnail img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 6px;
-}
-
+/* Tailwind 변수 설정 */
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);
@@ -709,29 +216,6 @@ body.dark {
   --soft-gray: hsl(210, 20%, 98%);
 }
 
-.dark {
-  --background: 0 0% 10.2%;
-  --foreground: 210 40% 98%;
-  --muted: 0 0% 10.2%;
-  --muted-foreground: 210 20% 65%;
-  --popover: 0 0% 10.2%;
-  --popover-foreground: 210 40% 98%;
-  --card: 0 0% 10.2%;
-  --card-foreground: 210 40% 98%;
-  --border: 0 0% 10.2%;
-  --input: 0 0% 10.2%;
-  --primary: 207 90% 54%;
-  --primary-foreground: 211 100% 99%;
-  --secondary: 0 0% 10.2%;
-  --secondary-foreground: 210 40% 98%;
-  --accent: 0 73% 66%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --ring: 0 0% 10.2%;
-  --radius: 0.5rem;
-}
-
 @layer base {
   * {
     @apply border-border;
@@ -755,10 +239,6 @@ body.dark {
     background: linear-gradient(135deg, hsl(207, 90%, 95%) 0%, hsl(280, 50%, 95%) 100%);
   }
 
-  .dark .hero-gradient {
-    background: linear-gradient(135deg, hsl(210, 38%, 21%) 0%, hsl(210, 38%, 21%) 100%);
-  }
-
   .card-hover {
     @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-2;
   }
@@ -768,8 +248,6 @@ body.dark {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-
-
 
   /* 섹션 간격 */
   .section-spacing {
@@ -781,7 +259,7 @@ body.dark {
     margin-bottom: 12px;
   }
 
-  /* pixelgoods 상품 카드 - 다크모드 대응 */
+  /* PINTO 상품 카드 - 라이트 모드 전용 */
   .allprint-card {
     width: 100%;
     min-width: 260px;
@@ -797,42 +275,12 @@ body.dark {
     transition: all 0.3s ease-in-out;
   }
 
-  /* 다크모드 대응 - 인기상품 카드는 더 밝은 gray-900 배경 */
-  .dark .allprint-card {
-    background-color: #1f2937;
-    border: 1px solid #374151;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  /* 다크모드 리뷰 카드 배경색 통일 */
-  .dark .bg-black {
-    background-color: #1f2937 !important;
-  }
-  
-  /* 다크모드 모든 카드 배경색 통일 */
-  .dark .bg-white {
-    background-color: #1f2937 !important;
-  }
-  
-  /* 다크모드 텍스트 가독성 향상 */
-  .dark .text-gray-700 {
-    color: #f3f4f6 !important;
-  }
-  
-  .dark .text-gray-600 {
-    color: #e5e7eb !important;
-  }
-  
-  .dark .text-gray-500 {
-    color: #d1d5db !important;
-  }
-
   .allprint-card:hover {
     transform: scale(1.05);
     transition: transform 0.3s ease-in-out;
   }
 
-  /* 상단 이미지 영역 - 고정 높이 */
+  /* 상단 이미지 영역 */
   .allprint-card-image {
     height: 180px;
     width: calc(100% - 16px);
@@ -847,11 +295,6 @@ body.dark {
     margin: 8px;
   }
 
-  .dark .allprint-card-image {
-    border-bottom: 1px solid #374151;
-    background-color: #1f2937;
-  }
-
   .allprint-card-image img {
     width: 100%;
     height: 100%;
@@ -859,35 +302,7 @@ body.dark {
     display: block;
   }
 
-  /* 이미지 플레이스홀더 스타일 */
-  .allprint-card-image-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f5f5f5;
-    color: #999;
-  }
-
-  .dark .allprint-card-image-placeholder {
-    background-color: #1f2937;
-    color: #9ca3af;
-  }
-
-  /* 이미지 실패 시 placeholder */
-  .allprint-card-image::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #f5f5f5;
-    z-index: -1;
-  }
-
-  /* HOT 배지 (왼쪽 상단 절대 위치) */
+  /* HOT 배지 */
   .allprint-card-hot-badge {
     position: absolute;
     top: 8px;
@@ -900,7 +315,7 @@ body.dark {
     font-weight: bold;
   }
 
-  /* LIKE 수 배지 (오른쪽 상단 절대 위치) */
+  /* LIKE 수 배지 */
   .allprint-card-like-badge {
     position: absolute;
     top: 8px;
@@ -911,11 +326,7 @@ body.dark {
     font-weight: 500;
   }
 
-  .dark .allprint-card-like-badge {
-    color: #ffffff;
-  }
-
-  /* 하단 텍스트 영역 - 고정 높이 */
+  /* 하단 텍스트 영역 */
   .allprint-card-content {
     height: 84px;
     padding: 16px;
@@ -923,10 +334,6 @@ body.dark {
     flex-direction: column;
     justify-content: space-between;
     background-color: #ffffff;
-  }
-
-  .dark .allprint-card-content {
-    background-color: #1f2937;
   }
 
   /* 상품명 */
@@ -940,20 +347,12 @@ body.dark {
     margin-bottom: 4px;
   }
 
-  .dark .allprint-card-title {
-    color: #ffffff !important;
-  }
-
   /* 가격 */
   .allprint-card-price {
     font-size: 16px;
     font-weight: 600;
     color: #000;
     margin-bottom: 2px;
-  }
-
-  .dark .allprint-card-price {
-    color: #ffffff !important;
   }
 
   /* 리뷰/좋아요 정보 */
@@ -963,20 +362,7 @@ body.dark {
     font-weight: 500;
   }
 
-  .dark .allprint-card-stats {
-    color: #d1d5db !important;
-  }
-  
-  /* 다크모드 텍스트 밝기 개선 */
-  .dark .text-gray-900 {
-    color: #ffffff !important;
-  }
-  
-  .dark .text-gray-800 {
-    color: #f3f4f6 !important;
-  }
-
-  /* pixelgoods 그리드 - 2/3/4 열 반응형 */
+  /* PINTO 그리드 반응형 */
   .allprint-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -987,7 +373,6 @@ body.dark {
     justify-items: center;
   }
 
-  /* 반응형 조정 */
   @media (min-width: 768px) {
     .allprint-grid {
       grid-template-columns: repeat(3, 1fr);
@@ -1000,70 +385,7 @@ body.dark {
     }
   }
 
-  /* 인기상품 섹션 전용 그리드 - 모바일 2x2 고정 */
-  .popular-products-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 0 16px;
-    background-color: transparent;
-    margin-bottom: 80px; /* 플로팅 버튼과 겹치지 않도록 여백 */
-  }
-
-  .popular-products-grid > * {
-    flex-basis: calc(50% - 6px);
-    max-width: calc(50% - 6px);
-    flex-shrink: 0;
-    margin-bottom: 16px;
-  }
-
-  /* 모바일에서 2x2 그리드 유지 */
-  @media (max-width: 640px) {
-    .popular-products-grid {
-      gap: 12px;
-      padding: 0 16px;
-      margin-bottom: 100px; /* 모바일에서 더 많은 여백 */
-      justify-content: space-between;
-    }
-    
-    .popular-products-grid > * {
-      flex-basis: calc(50% - 6px);
-      max-width: calc(50% - 6px);
-      margin-bottom: 16px;
-    }
-    
-    /* 2행 제한 - 4개 카드만 표시 */
-    .popular-products-grid > *:nth-child(n+5) {
-      display: none;
-    }
-  }
-
-  /* 태블릿 이상에서는 기본 그리드로 전환 */
-  @media (min-width: 768px) {
-    .popular-products-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      column-gap: 20px;
-      row-gap: 20px;
-      padding: 0 20px;
-      max-height: none;
-    }
-    
-    .popular-products-grid > * {
-      flex-basis: auto;
-      max-width: none;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .popular-products-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-
-
+  /* 기타 유틸리티 */
   .btn-primary {
     @apply bg-primary text-primary-foreground font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
   }
@@ -1080,11 +402,6 @@ body.dark {
     @apply bg-primary text-primary-foreground;
   }
 
-  .section-padding {
-    @apply py-16 px-4 sm:px-6 lg:px-8;
-  }
-
-  /* Korean typography with tight tracking */
   .text-tight {
     letter-spacing: -0.025em;
   }
@@ -1094,17 +411,9 @@ body.dark {
     letter-spacing: -0.025em;
   }
 
-  /* Line clamping utilities */
   .line-clamp-1 {
     display: -webkit-box;
     -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -1114,213 +423,6 @@ body.dark {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-
-  /* Slide-like section transitions */
-  .slide-section {
-    @apply scroll-mt-16;
-    min-height: 100vh;
-    transition: all 0.6s ease-in-out;
-  }
-
-  .slide-section.active {
-    @apply opacity-100;
-  }
-
-  .slide-section.inactive {
-    @apply opacity-70;
-  }
-
-  /* Hero section mobile optimizations */
-  .hero-mobile {
-    min-height: 50vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    background: linear-gradient(135deg, #6B5BD2 0%, #9D50BB 100%);
-    color: white;
-  }
-
-  .hero-title {
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-    word-break: keep-all;
-  }
-
-  .hero-subtitle {
-    font-size: 1rem;
-    opacity: 0.9;
-    margin-bottom: 2rem;
-  }
-
-  .hero-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    width: 100%;
-    max-width: 320px;
-  }
-
-  .hero-button {
-    width: 100%;
-    padding: 1rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-  }
-
-  .hero-button-primary {
-    background-color: white;
-    color: #6B5BD2;
-  }
-
-  .hero-button-primary:hover {
-    background-color: #f8f9fa;
-    transform: translateY(-2px);
-  }
-
-  .hero-button-secondary {
-    background-color: transparent;
-    color: white;
-    border: 2px solid white;
-  }
-
-  .hero-button-secondary:hover {
-    background-color: white;
-    color: #6B5BD2;
-    transform: translateY(-2px);
-  }
-
-  /* Slide indicators */
-  .slide-indicators {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 2rem;
-  }
-
-  .slide-indicator {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.4);
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .slide-indicator.active {
-    background-color: rgba(255, 255, 255, 0.9);
-    transform: scale(1.2);
-  }
-
-  .slide-indicator:hover {
-    background-color: rgba(255, 255, 255, 0.7);
-  }
-
-  /* Mobile responsive optimizations */
-  @media (max-width: 640px) {
-    .hero-title {
-      font-size: 1.5rem;
-    }
-    
-    .hero-subtitle {
-      font-size: 0.9rem;
-    }
-    
-    .hero-buttons {
-      max-width: 280px;
-    }
-  }
-
-  /* FAB animations */
-  .fab-button {
-    position: fixed;
-    bottom: 20px;
-    z-index: 50;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .fab-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-  }
-
-  .fab-inquiry {
-    right: 20px;
-    background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
-    border: 2px solid white;
-  }
-
-  .fab-editor {
-    left: 20px;
-    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    border: 2px solid white;
-  }
-
-  @media (min-width: 768px) {
-    .fab-button {
-      width: 96px;
-      height: 96px;
-    }
-  }
-
-  /* Navigation improvements */
-  .nav-link {
-    @apply px-3 py-2 text-sm font-medium transition-colors duration-200;
-  }
-
-  .nav-link:hover {
-    @apply text-primary;
-  }
-
-  .nav-link.active {
-    @apply text-primary border-b-2 border-primary;
-  }
-
-  /* Form improvements */
-  .form-field {
-    @apply mb-4;
-  }
-
-  .form-label {
-    @apply block text-sm font-medium mb-1 text-foreground;
-  }
-
-  .form-input {
-    @apply w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder-muted-foreground;
-  }
-
-  .form-input:focus {
-    @apply outline-none ring-2 ring-primary border-primary;
-  }
-
-  /* Canvas container mobile optimization */
-  .canvas-container {
-    overflow: hidden;
-    touch-action: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Mobile canvas scaling */
-  @media (max-width: 640px) {
-    .canvas-container {
-      max-width: 100vw;
-      max-height: 60vh;
-    }
   }
 
   .hover-lift {
@@ -1328,151 +430,7 @@ body.dark {
   }
 
   .hover-lift:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-  }
-
-  /* Cart preview hover */
-  .cart-preview {
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-  }
-
-  .cart-container:hover .cart-preview {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@layer utilities {
-  .line-clamp-3 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
-
-  .animate-pulse-slow {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  .animate-pulse-delay {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    animation-delay: 0.5s;
-  }
-
-  .animate-pulse-delay-2 {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    animation-delay: 1s;
-  }
-
-  .bg-soft-gray {
-    background-color: hsl(var(--soft-gray));
-  }
-
-  /* Hide scrollbar for category tabs */
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari, Opera */
-  }
-
-  /* Mobile unified card system - Fixed 2-column layout */
-  .unified-mobile-card {
-    @apply rounded-xl bg-white shadow-md p-3 cursor-pointer hover:shadow-lg transition-shadow;
-    height: 420px;
-    min-height: 420px;
-    max-height: 420px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-
-  .unified-mobile-image {
-    height: 140px;
-    width: 100%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f3f3f3;
-    border-radius: 8px;
-    flex-shrink: 0;
-    position: relative;
-  }
-
-  .unified-mobile-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .unified-mobile-content {
-    @apply flex-1 flex flex-col justify-between;
-    padding-top: 8px;
-  }
-
-  .unified-mobile-footer {
-    @apply mt-auto;
-    padding-top: 8px;
-  }
-
-  .unified-mobile-grid {
-    @apply grid grid-cols-2 gap-3 px-4;
-  }
-
-  /* Responsive breakpoints */
-  @media (min-width: 768px) {
-    .unified-mobile-grid {
-      @apply grid-cols-3 gap-4 px-0;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .unified-mobile-grid {
-      @apply grid-cols-4 gap-4;
-    }
-  }
-
-  /* Text truncation utilities */
-  .line-clamp-1 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-  }
-
-  .line-clamp-2 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  /* Korean text break */
-  .text-break-keep {
-    word-break: keep-all;
-  }
-
-  /* Custom scrollbar */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: hsl(var(--muted));
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground));
-    border-radius: 3px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--foreground));
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   }
 }

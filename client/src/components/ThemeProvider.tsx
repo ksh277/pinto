@@ -1,29 +1,24 @@
 import { createContext, useContext, ReactNode } from "react";
-import { useTheme, Theme } from "@/hooks/useTheme";
 
+// 라이트 모드만 지원하는 간단한 테마 프로바이더
 interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
-  isDark: boolean;
+  theme: "light";
+  isDark: false;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType>({
+  theme: "light",
+  isDark: false
+});
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const themeUtils = useTheme();
-
   return (
-    <ThemeContext.Provider value={themeUtils}>
+    <ThemeContext.Provider value={{ theme: "light", isDark: false }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useThemeContext() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useThemeContext must be used within a ThemeProvider");
-  }
-  return context;
+  return useContext(ThemeContext);
 }

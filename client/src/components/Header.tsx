@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSupabaseAuth } from "@/components/SupabaseProvider";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import UserMenu from "@/components/auth/UserMenu";
-import { ThemeToggle } from "@/components/ThemeToggle";
+// import { ThemeToggle } from "@/components/ThemeToggle"; // 다크모드 제거
 import { SearchModal } from "@/components/SearchModal";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
@@ -173,7 +173,7 @@ export const Header = () => {
                   ja: "商品検索...",
                   zh: "搜索商品...",
                 })}
-                className="w-64 pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </form>
@@ -237,7 +237,7 @@ export const Header = () => {
                 <SelectValue />
               </div>
             </SelectTrigger>
-            <SelectContent className="bg-gray-50 dark:bg-gray-50 border border-gray-200">
+            <SelectContent className="bg-gray-50 border border-gray-200">
               <SelectItem
                 value="ko"
                 className="hover:bg-gray-100 text-gray-900"
@@ -265,8 +265,7 @@ export const Header = () => {
             </SelectContent>
           </Select>
 
-          {/* Theme Toggle */}
-          <ThemeToggle />
+          {/* 다크모드 제거됨 */}
 
           {/* User Authentication */}
           <div className="flex items-center space-x-2">
@@ -550,9 +549,8 @@ export const Header = () => {
             </div>
 
             {/* Mobile Footer */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <ThemeToggle />
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex items-center justify-center">
                 <Select value={language} onValueChange={setLanguage}>
                   <SelectTrigger className="w-24 h-8 border-0 bg-transparent">
                     <div className="flex items-center space-x-1">
@@ -560,7 +558,7 @@ export const Header = () => {
                       <SelectValue />
                     </div>
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-50 dark:bg-gray-50 border border-gray-200">
+                  <SelectContent className="bg-gray-50 border border-gray-200">
                     <SelectItem
                       value="ko"
                       className="hover:bg-gray-100 text-gray-900"

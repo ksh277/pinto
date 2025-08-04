@@ -1,36 +1,11 @@
-import { useState, useEffect } from 'react';
+// 라이트 모드만 지원하는 간단한 테마 훅
+export type Theme = "light";
 
-export const useTheme = () => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
-  useEffect(() => {
-    // Check for saved theme preference or default to light
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
-    setTheme(initialTheme);
-    
-    // Apply theme to document
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    
-    // Apply theme to document
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+export function useTheme() {
+  return {
+    theme: "light" as Theme,
+    setTheme: () => {}, // 아무것도 하지 않음
+    toggleTheme: () => {}, // 아무것도 하지 않음
+    isDark: false,
   };
-
-  return { theme, toggleTheme };
-};
+}
