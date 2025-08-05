@@ -1,6 +1,16 @@
 import { useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Heart, MessageCircle, User, Star, ThumbsUp, Share2, ChevronRight, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  Heart,
+  MessageCircle,
+  User,
+  Star,
+  ThumbsUp,
+  Share2,
+  ChevronRight,
+  Send,
+} from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,20 +44,25 @@ export default function ReviewDetail() {
   });
 
   // Fetch review likes
-  const { data: likesData = { count: 0, userIds: [] }, isLoading: isLoadingLikes } = useQuery({
+  const {
+    data: likesData = { count: 0, userIds: [] },
+    isLoading: isLoadingLikes,
+  } = useQuery({
     queryKey: ["/api/reviews", reviewIdNumber, "likes"],
     queryFn: () => apiRequest(`/api/reviews/${reviewIdNumber}/likes`),
   });
 
   // Comment submission mutation
   const commentMutation = useMutation({
-    mutationFn: (content: string) => 
+    mutationFn: (content: string) =>
       apiRequest(`/api/reviews/${reviewIdNumber}/comments`, {
         method: "POST",
-        body: { content }
+        body: { content },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/reviews", reviewIdNumber, "comments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/reviews", reviewIdNumber, "comments"],
+      });
       setNewComment("");
       toast({
         title: "댓글이 작성되었습니다!",
@@ -65,12 +80,14 @@ export default function ReviewDetail() {
 
   // Like toggle mutation
   const likeMutation = useMutation({
-    mutationFn: () => 
+    mutationFn: () =>
       apiRequest(`/api/reviews/${reviewIdNumber}/like`, {
-        method: "POST"
+        method: "POST",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/reviews", reviewIdNumber, "likes"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/reviews", reviewIdNumber, "likes"],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -116,7 +133,7 @@ export default function ReviewDetail() {
       "/api/placeholder/400/400",
       "/api/placeholder/400/400",
       "/api/placeholder/400/400",
-      "/api/placeholder/400/400"
+      "/api/placeholder/400/400",
     ],
     rating: 5,
     likes: 245,
@@ -130,8 +147,8 @@ export default function ReviewDetail() {
       id: 1,
       name: "아크릴 키링",
       price: "8,900원",
-      image: "/api/placeholder/300/300"
-    }
+      image: "/api/placeholder/300/300",
+    },
   };
 
   const relatedReviews = [
@@ -141,7 +158,7 @@ export default function ReviewDetail() {
       author: "짱구***",
       image: "/api/placeholder/300/300",
       rating: 4,
-      likes: 156
+      likes: 156,
     },
     {
       id: 3,
@@ -149,7 +166,7 @@ export default function ReviewDetail() {
       author: "디모***",
       image: "/api/placeholder/300/300",
       rating: 5,
-      likes: 134
+      likes: 134,
     },
     {
       id: 4,
@@ -157,11 +174,9 @@ export default function ReviewDetail() {
       author: "모토***",
       image: "/api/placeholder/300/300",
       rating: 5,
-      likes: 189
-    }
+      likes: 189,
+    },
   ];
-
-
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -177,11 +192,23 @@ export default function ReviewDetail() {
       <div className="bg-white dark:bg-[#1a1a1a] border-b dark:border-gray-700">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-2 py-4 text-sm">
-            <Link href="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">홈</Link>
+            <Link
+              href="/"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              홈
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <Link href="/community" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">커뮤니티</Link>
+            <Link
+              href="/community"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              커뮤니티
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <span className="text-gray-900 dark:text-white font-medium">후기 상세</span>
+            <span className="text-gray-900 dark:text-white font-medium">
+              후기 상세
+            </span>
           </div>
         </div>
       </div>
@@ -253,7 +280,10 @@ export default function ReviewDetail() {
                   <div className="mb-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {mockReview.images.map((image, index) => (
-                        <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        <div
+                          key={index}
+                          className="aspect-square bg-gray-100 rounded-lg overflow-hidden"
+                        >
                           <img
                             src={image}
                             alt={`후기 이미지 ${index + 1}`}
@@ -279,11 +309,15 @@ export default function ReviewDetail() {
                       <button
                         onClick={handleLike}
                         className={`flex items-center space-x-2 transition-colors ${
-                          likesData.userIds.includes(1) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                          likesData.userIds.includes(1)
+                            ? "text-red-500"
+                            : "text-gray-500 hover:text-red-500"
                         }`}
                         disabled={likeMutation.isPending}
                       >
-                        <Heart className={`w-5 h-5 ${likesData.userIds.includes(1) ? 'fill-current' : ''}`} />
+                        <Heart
+                          className={`w-5 h-5 ${likesData.userIds.includes(1) ? "fill-current" : ""}`}
+                        />
                         <span className="font-medium">{likesData.count}</span>
                       </button>
                       <div className="flex items-center space-x-2 text-gray-500">
@@ -292,7 +326,9 @@ export default function ReviewDetail() {
                       </div>
                       <div className="flex items-center space-x-2 text-gray-500">
                         <ThumbsUp className="w-5 h-5" />
-                        <span className="font-medium">{mockReview.helpful}</span>
+                        <span className="font-medium">
+                          {mockReview.helpful}
+                        </span>
                       </div>
                     </div>
                     <Button
@@ -329,7 +365,7 @@ export default function ReviewDetail() {
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
                             onKeyPress={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
+                              if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
                                 handleSubmitComment();
                               }
@@ -339,7 +375,9 @@ export default function ReviewDetail() {
                         </div>
                         <Button
                           onClick={handleSubmitComment}
-                          disabled={commentMutation.isPending || !newComment.trim()}
+                          disabled={
+                            commentMutation.isPending || !newComment.trim()
+                          }
                           size="sm"
                           className="px-4"
                         >
@@ -372,17 +410,24 @@ export default function ReviewDetail() {
                         </div>
                       ) : (
                         comments.map((comment: any) => (
-                          <div key={comment.id} className="flex space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <div
+                            key={comment.id}
+                            className="flex space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                          >
                             <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                               <User className="w-4 h-4 text-blue-600 dark:text-blue-300" />
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-1">
                                 <span className="font-medium text-gray-900 dark:text-white text-sm">
-                                  {comment.users?.first_name || comment.users?.username || '익명'}
+                                  {comment.users?.first_name ||
+                                    comment.users?.username ||
+                                    "익명"}
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {new Date(comment.created_at).toLocaleDateString('ko-KR')}
+                                  {new Date(
+                                    comment.created_at,
+                                  ).toLocaleDateString("ko-KR")}
                                 </span>
                               </div>
                               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">

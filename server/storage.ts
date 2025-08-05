@@ -4,6 +4,8 @@ import {
   products,
   productReviews,
   productLikes,
+  reviewComments,
+  reviewLikes,
   cartItems,
   orders,
   orderItems,
@@ -25,6 +27,10 @@ import {
   type InsertProductReview,
   type ProductLike,
   type InsertProductLike,
+  type ReviewComment,
+  type InsertReviewComment,
+  type ReviewLike,
+  type InsertReviewLike,
   type CartItem,
   type InsertCartItem,
   type Order,
@@ -78,6 +84,15 @@ export interface IStorage {
   // Review methods
   getProductReviews(productId: number): Promise<ProductReview[]>;
   createProductReview(review: InsertProductReview): Promise<ProductReview>;
+
+  // Review comment methods
+  getReviewComments(reviewId: number): Promise<ReviewComment[]>;
+  createReviewComment(comment: InsertReviewComment): Promise<ReviewComment>;
+
+  // Review like methods
+  getReviewLikes(reviewId: number): Promise<ReviewLike[]>;
+  createReviewLike(like: InsertReviewLike): Promise<ReviewLike>;
+  isReviewLiked(reviewId: number, userId: number): Promise<boolean>;
 
   // Product like methods
   isProductLiked(productId: number, userId: number): Promise<boolean>;
@@ -172,6 +187,8 @@ export class MemStorage implements IStorage {
   private products: Map<number, Product>;
   private productReviews: Map<number, ProductReview>;
   private productLikes: Map<number, ProductLike>;
+  private reviewComments: Map<number, ReviewComment>;
+  private reviewLikes: Map<number, ReviewLike>;
   private cartItems: Map<number, CartItem>;
   private orders: Map<number, Order>;
   private orderItems: Map<number, OrderItem>;
@@ -191,6 +208,8 @@ export class MemStorage implements IStorage {
     this.products = new Map();
     this.productReviews = new Map();
     this.productLikes = new Map();
+    this.reviewComments = new Map();
+    this.reviewLikes = new Map();
     this.cartItems = new Map();
     this.orders = new Map();
     this.orderItems = new Map();
@@ -1225,6 +1244,51 @@ export class MemStorage implements IStorage {
     return review;
   }
 
+  // Review comment methods
+  async getReviewComments(reviewId: number): Promise<ReviewComment[]> {
+    return Array.from(this.reviewComments.values()).filter(
+      (comment) => comment.reviewId === reviewId,
+    );
+  }
+
+  async createReviewComment(
+    insertComment: InsertReviewComment,
+  ): Promise<ReviewComment> {
+    const id = this.currentId++;
+    const comment: ReviewComment = {
+      ...insertComment,
+      id,
+      createdAt: new Date(),
+    };
+    this.reviewComments.set(id, comment);
+    return comment;
+  }
+
+  // Review like methods
+  async getReviewLikes(reviewId: number): Promise<ReviewLike[]> {
+    return Array.from(this.reviewLikes.values()).filter(
+      (like) => like.reviewId === reviewId,
+    );
+  }
+
+  async createReviewLike(insertLike: InsertReviewLike): Promise<ReviewLike> {
+    const id = this.currentId++;
+    const like: ReviewLike = {
+      ...insertLike,
+      id,
+      createdAt: new Date(),
+    };
+    this.reviewLikes.set(id, like);
+    return like;
+  }
+
+  async isReviewLiked(reviewId: number, userId: number): Promise<boolean> {
+    const likes = Array.from(this.reviewLikes.values());
+    return likes.some(
+      (like) => like.reviewId === reviewId && like.userId === userId,
+    );
+  }
+
   // Cart methods
   async getCartItems(userId: number): Promise<CartItem[]> {
     return Array.from(this.cartItems.values()).filter(
@@ -1598,6 +1662,66 @@ export class DatabaseStorage implements IStorage {
       .values(insertReview)
       .returning();
     return review;
+  }
+
+  // Review comment methods
+  async getReviewComments(reviewId: number): Promise<ReviewComment[]> {
+    return await db
+      .select()
+      .from(reviewComments)
+      .where(eq(reviewComments.reviewId, reviewId));
+  }
+
+  async createReviewComment(
+    insertComment: InsertReviewComment,
+  ): Promise<ReviewComment> {
+    const [comment] = await db
+      .insert(reviewComments)
+      .values(insertComment)
+      .returning();
+    return comment;
+  }
+
+  // Review like methods
+  async getReviewLikes(reviewId: number): Promise<ReviewLike[]> {
+    return await db
+      .select()
+      .from(reviewLikes)
+      .where(eq(reviewLikes.reviewId, reviewId));
+  }
+
+  async createReviewLike(insertLike: InsertReviewLike): Promise<ReviewLike> {
+    const [like] = await db
+      .insert(reviewLikes)
+      .values(insertLike)
+      .returning();
+    return like;
+  }
+
+  async isReviewLiked(reviewId: number, userId: number): Promise<boolean> {
+    const [like] = await db
+      .select()
+      .from(reviewLikes)
+      .where(
+        and(
+          eq(reviewLikes.reviewId, reviewId),
+          eq(reviewLikes.userId, userId),
+        ),
+      );
+    return !!like;
+  }
+
+  async isReviewLiked(reviewId: number, userId: number): Promise<boolean> {
+    const [like] = await db
+      .select()
+      .from(reviewLikes)
+      .where(
+        and(
+          eq(reviewLikes.reviewId, reviewId),
+          eq(reviewLikes.userId, userId),
+        ),
+      );
+    return !!like;
   }
 
   // Product like methods

@@ -271,12 +271,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Review likes and comments
-  app.post("/api/reviews/:id/like", async (req, res) => {
+  app.post("/api/reviews/:id/like", authenticateToken, async (req: any, res) => {
     try {
       const reviewId = parseInt(req.params.id);
       const like = await storage.createReviewLike({
         reviewId,
-        userId: req.body.userId
+        userId: req.user.id
       });
       res.status(201).json(like);
     } catch (error) {
@@ -285,12 +285,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/reviews/:id/comments", async (req, res) => {
+  app.get("/api/reviews/:id/likes", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.id);
+      const likes = await storage.getReviewLikes(reviewId);
+      res.json(likes);
+    } catch (error) {
+      console.error("Error fetching likes:", error);
+      res.status(500).json({ message: "Failed to fetch likes" });
+    }
+  });
+
+  app.get("/api/reviews/:id/comments", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.id);
+      const comments = await storage.getReviewComments(reviewId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/reviews/:id/comments", authenticateToken, async (req: any, res) => {
     try {
       const reviewId = parseInt(req.params.id);
       const comment = await storage.createReviewComment({
-        ...req.body,
-        reviewId
+        reviewId,
+        userId: req.user.id,
+        content: req.body.content
       });
       res.status(201).json(comment);
     } catch (error) {

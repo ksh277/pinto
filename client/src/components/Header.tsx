@@ -107,14 +107,6 @@ export const Header = () => {
       }),
       href: "/community",
     },
-    {
-      name: t({ ko: "자료실", en: "Resources", ja: "資料室", zh: "资源" }),
-      href: "/resources",
-    },
-    {
-      name: t({ ko: "이벤트", en: "Events", ja: "イベント", zh: "活动" }),
-      href: "/events",
-    },
   ];
 
   const getDisplayName = () => {
@@ -133,7 +125,7 @@ export const Header = () => {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Package className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
+            <span className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-blue-500 bg-clip-text text-transparent">
               Pinto
             </span>
           </div>
