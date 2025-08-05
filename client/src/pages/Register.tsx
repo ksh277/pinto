@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,11 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [nicknameStatus, setNicknameStatus] = useState<{
+    checking: boolean;
+    available: boolean | null;
+    message: string;
+  }>({ checking: false, available: null, message: "" });
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
 
@@ -93,6 +98,53 @@ export default function Register() {
   const canProceedFromStep1 =
     agreements.serviceTerms && agreements.privacyPolicy;
 
+  // 닉네임 중복 체크 함수
+  const checkNicknameAvailability = useCallback(async (nickname: string) => {
+    if (!nickname || nickname.length < 2) {
+      setNicknameStatus({ checking: false, available: null, message: "" });
+      return;
+    }
+
+    if (nickname.length > 10) {
+      setNicknameStatus({ 
+        checking: false, 
+        available: false, 
+        message: "닉네임은 10자 이하여야 합니다." 
+      });
+      return;
+    }
+
+    setNicknameStatus({ checking: true, available: null, message: "확인 중..." });
+
+    try {
+      const response = await fetch(`/api/auth/check-nickname/${encodeURIComponent(nickname)}`);
+      const data = await response.json();
+      
+      setNicknameStatus({
+        checking: false,
+        available: data.available,
+        message: data.message
+      });
+    } catch (error) {
+      setNicknameStatus({
+        checking: false,
+        available: false,
+        message: "닉네임 확인 중 오류가 발생했습니다."
+      });
+    }
+  }, []);
+
+  // 닉네임 변경 시 중복 체크 (debouncing 적용)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (userData.nickname) {
+        checkNicknameAvailability(userData.nickname);
+      }
+    }, 500); // 500ms 지연
+
+    return () => clearTimeout(timeoutId);
+  }, [userData.nickname, checkNicknameAvailability]);
+
   const canProceedFromStep2 =
     userData.username &&
     userData.password &&
@@ -103,7 +155,8 @@ export default function Register() {
     userData.email &&
     userData.password === userData.confirmPassword &&
     userData.nickname.length >= 2 &&
-    userData.nickname.length <= 10;
+    userData.nickname.length <= 10 &&
+    nicknameStatus.available === true;
 
   const handleStep1Next = () => {
     if (!canProceedFromStep1) {
@@ -426,12 +479,28 @@ export default function Register() {
             placeholder="닉네임을 입력하세요 (2-10자)"
             value={userData.nickname}
             onChange={(e) => setUserData({ ...userData, nickname: e.target.value })}
-            className="mt-1 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+            className={`mt-1 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 ${
+              nicknameStatus.available === false ? 'border-red-500' : 
+              nicknameStatus.available === true ? 'border-green-500' : ''
+            }`}
             maxLength={10}
           />
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            댓글 작성 시 표시될 닉네임입니다 (필수)
-          </p>
+          <div className="mt-1 min-h-[20px]">
+            {nicknameStatus.checking && (
+              <p className="text-sm text-blue-500">확인 중...</p>
+            )}
+            {nicknameStatus.available === true && (
+              <p className="text-sm text-green-600">✓ 사용 가능한 닉네임입니다</p>
+            )}
+            {nicknameStatus.available === false && nicknameStatus.message && (
+              <p className="text-sm text-red-500">✗ {nicknameStatus.message}</p>
+            )}
+            {!nicknameStatus.checking && nicknameStatus.available === null && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                댓글 작성 시 표시될 닉네임입니다 (필수)
+              </p>
+            )}
+          </div>
         </div>
 
         <div>

@@ -524,6 +524,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Nickname availability check
+  app.get("/api/auth/check-nickname/:nickname", async (req, res) => {
+    try {
+      console.log("Nickname check endpoint hit with:", req.params.nickname);
+      const { nickname } = req.params;
+
+      // Set proper headers
+      res.setHeader('Content-Type', 'application/json');
+
+      // Validate nickname length
+      if (!nickname || nickname.length < 2 || nickname.length > 10) {
+        return res.status(400).json({ 
+          available: false, 
+          message: "닉네임은 2-10자 사이여야 합니다." 
+        });
+      }
+
+      // Check if nickname exists
+      const { data: existingUser, error } = await supabase
+        .from("users")
+        .select("id")
+        .eq("nickname", nickname)
+        .single();
+
+      console.log("Nickname check result:", { existingUser, error });
+
+      // If no error and user exists, nickname is taken
+      if (existingUser && !error) {
+        return res.status(200).json({ 
+          available: false, 
+          message: "이미 사용 중인 닉네임입니다." 
+        });
+      }
+
+      // If error code is PGRST116 (no rows), nickname is available
+      if (error && error.code === "PGRST116") {
+        return res.status(200).json({ 
+          available: true, 
+          message: "사용 가능한 닉네임입니다." 
+        });
+      }
+
+      // Other errors
+      if (error) {
+        console.error("Error checking nickname:", error);
+        return res.status(500).json({ 
+          available: false, 
+          message: "닉네임 확인 중 오류가 발생했습니다." 
+        });
+      }
+
+      // Fallback - should not reach here
+      return res.status(200).json({ 
+        available: true, 
+        message: "사용 가능한 닉네임입니다." 
+      });
+    } catch (error) {
+      console.error("Error in nickname check endpoint:", error);
+      res.status(500).json({ 
+        available: false, 
+        message: "닉네임 확인 중 오류가 발생했습니다." 
+      });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
