@@ -86,8 +86,8 @@ export function ProductCard({
   };
 
   const formattedPrice = parseInt(product.basePrice).toLocaleString();
-  const reviewCount = product.reviewCount || 0;
-  const likeCount = product.likeCount || 0;
+  const reviewCount = product.reviewsCount || product.reviewCount || 0;
+  const likeCount = product.likesCount || product.likeCount || 0;
 
   return (
     <Link href={`/product/${product.id}`} className="block">
@@ -130,7 +130,7 @@ export function ProductCard({
             className="allprint-card-like-badge hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
           >
             <Heart className={`w-3 h-3 mr-1 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
-            LIKE {likeCount || 15}
+            LIKE {likeCount}
           </button>
         </div>
 
@@ -143,8 +143,7 @@ export function ProductCard({
           {/* 재고 정보 표시 */}
           <div className="flex items-center justify-between mb-2">
             <div className="allprint-card-stats">
-              리뷰 {reviewCount?.toLocaleString() || "11,390"} / LIKE{" "}
-              {likeCount || 15}
+              리뷰 {reviewCount} / LIKE {likeCount}
             </div>
             {product.stock !== undefined && (
               <div className={`text-xs font-medium ${
