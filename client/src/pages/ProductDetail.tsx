@@ -72,8 +72,8 @@ export default function ProductDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
-  const [selectedBase, setSelectedBase] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedBase, setSelectedBase] = useState("일반"); // Default base
+  const [selectedColor, setSelectedColor] = useState("투명"); // Default color
   const [selectedPackaging, setSelectedPackaging] = useState("기본 포장"); // Default packaging
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -125,19 +125,43 @@ export default function ProductDetail() {
       "/api/placeholder/600/600",
     ],
     
-    // Options from customization_options or fallback defaults
+    // Options from customization_options or fallback defaults that match the UI
     sizes: product.customization_options?.sizes || [
+      // 일반 사이즈
       { name: "일반 20x20", price: 3500, description: "기본 사이즈" },
-      { name: "중형 50x50", price: 6500, description: "중형 사이즈" },
-      { name: "라미 100x100", price: 12000, description: "대형 사이즈" },
-      { name: "대형 200x200", price: 25000, description: "특대형 사이즈" },
+      { name: "일반 30x15", price: 4000, description: "기본 사이즈" },
+      { name: "일반 30x30", price: 4500, description: "기본 사이즈" },
+      { name: "일반 40x40", price: 5500, description: "기본 사이즈" },
+      { name: "일반 50x30", price: 6000, description: "기본 사이즈" },
+      { name: "일반 50x50", price: 6500, description: "기본 사이즈" },
+      { name: "일반 60x30", price: 7000, description: "기본 사이즈" },
+      { name: "일반 60x60", price: 7500, description: "기본 사이즈" },
+      { name: "일반 70x35", price: 8000, description: "기본 사이즈" },
+      { name: "일반 70x50", price: 8500, description: "기본 사이즈" },
+      { name: "일반 70x70", price: 9000, description: "기본 사이즈" },
+      { name: "일반 80x20", price: 8500, description: "기본 사이즈" },
+      // 라미 사이즈  
+      { name: "라미 20x20", price: 4000, description: "라미네이팅 처리" },
+      { name: "라미 30x30", price: 5000, description: "라미네이팅 처리" },
+      { name: "라미 40x40", price: 6000, description: "라미네이팅 처리" },
+      { name: "라미 50x50", price: 7000, description: "라미네이팅 처리" },
+      { name: "라미 60x60", price: 8000, description: "라미네이팅 처리" },
+      { name: "라미 70x70", price: 9000, description: "라미네이팅 처리" },
+      { name: "라미 80x80", price: 10000, description: "라미네이팅 처리" },
+      { name: "라미 100x100", price: 12000, description: "라미네이팅 처리" },
+      // 대형 사이즈
+      { name: "대형 100x200", price: 15000, description: "대형 사이즈" },
+      { name: "대형 120x200", price: 18000, description: "대형 사이즈" },
+      { name: "대형 150x200", price: 22000, description: "대형 사이즈" },
+      { name: "대형 200x200", price: 25000, description: "대형 사이즈" },
     ],
     
     colors: product.customization_options?.colors || [
-      { name: "투명", priceDelta: 0, hex: "#FFFFFF", opacity: 0.8 },
+      { name: "투명", priceDelta: 500, hex: "#FFFFFF", opacity: 0.8 },
       { name: "반투명", priceDelta: 500, hex: "#FFFFFF", opacity: 0.5 },
       { name: "흰색", priceDelta: 300, hex: "#FFFFFF" },
       { name: "검정", priceDelta: 300, hex: "#000000" },
+      { name: "기타", priceDelta: 0, hex: "#888888" },
     ],
     
     bases: product.customization_options?.bases || [
@@ -206,16 +230,20 @@ export default function ProductDetail() {
     const basePrice = product?.base_price ? Number(product.base_price) : 0;
     
     // Get size price (this is the main price component)
-    const sizePrice = productDisplay?.sizes?.find((s: any) => s.name === selectedSize)?.price || 0;
+    const sizeData = productDisplay?.sizes?.find((s: any) => s.name === selectedSize);
+    const sizePrice = sizeData?.price || 0;
     
     // Get color price delta
-    const colorPrice = productDisplay?.colors?.find((c: any) => c.name === selectedColor)?.priceDelta || 0;
+    const colorData = productDisplay?.colors?.find((c: any) => c.name === selectedColor);
+    const colorPrice = colorData?.priceDelta || 0;
     
     // Get base material price
-    const baseTypePrice = productDisplay?.bases?.find((b: any) => b.name === selectedBase)?.price || 0;
+    const baseData = productDisplay?.bases?.find((b: any) => b.name === selectedBase);
+    const baseTypePrice = baseData?.price || 0;
     
     // Get packaging price
-    const packagingPrice = productDisplay?.packaging?.find((p: any) => p.name === selectedPackaging)?.price || 0;
+    const packagingData = productDisplay?.packaging?.find((p: any) => p.name === selectedPackaging);
+    const packagingPrice = packagingData?.price || 0;
 
     // Calculate subtotal - use size price as main price if available, otherwise use base price
     const itemPrice = sizePrice > 0 ? sizePrice : basePrice;
@@ -232,11 +260,19 @@ export default function ProductDetail() {
 
     const total = Math.round(subtotal * multiplier * quantity);
     
-    console.log("Price calculation:", {
+    console.log("Price calculation details:", {
       basePrice,
+      selectedSize,
+      sizeData,
       sizePrice,
+      selectedColor,
+      colorData,
       colorPrice,
+      selectedBase,
+      baseData,
       baseTypePrice,
+      selectedPackaging,
+      packagingData,
       packagingPrice,
       itemPrice,
       addons,
