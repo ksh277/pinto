@@ -104,49 +104,64 @@ export default function ProductDetail() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: [`/api/product/${id}`],
+    queryKey: [`/api/products/${id}`],
     enabled: !!id,
   });
 
-  // Default product structure for UI
-  const productDisplay = product
-    ? {
-        ...product,
-        images: [
-          product.imageUrl || "/api/placeholder/600/600",
-          "/api/placeholder/600/600",
-          "/api/placeholder/600/600",
-        ],
-        sizes: product.options?.sizes || [
-          { name: "일반 35x50", price: 3500, description: "기본 사이즈" },
-          { name: "라미 70x140", price: 8500, description: "라미네이팅 처리" },
-          { name: "대형 100x200", price: 12000, description: "대형 사이즈" },
-        ],
-        colors: product.options?.colors || [],
-        bases: [
-          { name: "투명", price: 0, description: "투명 받침" },
-          { name: "인쇄", price: 500, description: "인쇄 받침" },
-          { name: "라미 3T", price: 800, description: "라미네이팅 3T" },
-          { name: "라미 5T", price: 1200, description: "라미네이팅 5T" },
-        ],
-        quantityRanges: [
-          { range: "1~9개", condition: "도안 1종류", multiplier: 1 },
-          { range: "10~99개", condition: "도안 1종류", multiplier: 0.9 },
-          { range: "100~499개", condition: "도안 3종류 이하", multiplier: 0.8 },
-          {
-            range: "500개 이상",
-            condition: "도안 5종류 이하",
-            multiplier: 0.7,
-          },
-        ],
-        packaging: [
-          { name: "기본 포장", price: 0, description: "기본 포장" },
-          { name: "OPP 동봉", price: 200, description: "OPP 포장지 동봉" },
-        ],
-        rating: 4.8,
-        reviewCount: product.reviewCount || 0,
-      }
-    : null;
+  // Product display data using API response with customization_options
+  const productDisplay = product ? {
+    ...product,
+    // Basic product info
+    name: product.name || "상품명",
+    nameKo: product.name_ko || product.name || "상품명", 
+    description: product.description || product.description_ko || "",
+    basePrice: product.base_price || 0,
+    imageUrl: product.image_url || "/api/placeholder/600/600",
+    
+    // Image gallery
+    images: [
+      product.image_url || "/api/placeholder/600/600",
+      "/api/placeholder/600/600", 
+      "/api/placeholder/600/600",
+    ],
+    
+    // Options from customization_options or fallback defaults
+    sizes: product.customization_options?.sizes || [
+      { name: "일반 20x20", price: 3500, description: "기본 사이즈" },
+      { name: "중형 50x50", price: 6500, description: "중형 사이즈" },
+      { name: "라미 100x100", price: 12000, description: "대형 사이즈" },
+      { name: "대형 200x200", price: 25000, description: "특대형 사이즈" },
+    ],
+    
+    colors: product.customization_options?.colors || [
+      { name: "투명", priceDelta: 0, hex: "#FFFFFF", opacity: 0.8 },
+      { name: "반투명", priceDelta: 500, hex: "#FFFFFF", opacity: 0.5 },
+      { name: "흰색", priceDelta: 300, hex: "#FFFFFF" },
+      { name: "검정", priceDelta: 300, hex: "#000000" },
+    ],
+    
+    bases: product.customization_options?.bases || [
+      { name: "일반", price: 0, description: "기본 받침" },
+      { name: "라미 3T", price: 1200, description: "3mm 라미네이팅" },
+      { name: "라미 5T", price: 1800, description: "5mm 라미네이팅" },
+    ],
+    
+    quantityRanges: [
+      { range: "1~9", condition: "소량 주문", multiplier: 1.0 },
+      { range: "10~49", condition: "중량 주문", multiplier: 0.9 },
+      { range: "50~99", condition: "대량 주문", multiplier: 0.8 },
+      { range: "100+", condition: "초대량 주문", multiplier: 0.7 },
+    ],
+    
+    packaging: [
+      { name: "기본 포장", price: 0, description: "개별 비닐 포장" },
+      { name: "개별 포장", price: 500, description: "개별 OPP 포장" },
+      { name: "선물 포장", price: 1000, description: "선물용 박스 포장" },
+    ],
+    
+    rating: 4.5,
+    reviewCount: product.reviewsCount || product.reviews_count || 0,
+  } : null;
 
   // Mock reviews data
   const mockReviews = [
@@ -176,34 +191,62 @@ export default function ProductDetail() {
     },
   ];
 
-  // Calculate total price
+  // Calculate total price with proper validation
   const calculateTotalPrice = () => {
-    const basePrice = productDisplay?.basePrice
-      ? parseInt(productDisplay.basePrice)
-      : 0;
+    console.log("Calculating price with:", {
+      selectedSize,
+      selectedColor, 
+      selectedBase,
+      selectedPackaging,
+      quantity,
+      productDisplay
+    });
 
-    const sizePrice =
-      productDisplay?.sizes.find((s: any) => s.name === selectedSize)?.price ||
-      0;
-    const colorPrice =
-      productDisplay?.colors?.find((c: any) => c.name === selectedColor)
-        ?.priceDelta || 0;
-    const baseTypePrice =
-      productDisplay?.bases.find((b) => b.name === selectedBase)?.price || 0;
-    const packagingPrice =
-      productDisplay?.packaging.find((p) => p.name === selectedPackaging)
-        ?.price || 0;
+    // Get base price from product data
+    const basePrice = product?.base_price ? Number(product.base_price) : 0;
+    
+    // Get size price (this is the main price component)
+    const sizePrice = productDisplay?.sizes?.find((s: any) => s.name === selectedSize)?.price || 0;
+    
+    // Get color price delta
+    const colorPrice = productDisplay?.colors?.find((c: any) => c.name === selectedColor)?.priceDelta || 0;
+    
+    // Get base material price
+    const baseTypePrice = productDisplay?.bases?.find((b: any) => b.name === selectedBase)?.price || 0;
+    
+    // Get packaging price
+    const packagingPrice = productDisplay?.packaging?.find((p: any) => p.name === selectedPackaging)?.price || 0;
 
-    const subtotal = sizePrice + colorPrice + baseTypePrice + packagingPrice;
-    const quantityRange = productDisplay?.quantityRanges.find((r) => {
-      const [min, max] = r.range
-        .split("~")
-        .map((n) => parseInt(n.replace(/\D/g, "")));
+    // Calculate subtotal - use size price as main price if available, otherwise use base price
+    const itemPrice = sizePrice > 0 ? sizePrice : basePrice;
+    const addons = colorPrice + baseTypePrice + packagingPrice;
+    const subtotal = itemPrice + addons;
+
+    // Apply quantity-based multiplier
+    const quantityRange = productDisplay?.quantityRanges?.find((r: any) => {
+      if (!r.range) return false;
+      const [min, max] = r.range.split(/[~-]/).map((n: string) => parseInt(n.replace(/\D/g, "")));
       return quantity >= min && (isNaN(max) || quantity <= max);
     });
     const multiplier = quantityRange?.multiplier || 1;
 
-    return Math.round(subtotal * multiplier * quantity);
+    const total = Math.round(subtotal * multiplier * quantity);
+    
+    console.log("Price calculation:", {
+      basePrice,
+      sizePrice,
+      colorPrice,
+      baseTypePrice,
+      packagingPrice,
+      itemPrice,
+      addons,
+      subtotal,
+      multiplier,
+      quantity,
+      total
+    });
+
+    return total;
   };
 
   // File upload handlers
