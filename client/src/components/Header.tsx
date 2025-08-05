@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Globe } from "lucide-react";
+import { NicknameSetupDialog } from "@/components/NicknameSetupDialog";
 
 export const Header = () => {
   const [location, setLocation] = useLocation();
@@ -42,6 +43,7 @@ export const Header = () => {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [showNicknameDialog, setShowNicknameDialog] = useState(false);
   const { user: localUser, logout: localLogout } = useAuth();
   const { toast } = useToast();
   const { itemCount } = useCart();
@@ -78,6 +80,13 @@ export const Header = () => {
       window.removeEventListener("wishlist-updated", handleStorageChange);
     };
   }, []);
+
+  // Check for nickname requirement when user logs in
+  useEffect(() => {
+    if (currentUser && !currentUser.nickname) {
+      setShowNicknameDialog(true);
+    }
+  }, [currentUser]);
 
   // Handle search
   const handleSearch = (e: React.FormEvent) => {
@@ -598,6 +607,18 @@ export const Header = () => {
       <SearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
+      />
+
+      {/* Nickname Setup Dialog */}
+      <NicknameSetupDialog
+        open={showNicknameDialog}
+        onOpenChange={setShowNicknameDialog}
+        onSuccess={() => {
+          toast({
+            title: "닉네임 설정 완료",
+            description: "댓글 작성이 가능합니다.",
+          });
+        }}
       />
     </header>
   );

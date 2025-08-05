@@ -567,27 +567,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { username, email, password, firstName, lastName } = req.body;
+      const { username, email, password, nickname, firstName, lastName, phone } = req.body;
 
       // Validation
-      if (!username || !email || !password) {
-        return res.status(400).json({ message: "모든 필드를 입력해주세요." });
+      if (!username || !email || !password || !nickname) {
+        return res.status(400).json({ message: "필수 정보를 모두 입력해주세요." });
+      }
+
+      // Validate nickname length
+      if (nickname.length < 2 || nickname.length > 10) {
+        return res.status(400).json({ message: "닉네임은 2-10자 사이여야 합니다." });
       }
 
       // Check if user already exists
       const { data: existingUser, error: checkError } = await supabase
         .from("users")
-        .select("username, email")
-        .or(`username.eq.${username},email.eq.${email}`)
+        .select("username, email, nickname")
+        .or(`username.eq.${username},email.eq.${email},nickname.eq.${nickname}`)
         .single();
 
       if (existingUser) {
-        return res.status(400).json({
-          message:
-            existingUser.username === username
-              ? "이미 사용 중인 아이디입니다."
-              : "이미 사용 중인 이메일입니다.",
-        });
+        let message = "이미 사용 중인 ";
+        if (existingUser.username === username) message += "아이디입니다.";
+        else if (existingUser.email === email) message += "이메일입니다.";
+        else if (existingUser.nickname === nickname) message += "닉네임입니다.";
+        
+        return res.status(400).json({ message });
       }
 
       // Hash password with bcrypt
@@ -602,8 +607,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             username,
             email,
             password: hashedPassword,
+            nickname,
             first_name: firstName,
             last_name: lastName,
+            phone,
           },
         ])
         .select()
@@ -1603,6 +1610,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in user update endpoint:", error);
       res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Update user nickname
+  app.patch("/api/users/:userId/nickname", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      const { nickname } = req.body;
+
+      // Check if user is updating their own nickname or is admin
+      if (req.user.userId !== userId && !req.user.isAdmin) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      // Validate nickname
+      if (!nickname || nickname.length < 2 || nickname.length > 10) {
+        return res.status(400).json({ message: "닉네임은 2-10자 사이여야 합니다." });
+      }
+
+      // Check if nickname already exists
+      const { data: existingNickname } = await supabase
+        .from("users")
+        .select("id")
+        .eq("nickname", nickname)
+        .neq("id", userId)
+        .single();
+
+      if (existingNickname) {
+        return res.status(400).json({ message: "이미 사용 중인 닉네임입니다." });
+      }
+
+      // Update nickname
+      const { data: updatedUser, error } = await supabase
+        .from("users")
+        .update({ nickname })
+        .eq("id", userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating user nickname:", error);
+        return res.status(500).json({ message: "닉네임 업데이트에 실패했습니다." });
+      }
+
+      // Remove password before sending response
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error in nickname update endpoint:", error);
+      res.status(500).json({ message: "닉네임 업데이트에 실패했습니다." });
     }
   });
 

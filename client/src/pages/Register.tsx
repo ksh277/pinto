@@ -26,6 +26,7 @@ interface UserData {
   username: string;
   password: string;
   confirmPassword: string;
+  nickname: string;
   name: string;
   phone: string;
   email: string;
@@ -53,6 +54,7 @@ export default function Register() {
     username: "",
     password: "",
     confirmPassword: "",
+    nickname: "",
     name: "",
     phone: "",
     email: "",
@@ -96,8 +98,12 @@ export default function Register() {
     userData.password &&
     userData.confirmPassword &&
     userData.name &&
+    userData.nickname &&
     userData.phone &&
-    userData.password === userData.confirmPassword;
+    userData.email &&
+    userData.password === userData.confirmPassword &&
+    userData.nickname.length >= 2 &&
+    userData.nickname.length <= 10;
 
   const handleStep1Next = () => {
     if (!canProceedFromStep1) {
@@ -128,8 +134,10 @@ export default function Register() {
           username: userData.username,
           email: userData.email,
           password: userData.password,
+          nickname: userData.nickname,
           firstName: userData.name,
           lastName: "", // 성이 없으므로 빈 문자열
+          phone: userData.phone,
         }),
       });
 
@@ -406,6 +414,24 @@ export default function Register() {
             onChange={(e) => setUserData({ ...userData, name: e.target.value })}
             className="mt-1 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
           />
+        </div>
+
+        <div>
+          <Label htmlFor="nickname" className="text-gray-900 dark:text-white">
+            닉네임 <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="nickname"
+            type="text"
+            placeholder="닉네임을 입력하세요 (2-10자)"
+            value={userData.nickname}
+            onChange={(e) => setUserData({ ...userData, nickname: e.target.value })}
+            className="mt-1 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+            maxLength={10}
+          />
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            댓글 작성 시 표시될 닉네임입니다 (필수)
+          </p>
         </div>
 
         <div>
