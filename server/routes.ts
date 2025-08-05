@@ -21,7 +21,7 @@ import {
   insertBelugaTemplateSchema,
   insertGoodsEditorDesignSchema,
   insertInquirySchema,
-
+  insertPointHistorySchema,
 } from "@shared/schema";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -1318,6 +1318,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in user orders endpoint:", error);
       res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  });
+
+  // Points API routes
+  app.get("/api/users/:userId/points", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Check if user is requesting their own points or is admin
+      if (req.user.userId !== userId && !req.user.isAdmin) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      const points = await storage.getUserPoints(userId);
+      const history = await storage.getPointHistory(userId, 10);
+
+      res.json({
+        points,
+        history
+      });
+    } catch (error) {
+      console.error("Error fetching user points:", error);
+      res.status(500).json({ message: "포인트 정보를 가져오는데 실패했습니다." });
+    }
+  });
+
+  app.post("/api/points/earn", authenticateToken, async (req: any, res) => {
+    try {
+      const { amount, source } = req.body;
+      const userId = req.user.userId;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "올바르지 않은 포인트 금액입니다." });
+      }
+
+      if (!source) {
+        return res.status(400).json({ message: "포인트 적립 사유가 필요합니다." });
+      }
+
+      const result = await storage.earnPoints(userId, amount, source);
+      
+      res.json({
+        message: `${amount}P가 적립되었습니다.`,
+        points: result.user.points,
+        history: result.history
+      });
+    } catch (error) {
+      console.error("Error earning points:", error);
+      res.status(500).json({ message: "포인트 적립에 실패했습니다." });
+    }
+  });
+
+  app.post("/api/points/use", authenticateToken, async (req: any, res) => {
+    try {
+      const { amount, source } = req.body;
+      const userId = req.user.userId;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "올바르지 않은 포인트 금액입니다." });
+      }
+
+      if (!source) {
+        return res.status(400).json({ message: "포인트 사용 사유가 필요합니다." });
+      }
+
+      const result = await storage.usePoints(userId, amount, source);
+      
+      if (!result) {
+        return res.status(400).json({ message: "포인트가 부족합니다." });
+      }
+
+      res.json({
+        message: `${amount}P가 사용되었습니다.`,
+        points: result.user.points,
+        history: result.history
+      });
+    } catch (error) {
+      console.error("Error using points:", error);
+      res.status(500).json({ message: "포인트 사용에 실패했습니다." });
+    }
+  });
+
+  app.get("/api/points/history/:userId", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const limit = parseInt(req.query.limit) || 20;
+      
+      // Check if user is requesting their own history or is admin
+      if (req.user.userId !== userId && !req.user.isAdmin) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      const history = await storage.getPointHistory(userId, limit);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching point history:", error);
+      res.status(500).json({ message: "포인트 내역을 가져오는데 실패했습니다." });
     }
   });
 

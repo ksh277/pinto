@@ -73,6 +73,7 @@ import OrdersPage from "@/pages/OrdersPage";
 import CommunityPage from "@/pages/CommunityPage";
 import CommunityWritePage from "@/pages/CommunityWritePage";
 import CommunityPostPage from "@/pages/CommunityPostPage";
+import PointsGuide from "@/pages/PointsGuide";
 import { Chatbot } from "@/components/Chatbot";
 import CommunityPostDetail from "@/pages/CommunityPostDetail";
 import SellerDashboard from "@/pages/SellerDashboard";
@@ -200,6 +201,8 @@ function Router() {
         <Route path="/inquiry" component={Inquiry} />
         <Route path="/support" component={Inquiry} />
         <Route path="/rewards" component={Rewards} />
+        <Route path="/points" component={PointsGuide} />
+        <Route path="/points-guide" component={PointsGuide} />
         <Route path="/reviews/all" component={ReviewsListPage} />
         <Route path="/reviews" component={ReviewsListPage} />
         <Route path="/design-service" component={DesignServiceProduct} />

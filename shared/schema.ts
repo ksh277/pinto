@@ -21,6 +21,7 @@ export const users = mysqlTable("users", {
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
   phone: varchar("phone", { length: 20 }),
+  points: int("points").default(0).notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -299,6 +300,19 @@ export const inquiries = mysqlTable("inquiries", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Point History table for tracking point earning and usage
+export const pointHistory = mysqlTable("point_history", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id")
+    .references(() => users.id)
+    .notNull(),
+  type: varchar("type", { length: 20 }).notNull(), // "earn" or "use"
+  source: varchar("source", { length: 50 }).notNull(), // "리뷰작성", "결제", "상품구매", "이벤트참여"
+  amount: int("amount").notNull(), // positive for earn, negative for use
+  balance: int("balance").notNull(), // remaining points after this transaction
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Type exports for TypeScript usage
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -360,6 +374,9 @@ export type InsertGoodsEditorDesign = typeof goodsEditorDesigns.$inferInsert;
 export type Inquiry = typeof inquiries.$inferSelect;
 export type InsertInquiry = typeof inquiries.$inferInsert;
 
+export type PointHistory = typeof pointHistory.$inferSelect;
+export type InsertPointHistory = typeof pointHistory.$inferInsert;
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users);
 export const insertCategorySchema = createInsertSchema(categories);
@@ -376,3 +393,4 @@ export const insertCommunityCommentSchema = createInsertSchema(communityComments
 export const insertBelugaTemplateSchema = createInsertSchema(belugaTemplates);
 export const insertGoodsEditorDesignSchema = createInsertSchema(goodsEditorDesigns);
 export const insertInquirySchema = createInsertSchema(inquiries);
+export const insertPointHistorySchema = createInsertSchema(pointHistory);

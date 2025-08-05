@@ -15,6 +15,7 @@ import {
   Package,
   Bell,
   ChevronRight,
+  Coins,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSupabaseAuth } from "@/components/SupabaseProvider";
@@ -203,6 +204,16 @@ export const Header = () => {
               </span>
             </Button>
           </Link>
+
+          {/* Points */}
+          {currentUser && (
+            <Link href="/points">
+              <Button variant="ghost" size="sm" className="flex items-center gap-1 px-2">
+                <Coins className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm font-medium">0P</span>
+              </Button>
+            </Link>
+          )}
 
           {/* Notifications */}
           {currentUser && (

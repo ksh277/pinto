@@ -17,6 +17,7 @@ import {
   belugaTemplates,
   goodsEditorDesigns,
   inquiries,
+  pointHistory,
   type User,
   type InsertUser,
   type Category,
@@ -53,6 +54,8 @@ import {
   type InsertGoodsEditorDesign,
   type Inquiry,
   type InsertInquiry,
+  type PointHistory,
+  type InsertPointHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, count, and, sql } from "drizzle-orm";
@@ -182,6 +185,14 @@ export interface IStorage {
     id: number,
     updates: Partial<InsertInquiry>,
   ): Promise<Inquiry | undefined>;
+
+  // Point methods
+  getUserPoints(userId: number): Promise<number>;
+  updateUserPoints(userId: number, points: number): Promise<User | undefined>;
+  createPointHistory(pointHistory: InsertPointHistory): Promise<PointHistory>;
+  getPointHistory(userId: number, limit?: number): Promise<PointHistory[]>;
+  earnPoints(userId: number, amount: number, source: string): Promise<{ user: User; history: PointHistory }>;
+  usePoints(userId: number, amount: number, source: string): Promise<{ user: User; history: PointHistory } | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -203,6 +214,7 @@ export class MemStorage implements IStorage {
   private belugaTemplates: Map<number, BelugaTemplate>;
   private goodsEditorDesigns: Map<number, GoodsEditorDesign>;
   private inquiries: Map<number, Inquiry>;
+  private pointHistories: Map<number, PointHistory>;
   private currentId: number;
 
   constructor() {
@@ -224,6 +236,7 @@ export class MemStorage implements IStorage {
     this.belugaTemplates = new Map();
     this.goodsEditorDesigns = new Map();
     this.inquiries = new Map();
+    this.pointHistories = new Map();
     this.currentId = 1;
     this.initializeData();
   }
@@ -238,6 +251,7 @@ export class MemStorage implements IStorage {
         password: "12345",
         firstName: "관리자",
         lastName: "",
+        points: 1000,
         isAdmin: true,
         createdAt: new Date(),
       },
@@ -248,6 +262,7 @@ export class MemStorage implements IStorage {
         password: "12345",
         firstName: "슈퍼관리자",
         lastName: "",
+        points: 2000,
         isAdmin: true,
         createdAt: new Date(),
       },
@@ -1555,6 +1570,115 @@ export class MemStorage implements IStorage {
     const reviews = Array.from(this.productReviews.values());
     return reviews.filter((review) => review.productId === productId).length;
   }
+
+  // Point methods
+  async getUserPoints(userId: number): Promise<number> {
+    const user = this.users.get(userId);
+    return user?.points || 0;
+  }
+
+  async updateUserPoints(userId: number, points: number): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (user) {
+      const updatedUser = { ...user, points };
+      this.users.set(userId, updatedUser);
+      return updatedUser;
+    }
+    return undefined;
+  }
+
+  async createPointHistory(pointHistory: InsertPointHistory): Promise<PointHistory> {
+    const id = this.currentId++;
+    const history: PointHistory = {
+      id,
+      ...pointHistory,
+      createdAt: new Date(),
+    };
+    this.pointHistories.set(id, history);
+    return history;
+  }
+
+  async getPointHistory(userId: number, limit = 10): Promise<PointHistory[]> {
+    const histories = Array.from(this.pointHistories.values())
+      .filter((history) => history.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
+    return histories;
+  }
+
+  async earnPoints(userId: number, amount: number, source: string): Promise<{ user: User; history: PointHistory }> {
+    const currentPoints = await this.getUserPoints(userId);
+    const newBalance = currentPoints + amount;
+    
+    const user = await this.updateUserPoints(userId, newBalance);
+    const history = await this.createPointHistory({
+      userId,
+      type: "earn",
+      source,
+      amount,
+      balance: newBalance,
+    });
+    
+    return { user: user!, history };
+  }
+
+  async usePoints(userId: number, amount: number, source: string): Promise<{ user: User; history: PointHistory } | null> {
+    const currentPoints = await this.getUserPoints(userId);
+    
+    if (currentPoints < amount) {
+      return null; // Not enough points
+    }
+    
+    const newBalance = currentPoints - amount;
+    
+    const user = await this.updateUserPoints(userId, newBalance);
+    const history = await this.createPointHistory({
+      userId,
+      type: "use",
+      source,
+      amount: -amount,
+      balance: newBalance,
+    });
+    
+    return { user: user!, history };
+  }
+
+  // Inquiry methods
+  async getInquiries(userId?: number): Promise<Inquiry[]> {
+    const inquiries = Array.from(this.inquiries.values());
+    if (userId) {
+      return inquiries.filter((inquiry) => inquiry.userId === userId);
+    }
+    return inquiries;
+  }
+
+  async getInquiryById(id: number): Promise<Inquiry | undefined> {
+    return this.inquiries.get(id);
+  }
+
+  async createInquiry(insertInquiry: InsertInquiry): Promise<Inquiry> {
+    const id = this.currentId++;
+    const inquiry: Inquiry = {
+      id,
+      ...insertInquiry,
+      createdAt: new Date(),
+    };
+    this.inquiries.set(id, inquiry);
+    return inquiry;
+  }
+
+  async updateInquiry(
+    id: number,
+    updates: Partial<InsertInquiry>,
+  ): Promise<Inquiry | undefined> {
+    const inquiry = this.inquiries.get(id);
+    if (inquiry) {
+      const updatedInquiry = { ...inquiry, ...updates };
+      this.inquiries.set(id, updatedInquiry);
+      return updatedInquiry;
+    }
+    return undefined;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2160,12 +2284,98 @@ export class DatabaseStorage implements IStorage {
     id: number,
     updates: Partial<InsertInquiry>,
   ): Promise<Inquiry | undefined> {
-    const [inquiry] = await db
+    await db
       .update(inquiries)
       .set(updates)
-      .where(eq(inquiries.id, id))
-      .returning();
+      .where(eq(inquiries.id, id));
+    
+    const [inquiry] = await db
+      .select()
+      .from(inquiries)
+      .where(eq(inquiries.id, id));
     return inquiry;
+  }
+
+  // Point methods
+  async getUserPoints(userId: number): Promise<number> {
+    const [user] = await db
+      .select({ points: users.points })
+      .from(users)
+      .where(eq(users.id, userId));
+    return user?.points || 0;
+  }
+
+  async updateUserPoints(userId: number, points: number): Promise<User | undefined> {
+    await db
+      .update(users)
+      .set({ points })
+      .where(eq(users.id, userId));
+    
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+    return user;
+  }
+
+  async createPointHistory(pointHistory: InsertPointHistory): Promise<PointHistory> {
+    await db.insert(pointHistory).values(pointHistory);
+    
+    // Get the inserted record by finding the latest one for this user
+    const [history] = await db
+      .select()
+      .from(pointHistory)
+      .where(eq(pointHistory.userId, pointHistory.userId))
+      .orderBy(sql`${pointHistory.createdAt} DESC`)
+      .limit(1);
+    
+    return history;
+  }
+
+  async getPointHistory(userId: number, limit = 10): Promise<PointHistory[]> {
+    return await db
+      .select()
+      .from(pointHistory)
+      .where(eq(pointHistory.userId, userId))
+      .orderBy(sql`${pointHistory.createdAt} DESC`)
+      .limit(limit);
+  }
+
+  async earnPoints(userId: number, amount: number, source: string): Promise<{ user: User; history: PointHistory }> {
+    const currentPoints = await this.getUserPoints(userId);
+    const newBalance = currentPoints + amount;
+    
+    const user = await this.updateUserPoints(userId, newBalance);
+    const history = await this.createPointHistory({
+      userId,
+      type: "earn",
+      source,
+      amount,
+      balance: newBalance,
+    });
+    
+    return { user: user!, history };
+  }
+
+  async usePoints(userId: number, amount: number, source: string): Promise<{ user: User; history: PointHistory } | null> {
+    const currentPoints = await this.getUserPoints(userId);
+    
+    if (currentPoints < amount) {
+      return null; // Not enough points
+    }
+    
+    const newBalance = currentPoints - amount;
+    
+    const user = await this.updateUserPoints(userId, newBalance);
+    const history = await this.createPointHistory({
+      userId,
+      type: "use",
+      source,
+      amount: -amount,
+      balance: newBalance,
+    });
+    
+    return { user: user!, history };
   }
 }
 
