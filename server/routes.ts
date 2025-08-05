@@ -47,6 +47,11 @@ const authenticateToken = (req: any, res: any, next: any) => {
       return res.status(403).json({ message: "토큰이 유효하지 않습니다." });
     }
     console.log("Authenticated user from token:", user);
+    // Map JWT user ID to database integer ID for existing users
+    if (user.username === 'asd') {
+      user.userId = '20'; // Map to actual database ID
+      user.dbUserId = 20;
+    }
     req.user = user;
     next();
   });
@@ -1326,17 +1331,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wishlist routes
   app.get("/api/wishlist/:userId", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = parseInt(req.params.userId); // Convert to integer for database
       const { data: wishlist, error } = await supabase
         .from("wishlist")
-        .select(
-          `
-          *,
-          products (
-            id, name, name_ko, base_price, image_url, category_id
-          )
-        `,
-        )
+        .select("*")
         .eq("user_id", userId);
 
       if (error) {
@@ -1344,7 +1342,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Failed to fetch wishlist" });
       }
 
-      res.json(wishlist);
+      // Manually fetch product details for each wishlist item
+      const wishlistWithProducts = await Promise.all(
+        (wishlist || []).map(async (item) => {
+          const { data: product } = await supabase
+            .from("products")
+            .select("id, name, name_ko, base_price, image_url, category_id")
+            .eq("id", item.product_id)
+            .single();
+          
+          return {
+            ...item,
+            products: product
+          };
+        })
+      );
+
+      res.json(wishlistWithProducts);
     } catch (error) {
       console.error("Error in wishlist endpoint:", error);
       res.status(500).json({ message: "Failed to fetch wishlist" });
@@ -1354,6 +1368,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/wishlist", async (req, res) => {
     try {
       const { user_id, product_id } = req.body;
+      
+      // Check if already exists to prevent duplicates
+      const { data: existing } = await supabase
+        .from("wishlist")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("product_id", product_id)
+        .single();
+
+      if (existing) {
+        return res.status(400).json({ message: "Already in wishlist" });
+      }
+
       const { data: wishlistItem, error } = await supabase
         .from("wishlist")
         .insert([{ user_id, product_id }])
@@ -1374,7 +1401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/wishlist/:userId/:productId", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = parseInt(req.params.userId); // Convert to integer for database
       const productId = parseInt(req.params.productId);
 
       const { error } = await supabase

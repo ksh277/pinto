@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
+import { useFavorites } from "@/hooks/useFavorites";
 import type { Product } from "@shared/schema";
 
 interface ProductCardProps {
@@ -32,47 +33,36 @@ export function ProductCard({
   const [isLiked, setIsLiked] = useState(isFavorite);
   const { language, t } = useLanguage();
   const { toast } = useToast();
+  const { addToFavorites, removeFromFavorites, isFavorite: isInDbFavorites } = useFavorites();
 
-  // Check if product is in wishlist on mount
+  // Check if product is in database wishlist on mount
   useEffect(() => {
-    const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
-    const isInWishlist = wishlist.some((item: any) => item.id === product.id);
-    setIsLiked(isInWishlist);
-  }, [product.id]);
+    const inDbFavorites = isInDbFavorites(product.id.toString());
+    setIsLiked(inDbFavorites);
+  }, [product.id, isInDbFavorites]);
 
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
-    const isInWishlist = wishlist.some((item: any) => item.id === product.id);
+    const productIdStr = product.id.toString();
+    const inDbFavorites = isInDbFavorites(productIdStr);
     
-    if (isInWishlist) {
-      // Remove from wishlist
-      const updatedWishlist = wishlist.filter((item: any) => item.id !== product.id);
-      localStorage.setItem('wishlist', JSON.stringify(updatedWishlist));
+    if (inDbFavorites) {
+      // Remove from database wishlist
+      removeFromFavorites(productIdStr);
       setIsLiked(false);
       toast({
         title: "찜 목록에서 제거됨",
-        description: `${product.name}이(가) 찜 목록에서 제거되었습니다.`,
+        description: `${product.nameKo || product.name}이(가) 찜 목록에서 제거되었습니다.`,
       });
     } else {
-      // Add to wishlist
-      const wishlistItem = {
-        id: product.id,
-        name: product.name,
-        base_price: product.basePrice,
-        image_url: product.imageUrl,
-        category_id: product.categoryId,
-        description: product.description,
-        addedAt: new Date().toISOString()
-      };
-      wishlist.push(wishlistItem);
-      localStorage.setItem('wishlist', JSON.stringify(wishlist));
+      // Add to database wishlist
+      addToFavorites(productIdStr);
       setIsLiked(true);
       toast({
         title: "찜 목록에 추가됨",
-        description: `${product.name}이(가) 찜 목록에 추가되었습니다.`,
+        description: `${product.nameKo || product.name}이(가) 찜 목록에 추가되었습니다.`,
       });
     }
     
