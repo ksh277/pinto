@@ -5,26 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useCart } from "@/hooks/useCart";
-import { useSupabaseAuth } from "@/components/SupabaseProvider";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { isSupabaseConfigured } from "@/lib/supabase";
 
 const Wishlist = () => {
-  const { user } = useSupabaseAuth();
+  const { user, isAuthenticated } = useAuth();
   const { favorites = [], isLoading, toggleFavorite } = useFavorites();
   const { addToCart } = useCart();
   const { toast } = useToast();
 
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Supabase 설정이 필요합니다.</p>
-      </div>
-    );
-  }
-
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card>
@@ -34,7 +25,7 @@ const Wishlist = () => {
             <p className="text-gray-500 mb-6">
               찜 목록을 보려면 로그인해주세요.
             </p>
-            <Link href="/auth">
+            <Link href="/login">
               <Button className="w-full bg-blue-600 hover:bg-blue-700">
                 로그인하기
               </Button>

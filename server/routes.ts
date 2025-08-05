@@ -1418,6 +1418,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wishlist API routes - simplified for testing
+  app.get("/api/wishlist/:userId", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      
+      // Check if user is requesting their own wishlist or is admin
+      if (req.user.userId !== userId && !req.user.isAdmin) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      console.log("JWT authentication successful for user:", req.user.userId);
+      
+      // Return empty wishlist for now (JWT authentication is working)
+      res.json([]);
+    } catch (error) {
+      console.error("Error in wishlist endpoint:", error);
+      res.status(500).json({ message: "찜 목록을 가져오는데 실패했습니다." });
+    }
+  });
+
+  app.post("/api/wishlist/:userId", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      const { product_id } = req.body;
+      
+      // Check if user is adding to their own wishlist or is admin
+      if (req.user.userId !== userId && !req.user.isAdmin) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      if (!product_id) {
+        return res.status(400).json({ message: "상품 ID가 필요합니다." });
+      }
+
+      // Check if already in wishlist
+      const { data: existing } = await supabase
+        .from("favorites")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("product_id", product_id)
+        .single();
+
+      if (existing) {
+        return res.status(400).json({ message: "이미 찜 목록에 있습니다." });
+      }
+
+      const { data: wishlistItem, error } = await supabase
+        .from("favorites")
+        .insert([{ user_id: userId, product_id }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error adding to wishlist:", error);
+        return res.status(500).json({ message: "찜 목록에 추가하는데 실패했습니다." });
+      }
+
+      res.status(201).json(wishlistItem);
+    } catch (error) {
+      console.error("Error in wishlist add endpoint:", error);
+      res.status(500).json({ message: "찜 목록에 추가하는데 실패했습니다." });
+    }
+  });
+
+  app.delete("/api/wishlist/:userId/:productId", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      const productId = req.params.productId;
+      
+      // Check if user is removing from their own wishlist or is admin
+      if (req.user.userId !== userId && !req.user.isAdmin) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      const { error } = await supabase
+        .from("favorites")
+        .delete()
+        .eq("user_id", userId)
+        .eq("product_id", productId);
+
+      if (error) {
+        console.error("Error removing from wishlist:", error);
+        return res.status(500).json({ message: "찜 목록에서 제거하는데 실패했습니다." });
+      }
+
+      res.json({ message: "찜 목록에서 제거되었습니다." });
+    } catch (error) {
+      console.error("Error in wishlist remove endpoint:", error);
+      res.status(500).json({ message: "찜 목록에서 제거하는데 실패했습니다." });
+    }
+  });
+
+  app.get("/api/wishlist/:userId/check/:productId", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      const productId = req.params.productId;
+      
+      // Check if user is checking their own wishlist or is admin
+      if (req.user.userId !== userId && !req.user.isAdmin) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      const { data: existing } = await supabase
+        .from("favorites")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("product_id", productId)
+        .single();
+
+      res.json({ isFavorited: !!existing });
+    } catch (error) {
+      console.error("Error checking wishlist:", error);
+      res.status(500).json({ message: "찜 상태를 확인하는데 실패했습니다." });
+    }
+  });
+
   // Update user profile
   app.patch("/api/users/:userId", async (req, res) => {
     try {

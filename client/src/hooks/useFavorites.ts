@@ -1,29 +1,59 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseAuth } from "@/components/SupabaseProvider";
-import {
-  fetchWishlist,
-  toggleWishlistItem,
-  isInWishlist,
-} from "@/lib/supabaseApi";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { isSupabaseConfigured } from "@/lib/supabase";
+
+interface WishlistItem {
+  id: number;
+  user_id: string;
+  product_id: string;
+  created_at: string;
+  products?: {
+    id: string;
+    name: string;
+    nameKo: string;
+    image_url: string;
+    base_price: number;
+  };
+}
 
 export const useFavorites = () => {
-  const { user } = useSupabaseAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: favorites, isLoading } = useQuery({
+  const { data: favorites = [], isLoading } = useQuery<WishlistItem[]>({
     queryKey: ["wishlist", user?.id],
-    queryFn: () => (user?.id ? fetchWishlist(user.id) : []),
-    enabled: !!user?.id && isSupabaseConfigured,
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await apiRequest(`/api/wishlist/${user.id}`);
+      return response.json();
+    },
+    enabled: !!user?.id && isAuthenticated,
   });
 
   const toggleWishlistMutation = useMutation({
     mutationFn: async ({ productId }: { productId: string }) => {
       if (!user?.id) throw new Error("User not authenticated");
-      return toggleWishlistItem(user.id, productId);
+      
+      const isFavorited = favorites?.some((fav) => fav.product_id === productId);
+      
+      if (isFavorited) {
+        await apiRequest(`/api/wishlist/${user.id}/${productId}`, {
+          method: "DELETE",
+        });
+        return false;
+      } else {
+        await apiRequest(`/api/wishlist/${user.id}`, {
+          method: "POST",
+          body: JSON.stringify({ product_id: productId }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        return true;
+      }
     },
     onSuccess: (isFavorited, { productId }) => {
       queryClient.invalidateQueries({ queryKey: ["wishlist", user?.id] });
@@ -59,13 +89,18 @@ export const useFavorites = () => {
 };
 
 export const useIsFavorite = (productId: string) => {
-  const { user } = useSupabaseAuth();
+  const { user, isAuthenticated } = useAuth();
   const [favoriteState, setFavoriteState] = useState(false);
 
   const { data: isFavorited, isLoading } = useQuery({
     queryKey: ["isFavorite", user?.id, productId],
-    queryFn: () => (user?.id ? isInWishlist(user.id, productId) : false),
-    enabled: !!user?.id && !!productId && isSupabaseConfigured,
+    queryFn: async () => {
+      if (!user?.id || !productId) return false;
+      const response = await apiRequest(`/api/wishlist/${user.id}/check/${productId}`);
+      const data = await response.json();
+      return data.isFavorited;
+    },
+    enabled: !!user?.id && !!productId && isAuthenticated,
   });
 
   useEffect(() => {
