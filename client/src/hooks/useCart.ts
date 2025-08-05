@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { useSupabaseAuth } from "@/components/SupabaseProvider";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AddArgs {
   productId: string;
@@ -9,90 +9,37 @@ interface AddArgs {
 }
 
 export const useCart = () => {
-  const { user } = useSupabaseAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch cart items for the logged in user
-  const fetchCartItems = async () => {
-    const { data: authData } = await supabase.auth.getUser();
-    const userId = user?.id || authData.user?.id;
-    if (!userId) return [];
-    const { data, error } = await supabase
-      .from("cart_items")
-      .select(
-        `*, products(id, name, name_ko, base_price, image_url, is_available, product_images(image_url, display_order), product_options(*))`,
-      )
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return data;
-  };
-
+  // Fetch cart items using API
   const { data: cartItems = [], isLoading: isLoadingCart } = useQuery({
-    queryKey: ["cart", user?.id],
-    queryFn: fetchCartItems,
-    enabled: !!user?.id && isSupabaseConfigured,
+    queryKey: ["/api/cart", user?.id],
+    enabled: !!user?.id,
   });
 
-  // Upsert item (increase quantity if exists)
+  // Add item to cart
   const addToCartMutation = useMutation({
     mutationFn: async ({ productId, quantity = 1, options }: AddArgs) => {
       if (!user) throw new Error("로그인이 필요합니다");
 
-      const { data: existing, error: fetchError } = await supabase
-        .from("cart_items")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("product_id", productId)
-        .single();
-
-      if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
-
-      if (existing) {
-        const { error } = await supabase
-          .from("cart_items")
-          .update({
-            quantity: existing.quantity + quantity,
-            options,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("cart_items").insert({
-          user_id: user.id,
-          product_id: productId,
+      const response = await apiRequest(`/api/cart/${user.id}`, {
+        method: "POST",
+        body: JSON.stringify({
+          productId,
           quantity,
           options,
-        });
+        }),
+      });
 
-        if (error) throw error;
-      }
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart", user?.id] });
     },
   });
 
-  const removeFromCartMutation = useMutation({
-    mutationFn: async (cartItemId: string) => {
-      if (!user) throw new Error("로그인이 필요합니다");
-      const { error } = await supabase
-        .from("cart_items")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("id", cartItemId);
-
-      if (error) throw error;
-    },
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
-    },
-  });
-
+  // Update quantity of an item
   const updateQuantityMutation = useMutation({
     mutationFn: async ({
       cartItemId,
@@ -101,35 +48,55 @@ export const useCart = () => {
       cartItemId: string;
       quantity: number;
     }) => {
-      const { error } = await supabase
-        .from("cart_items")
-        .update({ quantity, updated_at: new Date().toISOString() })
-        .eq("id", cartItemId);
+      if (!user) throw new Error("로그인이 필요합니다");
 
-      // Remove from cart mutation
-      if (error) throw error;
+      const response = await apiRequest(`/api/cart/${user.id}/items/${cartItemId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ quantity }),
+      });
+
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart", user?.id] });
     },
   });
 
+  // Remove item from cart
+  const removeFromCartMutation = useMutation({
+    mutationFn: async (cartItemId: string) => {
+      if (!user) throw new Error("로그인이 필요합니다");
+
+      const response = await apiRequest(`/api/cart/${user.id}/items/${cartItemId}`, {
+        method: "DELETE",
+      });
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cart", user?.id] });
+    },
+  });
+
+  // Clear cart
   const clearCartMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("로그인이 필요합니다");
-      const { error } = await supabase
-        .from("cart_items")
-        .delete()
-        .eq("user_id", user.id);
-      if (error) throw error;
+
+      const response = await apiRequest(`/api/cart/${user.id}/clear`, {
+        method: "DELETE",
+      });
+
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart", user?.id] });
     },
   });
+
   // Calculate totals
   const cartTotal = cartItems.reduce((sum: number, item: any) => {
-    const price = item.products?.base_price || 0;
+    const price = parseFloat(item.products?.base_price || 0);
     return sum + price * item.quantity;
   }, 0);
 
