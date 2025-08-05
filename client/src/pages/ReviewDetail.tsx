@@ -37,19 +37,50 @@ export default function ReviewDetail() {
 
   const reviewIdNumber = parseInt(reviewId);
 
-  // Fetch review comments
-  const { data: comments = [], isLoading: isLoadingComments } = useQuery({
+  // Fetch review comments with count
+  const { data: commentsData = { comments: [], commentsCount: 0 }, isLoading: isLoadingComments } = useQuery({
     queryKey: ["/api/reviews", reviewIdNumber, "comments"],
     queryFn: () => apiRequest(`/api/reviews/${reviewIdNumber}/comments`),
   });
 
-  // Fetch review likes
-  const {
-    data: likesData = { count: 0, userIds: [] },
-    isLoading: isLoadingLikes,
-  } = useQuery({
+  // Fetch review likes count
+  const { data: likesData = { likesCount: 0 }, isLoading: isLoadingLikes } = useQuery({
     queryKey: ["/api/reviews", reviewIdNumber, "likes"],
     queryFn: () => apiRequest(`/api/reviews/${reviewIdNumber}/likes`),
+  });
+
+  // Fetch user's like status (if authenticated)
+  const { data: likeStatus = { isLiked: false, likesCount: 0 } } = useQuery({
+    queryKey: ["/api/reviews", reviewIdNumber, "likes/status"],
+    queryFn: () => apiRequest(`/api/reviews/${reviewIdNumber}/likes/status`),
+    retry: false, // Don't retry if not authenticated
+  });
+
+  // Like toggle mutation
+  const likeMutation = useMutation({
+    mutationFn: () =>
+      apiRequest(`/api/reviews/${reviewIdNumber}/like`, {
+        method: "POST",
+      }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/reviews", reviewIdNumber, "likes"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/reviews", reviewIdNumber, "likes/status"],
+      });
+      toast({
+        title: data.action === "liked" ? "좋아요!" : "좋아요 취소",
+        description: data.action === "liked" ? "이 리뷰를 좋아합니다." : "좋아요를 취소했습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "오류",
+        description: error.message.includes("토큰") ? "로그인이 필요합니다." : "좋아요 처리 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Comment submission mutation
@@ -72,27 +103,7 @@ export default function ReviewDetail() {
     onError: (error: any) => {
       toast({
         title: "댓글 작성 실패",
-        description: error.message || "댓글 작성 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Like toggle mutation
-  const likeMutation = useMutation({
-    mutationFn: () =>
-      apiRequest(`/api/reviews/${reviewIdNumber}/like`, {
-        method: "POST",
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/reviews", reviewIdNumber, "likes"],
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "좋아요 처리 실패",
-        description: error.message || "좋아요 처리 중 오류가 발생했습니다.",
+        description: error.message.includes("토큰") ? "로그인이 필요합니다." : "댓글 작성 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
@@ -136,9 +147,6 @@ export default function ReviewDetail() {
       "/api/placeholder/400/400",
     ],
     rating: 5,
-    likes: 245,
-    comments: 18,
-    views: 1234,
     category: "아크릴키링",
     createdAt: "2024-12-10",
     verified: true,
@@ -187,26 +195,26 @@ export default function ReviewDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a]">
+    <div className="min-h-screen bg-gray-50">
       {/* Breadcrumb */}
-      <div className="bg-white dark:bg-[#1a1a1a] border-b dark:border-gray-700">
+      <div className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-2 py-4 text-sm">
             <Link
               href="/"
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              className="text-gray-500 hover:text-gray-700"
             >
               홈
             </Link>
-            <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <ChevronRight className="w-4 h-4 text-gray-400" />
             <Link
               href="/community"
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              className="text-gray-500 hover:text-gray-700"
             >
               커뮤니티
             </Link>
-            <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <span className="text-gray-900 dark:text-white font-medium">
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <span className="text-gray-900 font-medium">
               후기 상세
             </span>
           </div>
@@ -222,7 +230,7 @@ export default function ReviewDetail() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <Card className="bg-white dark:bg-[#1a1a1a] shadow-sm border-gray-200 dark:border-gray-700">
+              <Card className="bg-white shadow-sm border-gray-200">
                 <CardContent className="p-6">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
@@ -233,284 +241,235 @@ export default function ReviewDetail() {
                       </Button>
                     </Link>
                     <div className="flex items-center space-x-2">
-                      <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-100 px-3 py-1">
+                      <Badge className="bg-blue-100 text-blue-600 px-3 py-1">
                         {mockReview.category}
                       </Badge>
                       {mockReview.verified && (
-                        <Badge className="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-100 px-3 py-1">
+                        <Badge className="bg-green-100 text-green-600 px-3 py-1">
                           인증된 구매
                         </Badge>
                       )}
                     </div>
                   </div>
 
-                  {/* Title and Rating */}
-                  <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                      {mockReview.title}
-                    </h1>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center space-x-1">
-                        <User className="w-4 h-4" />
-                        <span>{mockReview.author}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {mockReview.authorLevel}
-                        </Badge>
+                  {/* Title */}
+                  <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                    {mockReview.title}
+                  </h1>
+
+                  {/* Author Info */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-blue-600" />
                       </div>
-                      <div className="flex items-center space-x-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < mockReview.rating
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300 dark:text-gray-600"
-                            }`}
-                          />
-                        ))}
-                        <span className="ml-1 font-medium">
-                          {mockReview.rating}.0
-                        </span>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900">
+                            {mockReview.author}
+                          </span>
+                          <Badge className="bg-purple-100 text-purple-600 text-xs px-2 py-1">
+                            {mockReview.authorLevel}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <span>{mockReview.createdAt}</span>
+                          <div className="flex items-center space-x-1">
+                            {[...Array(mockReview.rating)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                              />
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <span>{mockReview.createdAt}</span>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={handleShare}>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      공유
+                    </Button>
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={mockReview.product.image}
+                        alt={mockReview.product.name}
+                        className="w-16 h-16 rounded-lg object-cover"
+                      />
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {mockReview.product.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {mockReview.product.price}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
                   {/* Images */}
-                  <div className="mb-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {mockReview.images.map((image, index) => (
-                        <div
-                          key={index}
-                          className="aspect-square bg-gray-100 rounded-lg overflow-hidden"
-                        >
-                          <img
-                            src={image}
-                            alt={`후기 이미지 ${index + 1}`}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
-                          />
-                        </div>
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {mockReview.images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`Review image ${index + 1}`}
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                    ))}
                   </div>
 
                   {/* Content */}
-                  <div className="mb-8">
-                    <div className="text-gray-700 dark:text-white whitespace-pre-line leading-relaxed">
+                  <div className="prose prose-sm max-w-none mb-8">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                       {mockReview.content}
-                    </div>
+                    </p>
                   </div>
 
-                  <Separator className="my-6" />
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-between pt-6 border-t">
+                    <div className="flex items-center space-x-6">
                       <button
                         onClick={handleLike}
-                        className={`flex items-center space-x-2 transition-colors ${
-                          likesData.userIds.includes(1)
-                            ? "text-red-500"
-                            : "text-gray-500 hover:text-red-500"
-                        }`}
                         disabled={likeMutation.isPending}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                          likeStatus.isLiked
+                            ? "bg-red-50 text-red-600 border border-red-200"
+                            : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
+                        }`}
                       >
                         <Heart
-                          className={`w-5 h-5 ${likesData.userIds.includes(1) ? "fill-current" : ""}`}
+                          className={`w-5 h-5 ${
+                            likeStatus.isLiked ? "fill-current" : ""
+                          }`}
                         />
-                        <span className="font-medium">{likesData.count}</span>
+                        <span>{likeStatus.likesCount || 0}</span>
                       </button>
-                      <div className="flex items-center space-x-2 text-gray-500">
+                      <div className="flex items-center space-x-2 text-gray-600">
                         <MessageCircle className="w-5 h-5" />
-                        <span className="font-medium">{comments.length}</span>
+                        <span>{commentsData.commentsCount || 0}</span>
                       </div>
-                      <div className="flex items-center space-x-2 text-gray-500">
+                      <div className="flex items-center space-x-2 text-gray-600">
                         <ThumbsUp className="w-5 h-5" />
-                        <span className="font-medium">
-                          {mockReview.helpful}
-                        </span>
+                        <span>{mockReview.helpful}</span>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleShare}
-                      className="flex items-center space-x-2"
-                    >
-                      <Share2 className="w-4 h-4" />
-                      <span>공유</span>
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Comments Section */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <Card className="bg-white dark:bg-[#1a1a1a] shadow-sm border-gray-200 dark:border-gray-700 mt-6">
-                  <CardContent className="p-6">
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-4">
-                      댓글 ({comments.length})
+              <Card className="bg-white shadow-sm border-gray-200 mt-6">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      댓글 ({commentsData.commentsCount || 0})
                     </h3>
+                  </div>
 
-                    {/* Comment Form */}
-                    <div className="mb-6">
-                      <div className="flex space-x-3">
-                        <div className="flex-1">
-                          <Input
-                            placeholder="댓글을 입력하세요..."
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            onKeyPress={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSubmitComment();
-                              }
-                            }}
-                            className="border-gray-200 dark:border-gray-700 dark:bg-[#1a1a1a] dark:text-white"
-                          />
-                        </div>
-                        <Button
-                          onClick={handleSubmitComment}
-                          disabled={
-                            commentMutation.isPending || !newComment.trim()
-                          }
-                          size="sm"
-                          className="px-4"
-                        >
-                          {commentMutation.isPending ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
-                        </Button>
+                  {/* Comment Form */}
+                  <div className="mb-6">
+                    <div className="flex space-x-4">
+                      <Input
+                        placeholder="댓글을 입력해주세요..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyPress={(e) =>
+                          e.key === "Enter" && handleSubmitComment()
+                        }
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleSubmitComment}
+                        disabled={commentMutation.isPending || !newComment.trim()}
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        작성
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Comments List */}
+                  <div className="space-y-6">
+                    {isLoadingComments ? (
+                      <div className="text-center py-8 text-gray-500">
+                        댓글을 불러오는 중...
                       </div>
-                    </div>
-
-                    {/* Comments List */}
-                    <div className="space-y-4">
-                      {isLoadingComments ? (
-                        <div className="space-y-4">
-                          {[...Array(3)].map((_, i) => (
-                            <div key={i} className="flex space-x-3">
-                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
-                              <div className="flex-1 space-y-2">
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24" />
-                                <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : comments.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                          첫 번째 댓글을 작성해보세요!
-                        </div>
-                      ) : (
-                        comments.map((comment: any) => (
-                          <div
-                            key={comment.id}
-                            className="flex space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                          >
-                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                              <User className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="font-medium text-gray-900 dark:text-white text-sm">
-                                  {comment.users?.first_name ||
-                                    comment.users?.username ||
-                                    "익명"}
-                                </span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {new Date(
-                                    comment.created_at,
-                                  ).toLocaleDateString("ko-KR")}
-                                </span>
-                              </div>
-                              <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                                {comment.content}
-                              </p>
-                            </div>
+                    ) : commentsData.comments && commentsData.comments.length > 0 ? (
+                      commentsData.comments.map((comment: any, index: number) => (
+                        <div key={comment.id || index} className="flex space-x-4">
+                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-gray-500" />
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="font-medium text-gray-900">
+                                {comment.userId || "익명"}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : "방금"}
+                              </span>
+                            </div>
+                            <p className="text-gray-700">{comment.content}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        아직 댓글이 없습니다. 첫 번째 댓글을 작성해보세요!
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
           </div>
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
-              {/* Related Product */}
-              <Card className="bg-white shadow-sm">
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-gray-900 mb-4">관련 상품</h3>
-                  <div className="flex items-center space-x-4">
-                    <img
-                      src={mockReview.product.image}
-                      alt={mockReview.product.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 mb-1">
-                        {mockReview.product.name}
-                      </h4>
-                      <p className="text-sm text-gray-500 mb-2">
-                        {mockReview.product.price}
-                      </p>
-                      <Link href={`/product/${mockReview.product.id}`}>
-                        <Button size="sm" className="w-full">
-                          상품 보기
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Related Reviews */}
-              <Card className="bg-white shadow-sm">
+              <Card className="bg-white shadow-sm border-gray-200">
                 <CardContent className="p-6">
-                  <h3 className="font-bold text-gray-900 mb-4">관련 후기</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    관련 후기
+                  </h3>
                   <div className="space-y-4">
                     {relatedReviews.map((review) => (
-                      <Link key={review.id} href={`/reviews/${review.id}`}>
-                        <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                      <Link
+                        key={review.id}
+                        href={`/reviews/${review.id}`}
+                        className="block group"
+                      >
+                        <div className="flex space-x-3 p-3 rounded-lg group-hover:bg-gray-50 transition-colors">
                           <img
                             src={review.image}
                             alt={review.title}
-                            className="w-12 h-12 rounded-lg object-cover"
+                            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-gray-900 text-sm truncate">
+                            <h4 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
                               {review.title}
                             </h4>
                             <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-xs text-gray-500">
+                              <span className="text-sm text-gray-500">
                                 {review.author}
                               </span>
                               <div className="flex items-center space-x-1">
-                                {[...Array(5)].map((_, i) => (
+                                {[...Array(review.rating)].map((_, i) => (
                                   <Star
                                     key={i}
-                                    className={`w-3 h-3 ${
-                                      i < review.rating
-                                        ? "text-yellow-400 fill-current"
-                                        : "text-gray-300"
-                                    }`}
+                                    className="w-3 h-3 fill-yellow-400 text-yellow-400"
                                   />
                                 ))}
                               </div>
-                              <Heart className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">
-                                {review.likes}
-                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1 text-sm text-gray-500">
+                              <Heart className="w-3 h-3" />
+                              <span>{review.likes}</span>
                             </div>
                           </div>
                         </div>
