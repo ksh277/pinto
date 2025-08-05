@@ -1957,16 +1957,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.params.userId;
       const { nickname } = req.body;
 
-      // Convert userId to integer for comparison if needed
-      const userIdInt = isNaN(parseInt(userId)) ? userId : parseInt(userId);
-      const reqUserIdInt = isNaN(parseInt(req.user.userId)) ? req.user.userId : parseInt(req.user.userId);
+      console.log("Nickname update request received:", {
+        userId,
+        nickname,
+        tokenUserId: req.user.userId,
+        tokenUsername: req.user.username,
+        isAdmin: req.user.isAdmin
+      });
       
-      console.log("Nickname update request - User ID from URL:", userId, "Type:", typeof userId);
-      console.log("Nickname update request - User ID from token:", req.user.userId, "Type:", typeof req.user.userId);
-      console.log("Converted IDs - URL:", userIdInt, "Token:", reqUserIdInt);
+      // Find user by username (from token) to get the integer ID
+      const { data: currentUser, error: userError } = await supabase
+        .from("users")
+        .select("id, username")
+        .eq("username", req.user.username)
+        .single();
+
+      if (userError || !currentUser) {
+        console.error("Error finding current user:", userError);
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      const actualUserId = currentUser.id;
+      const targetUserId = parseInt(userId);
+      
+      console.log("User validation:", {
+        actualUserId,
+        targetUserId,
+        match: actualUserId === targetUserId
+      });
       
       // Check if user is updating their own nickname or is admin
-      if (reqUserIdInt !== userIdInt && !req.user.isAdmin) {
+      if (actualUserId !== targetUserId && !req.user.isAdmin) {
         return res.status(403).json({ message: "권한이 없습니다." });
       }
 
@@ -2000,38 +2021,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "이미 사용 중인 닉네임입니다." });
       }
 
-      // Update nickname using raw SQL query
+      // Update nickname using the actual integer user ID
       const { data: updatedUser, error } = await supabase
         .from("users")
         .update({ nickname })
-        .eq("id", parseInt(userId))
-        .select()
+        .eq("id", actualUserId)
+        .select("id, username, email, first_name, last_name, nickname, is_admin, created_at")
         .single();
 
       if (error) {
         console.error("Error updating user nickname:", error);
-        // Try with string ID if integer fails
-        const { data: updatedUserStr, error: errorStr } = await supabase
-          .from("users")
-          .update({ nickname })
-          .eq("id", userId)
-          .select()
-          .single();
-        
-        if (errorStr) {
-          console.error("Error updating user nickname with string ID:", errorStr);
-          return res.status(500).json({ message: "닉네임 업데이트에 실패했습니다." });
-        }
-        
-        // Remove password before sending response
-        const { password: _, ...userWithoutPassword } = updatedUserStr;
-        res.json(userWithoutPassword);
-        return;
+        return res.status(500).json({ 
+          message: "닉네임 업데이트에 실패했습니다.",
+          error: error.message 
+        });
       }
 
-      // Remove password before sending response
-      const { password: _, ...userWithoutPassword } = updatedUser;
-      res.json(userWithoutPassword);
+      console.log("Successfully updated nickname:", updatedUser);
+      res.json(updatedUser);
     } catch (error) {
       console.error("Error in nickname update endpoint:", error);
       res.status(500).json({ message: "닉네임 업데이트에 실패했습니다." });
