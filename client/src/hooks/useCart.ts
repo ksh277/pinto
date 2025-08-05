@@ -16,6 +16,21 @@ export const useCart = () => {
   const { data: cartItems = [], isLoading: isLoadingCart } = useQuery({
     queryKey: ["/api/cart", user?.id],
     enabled: !!user?.id,
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/cart/${user?.id}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${await response.text()}`);
+      }
+      
+      return response.json();
+    },
   });
 
   // Add item to cart
@@ -23,10 +38,11 @@ export const useCart = () => {
     mutationFn: async ({ productId, quantity = 1, options }: AddArgs) => {
       if (!user) throw new Error("로그인이 필요합니다");
 
-      const response = await apiRequest(`/api/cart/${user.id}`, {
+      const response = await apiRequest(`/api/cart`, {
         method: "POST",
         body: JSON.stringify({
-          productId,
+          user_id: user.id,
+          product_id: productId,
           quantity,
           options,
         }),
@@ -67,7 +83,7 @@ export const useCart = () => {
     mutationFn: async (cartItemId: string) => {
       if (!user) throw new Error("로그인이 필요합니다");
 
-      const response = await apiRequest(`/api/cart/${user.id}/items/${cartItemId}`, {
+      const response = await apiRequest(`/api/cart/${user.id}/${cartItemId}`, {
         method: "DELETE",
       });
 

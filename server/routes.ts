@@ -146,26 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cart management API
-  app.get("/api/cart/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const cartItems = await storage.getCartItems(userId);
-      res.json(cartItems || []);
-    } catch (error) {
-      console.error("Error fetching cart:", error);
-      res.status(500).json({ message: "Failed to fetch cart" });
-    }
-  });
-
-  app.post("/api/cart", async (req, res) => {
-    try {
-      const cartItem = await storage.addToCart(req.body);
-      res.status(201).json(cartItem);
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      res.status(500).json({ message: "Failed to add to cart" });
-    }
-  });
+  // NOTE: Cart API routes moved to authenticated section below (line ~1063)
 
   // Orders API
   app.get("/api/orders/:userId", async (req, res) => {
@@ -400,28 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Cart operations
-  app.patch("/api/cart/:id", async (req, res) => {
-    try {
-      const cartItemId = parseInt(req.params.id);
-      const cartItem = await storage.updateCartItem(cartItemId, req.body);
-      res.json(cartItem);
-    } catch (error) {
-      console.error("Error updating cart item:", error);
-      res.status(500).json({ message: "Failed to update cart item" });
-    }
-  });
-
-  app.delete("/api/cart/:id", async (req, res) => {
-    try {
-      const cartItemId = parseInt(req.params.id);
-      const success = await storage.deleteCartItem(cartItemId);
-      res.json({ success });
-    } catch (error) {
-      console.error("Error deleting cart item:", error);
-      res.status(500).json({ message: "Failed to delete cart item" });
-    }
-  });
+  // NOTE: Cart update/delete API routes moved to authenticated section below
 
   // Admin product management
   app.patch("/api/admin/products/:id", async (req, res) => {
@@ -1065,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       
       // Verify user can only access their own cart
-      if (req.user.id !== userId.toString()) {
+      if (req.user.userId !== userId.toString()) {
         return res.status(403).json({ message: "자신의 장바구니만 조회할 수 있습니다." });
       }
       
@@ -1098,7 +1058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { user_id, product_id, quantity, options } = req.body;
       
       // Verify user can only add to their own cart
-      if (req.user.id !== user_id.toString()) {
+      if (req.user.userId !== user_id.toString()) {
         return res.status(403).json({ message: "자신의 장바구니에만 추가할 수 있습니다." });
       }
 
@@ -1157,7 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const itemId = parseInt(req.params.itemId);
       
       // Verify user can only remove from their own cart
-      if (req.user.id !== userId.toString()) {
+      if (req.user.userId !== userId.toString()) {
         return res.status(403).json({ message: "자신의 장바구니 아이템만 삭제할 수 있습니다." });
       }
 
