@@ -40,28 +40,39 @@ export default function ReviewDetail() {
   // Fetch review comments with count
   const { data: commentsData = { comments: [], commentsCount: 0 }, isLoading: isLoadingComments } = useQuery({
     queryKey: ["/api/reviews", reviewIdNumber, "comments"],
-    queryFn: () => apiRequest(`/api/reviews/${reviewIdNumber}/comments`),
+    queryFn: async () => {
+      const response = await apiRequest(`/api/reviews/${reviewIdNumber}/comments`);
+      return response.json();
+    },
   });
 
   // Fetch review likes count
   const { data: likesData = { likesCount: 0 }, isLoading: isLoadingLikes } = useQuery({
     queryKey: ["/api/reviews", reviewIdNumber, "likes"],
-    queryFn: () => apiRequest(`/api/reviews/${reviewIdNumber}/likes`),
+    queryFn: async () => {
+      const response = await apiRequest(`/api/reviews/${reviewIdNumber}/likes`);
+      return response.json();
+    },
   });
 
   // Fetch user's like status (if authenticated)
   const { data: likeStatus = { isLiked: false, likesCount: 0 } } = useQuery({
     queryKey: ["/api/reviews", reviewIdNumber, "likes/status"],
-    queryFn: () => apiRequest(`/api/reviews/${reviewIdNumber}/likes/status`),
+    queryFn: async () => {
+      const response = await apiRequest(`/api/reviews/${reviewIdNumber}/likes/status`);
+      return response.json();
+    },
     retry: false, // Don't retry if not authenticated
   });
 
   // Like toggle mutation
   const likeMutation = useMutation({
-    mutationFn: () =>
-      apiRequest(`/api/reviews/${reviewIdNumber}/like`, {
+    mutationFn: async () => {
+      const response = await apiRequest(`/api/reviews/${reviewIdNumber}/like`, {
         method: "POST",
-      }),
+      });
+      return response.json();
+    },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({
         queryKey: ["/api/reviews", reviewIdNumber, "likes"],
@@ -85,11 +96,13 @@ export default function ReviewDetail() {
 
   // Comment submission mutation
   const commentMutation = useMutation({
-    mutationFn: (content: string) =>
-      apiRequest(`/api/reviews/${reviewIdNumber}/comments`, {
+    mutationFn: async (content: string) => {
+      const response = await apiRequest(`/api/reviews/${reviewIdNumber}/comments`, {
         method: "POST",
-        body: { content },
-      }),
+        body: JSON.stringify({ content }),
+      });
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["/api/reviews", reviewIdNumber, "comments"],
@@ -336,21 +349,21 @@ export default function ReviewDetail() {
                         onClick={handleLike}
                         disabled={likeMutation.isPending}
                         className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                          likeStatus.isLiked
+                          likeStatus?.isLiked
                             ? "bg-red-50 text-red-600 border border-red-200"
                             : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
                         }`}
                       >
                         <Heart
                           className={`w-5 h-5 ${
-                            likeStatus.isLiked ? "fill-current" : ""
+                            likeStatus?.isLiked ? "fill-current" : ""
                           }`}
                         />
-                        <span>{likeStatus.likesCount || 0}</span>
+                        <span>{likeStatus?.likesCount || 0}</span>
                       </button>
                       <div className="flex items-center space-x-2 text-gray-600">
                         <MessageCircle className="w-5 h-5" />
-                        <span>{commentsData.commentsCount || 0}</span>
+                        <span>{commentsData?.commentsCount || 0}</span>
                       </div>
                       <div className="flex items-center space-x-2 text-gray-600">
                         <ThumbsUp className="w-5 h-5" />
@@ -366,7 +379,7 @@ export default function ReviewDetail() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      댓글 ({commentsData.commentsCount || 0})
+                      댓글 ({commentsData?.commentsCount || 0})
                     </h3>
                   </div>
 
@@ -398,7 +411,7 @@ export default function ReviewDetail() {
                       <div className="text-center py-8 text-gray-500">
                         댓글을 불러오는 중...
                       </div>
-                    ) : commentsData.comments && commentsData.comments.length > 0 ? (
+                    ) : commentsData?.comments && commentsData.comments.length > 0 ? (
                       commentsData.comments.map((comment: any, index: number) => (
                         <div key={comment.id || index} className="flex space-x-4">
                           <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
