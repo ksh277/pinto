@@ -270,29 +270,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Review likes and comments
+  // Review likes and comments (토글 방식으로 구현)
   app.post("/api/reviews/:id/like", authenticateToken, async (req: any, res) => {
     try {
       const reviewId = parseInt(req.params.id);
-      const like = await storage.createReviewLike({
-        reviewId,
-        userId: req.user.id
-      });
-      res.status(201).json(like);
+      const userId = req.user.id;
+
+      // 이미 좋아요를 눌렀는지 확인
+      const isLiked = await storage.isReviewLiked(reviewId, userId);
+
+      if (isLiked) {
+        // 좋아요 취소 (unlike)
+        await storage.deleteReviewLike(reviewId, userId);
+        const likesCount = await storage.getReviewLikesCount(reviewId);
+        res.json({ 
+          action: "unliked", 
+          likesCount,
+          isLiked: false
+        });
+      } else {
+        // 좋아요 추가
+        await storage.createReviewLike({ reviewId, userId });
+        const likesCount = await storage.getReviewLikesCount(reviewId);
+        res.json({ 
+          action: "liked", 
+          likesCount,
+          isLiked: true
+        });
+      }
     } catch (error) {
-      console.error("Error liking review:", error);
-      res.status(500).json({ message: "Failed to like review" });
+      console.error("Error toggling review like:", error);
+      res.status(500).json({ message: "Failed to toggle like" });
     }
   });
 
   app.get("/api/reviews/:id/likes", async (req, res) => {
     try {
       const reviewId = parseInt(req.params.id);
-      const likes = await storage.getReviewLikes(reviewId);
-      res.json(likes);
+      const likesCount = await storage.getReviewLikesCount(reviewId);
+      res.json({ likesCount });
     } catch (error) {
-      console.error("Error fetching likes:", error);
-      res.status(500).json({ message: "Failed to fetch likes" });
+      console.error("Error fetching likes count:", error);
+      res.status(500).json({ message: "Failed to fetch likes count" });
+    }
+  });
+
+  // 사용자가 특정 리뷰에 좋아요를 눌렀는지 확인
+  app.get("/api/reviews/:id/likes/status", authenticateToken, async (req: any, res) => {
+    try {
+      const reviewId = parseInt(req.params.id);
+      const userId = req.user.id;
+      const isLiked = await storage.isReviewLiked(reviewId, userId);
+      const likesCount = await storage.getReviewLikesCount(reviewId);
+      res.json({ isLiked, likesCount });
+    } catch (error) {
+      console.error("Error fetching like status:", error);
+      res.status(500).json({ message: "Failed to fetch like status" });
     }
   });
 
@@ -300,10 +333,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const reviewId = parseInt(req.params.id);
       const comments = await storage.getReviewComments(reviewId);
-      res.json(comments);
+      const commentsCount = await storage.getReviewCommentsCount(reviewId);
+      res.json({ comments, commentsCount });
     } catch (error) {
       console.error("Error fetching comments:", error);
       res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  // 댓글 수만 가져오는 엔드포인트 
+  app.get("/api/reviews/:id/comments/count", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.id);
+      const commentsCount = await storage.getReviewCommentsCount(reviewId);
+      res.json({ commentsCount });
+    } catch (error) {
+      console.error("Error fetching comments count:", error);
+      res.status(500).json({ message: "Failed to fetch comments count" });
     }
   });
 
@@ -315,7 +361,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user.id,
         content: req.body.content
       });
-      res.status(201).json(comment);
+      const commentsCount = await storage.getReviewCommentsCount(reviewId);
+      res.status(201).json({ 
+        comment, 
+        commentsCount 
+      });
     } catch (error) {
       console.error("Error creating review comment:", error);
       res.status(500).json({ message: "Failed to create comment" });

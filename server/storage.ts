@@ -91,8 +91,11 @@ export interface IStorage {
 
   // Review like methods
   getReviewLikes(reviewId: number): Promise<ReviewLike[]>;
+  getReviewLikesCount(reviewId: number): Promise<number>;
   createReviewLike(like: InsertReviewLike): Promise<ReviewLike>;
+  deleteReviewLike(reviewId: number, userId: number): Promise<boolean>;
   isReviewLiked(reviewId: number, userId: number): Promise<boolean>;
+  getReviewCommentsCount(reviewId: number): Promise<number>;
 
   // Product like methods
   isProductLiked(productId: number, userId: number): Promise<boolean>;
@@ -1289,6 +1292,28 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getReviewLikesCount(reviewId: number): Promise<number> {
+    const likes = Array.from(this.reviewLikes.values());
+    return likes.filter((like) => like.reviewId === reviewId).length;
+  }
+
+  async deleteReviewLike(reviewId: number, userId: number): Promise<boolean> {
+    const likes = Array.from(this.reviewLikes.entries());
+    const likeEntry = likes.find(
+      ([_, like]) => like.reviewId === reviewId && like.userId === userId,
+    );
+    if (likeEntry) {
+      this.reviewLikes.delete(likeEntry[0]);
+      return true;
+    }
+    return false;
+  }
+
+  async getReviewCommentsCount(reviewId: number): Promise<number> {
+    const comments = Array.from(this.reviewComments.values());
+    return comments.filter((comment) => comment.reviewId === reviewId).length;
+  }
+
   // Cart methods
   async getCartItems(userId: number): Promise<CartItem[]> {
     return Array.from(this.cartItems.values()).filter(
@@ -1711,17 +1736,32 @@ export class DatabaseStorage implements IStorage {
     return !!like;
   }
 
-  async isReviewLiked(reviewId: number, userId: number): Promise<boolean> {
-    const [like] = await db
-      .select()
+  async getReviewLikesCount(reviewId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
       .from(reviewLikes)
+      .where(eq(reviewLikes.reviewId, reviewId));
+    return result.count;
+  }
+
+  async deleteReviewLike(reviewId: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(reviewLikes)
       .where(
         and(
           eq(reviewLikes.reviewId, reviewId),
           eq(reviewLikes.userId, userId),
         ),
       );
-    return !!like;
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getReviewCommentsCount(reviewId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(reviewComments)
+      .where(eq(reviewComments.reviewId, reviewId));
+    return result.count;
   }
 
   // Product like methods
