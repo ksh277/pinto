@@ -442,9 +442,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { category, featured } = req.query;
       
-      // Use drizzle for querying products table
-      const products = await storage.getProducts();
-      res.json(products || []);
+      // Query products from database 
+      const { data: products, error } = await supabase
+        .from("products")
+        .select("*");
+
+      if (error) {
+        console.error("Error fetching products:", error);
+        return res.status(500).json({ message: "Failed to fetch products" });
+      }
+
+      // Ensure all products have default values for counts - calculate dynamically for now
+      const productsWithCounts = await Promise.all((products || []).map(async (product) => {
+        // Get actual review count
+        const { data: reviewsData } = await supabase
+          .from("product_reviews")
+          .select("id", { count: "exact" })
+          .eq("product_id", product.id);
+        
+        // Get actual likes count
+        const { data: likesData } = await supabase
+          .from("product_likes")
+          .select("id", { count: "exact" })
+          .eq("product_id", product.id);
+
+        return {
+          ...product,
+          reviews_count: reviewsData?.length || 0,
+          likes_count: likesData?.length || 0,
+          reviewsCount: reviewsData?.length || 0,
+          likesCount: likesData?.length || 0
+        };
+      }));
+
+      res.json(productsWithCounts);
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ message: "Failed to fetch products" });
@@ -464,7 +495,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Product not found" });
       }
 
-      res.json(product);
+      // Get actual review and like counts
+      const { data: reviewsData } = await supabase
+        .from("product_reviews")
+        .select("id", { count: "exact" })
+        .eq("product_id", productId);
+      
+      const { data: likesData } = await supabase
+        .from("product_likes")
+        .select("id", { count: "exact" })
+        .eq("product_id", productId);
+
+      // Ensure product has accurate counts
+      const productWithCounts = {
+        ...product,
+        reviews_count: reviewsData?.length || 0,
+        likes_count: likesData?.length || 0,
+        reviewsCount: reviewsData?.length || 0,
+        likesCount: likesData?.length || 0
+      };
+
+      res.json(productWithCounts);
     } catch (error) {
       console.error("Error fetching product:", error);
       res.status(500).json({ message: "Failed to fetch product" });
@@ -476,7 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { data: reviews, error } = await supabase
         .from("product_reviews")
-        .select(`*`)
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -484,7 +535,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Failed to fetch reviews" });
       }
 
-      res.json(reviews || []);
+      // Ensure all reviews have accurate counts - calculate dynamically
+      const reviewsWithCounts = await Promise.all((reviews || []).map(async (review) => {
+        // Get actual comment count
+        const { data: commentsData } = await supabase
+          .from("review_comments")
+          .select("id", { count: "exact" })
+          .eq("review_id", review.id);
+        
+        // Get actual likes count
+        const { data: likesData } = await supabase
+          .from("review_likes")
+          .select("id", { count: "exact" })
+          .eq("review_id", review.id);
+
+        return {
+          ...review,
+          comments_count: commentsData?.length || 0,
+          likes_count: likesData?.length || 0,
+          commentsCount: commentsData?.length || 0,
+          likesCount: likesData?.length || 0
+        };
+      }));
+
+      res.json(reviewsWithCounts);
     } catch (error) {
       console.error("Error in reviews endpoint:", error);
       res.status(500).json({ message: "Failed to fetch reviews" });
@@ -505,10 +579,249 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Failed to fetch reviews" });
       }
 
-      res.json(reviews || []);
+      // Ensure all reviews have accurate counts - calculate dynamically
+      const reviewsWithCounts = await Promise.all((reviews || []).map(async (review) => {
+        // Get actual comment count
+        const { data: commentsData } = await supabase
+          .from("review_comments")
+          .select("id", { count: "exact" })
+          .eq("review_id", review.id);
+        
+        // Get actual likes count
+        const { data: likesData } = await supabase
+          .from("review_likes")
+          .select("id", { count: "exact" })
+          .eq("review_id", review.id);
+
+        return {
+          ...review,
+          comments_count: commentsData?.length || 0,
+          likes_count: likesData?.length || 0,
+          commentsCount: commentsData?.length || 0,
+          likesCount: likesData?.length || 0
+        };
+      }));
+
+      res.json(reviewsWithCounts);
     } catch (error) {
       console.error("Error in product reviews endpoint:", error);
       res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  // POST: Add review and increment product reviews_count
+  app.post("/api/products/:productId/reviews", authenticateToken, async (req: any, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const userId = req.user.userId;
+      const { title, content, rating, images } = req.body;
+
+      // Validate required fields
+      if (!title || !content || !rating) {
+        return res.status(400).json({ message: "제목, 내용, 평점은 필수입니다." });
+      }
+
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({ message: "평점은 1-5 사이여야 합니다." });
+      }
+
+      // Insert new review
+      const { data: newReview, error: reviewError } = await supabase
+        .from("product_reviews")
+        .insert({
+          product_id: productId,
+          user_id: userId,
+          title,
+          content,
+          rating,
+          images: images || [],
+          comments_count: 0,
+          likes_count: 0
+        })
+        .select()
+        .single();
+
+      if (reviewError) {
+        console.error("Error creating review:", reviewError);
+        return res.status(500).json({ message: "리뷰 작성에 실패했습니다." });
+      }
+
+      // Increment product reviews_count
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({
+          reviews_count: await supabase.rpc('increment_reviews_count', { product_id: productId })
+        })
+        .eq("id", productId);
+
+      if (updateError) {
+        console.error("Error updating product reviews count:", updateError);
+      }
+
+      res.status(201).json(newReview);
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(500).json({ message: "리뷰 작성에 실패했습니다." });
+    }
+  });
+
+  // POST: Toggle product like and update likes_count
+  app.post("/api/products/:productId/like", authenticateToken, async (req: any, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const userId = req.user.userId;
+
+      // Check if user already liked this product
+      const { data: existingLike, error: checkError } = await supabase
+        .from("product_likes")
+        .select("id")
+        .eq("product_id", productId)
+        .eq("user_id", userId)
+        .single();
+
+      let isLiked = false;
+
+      if (existingLike) {
+        // Unlike: Remove like
+        const { error: deleteError } = await supabase
+          .from("product_likes")
+          .delete()
+          .eq("id", existingLike.id);
+
+        if (deleteError) {
+          console.error("Error removing like:", deleteError);
+          return res.status(500).json({ message: "좋아요 취소에 실패했습니다." });
+        }
+
+        // Decrement likes_count
+        const { error: updateError } = await supabase
+          .from("products")
+          .update({
+            likes_count: await supabase.rpc('decrement_likes_count', { product_id: productId })
+          })
+          .eq("id", productId);
+
+        isLiked = false;
+      } else {
+        // Like: Add like
+        const { error: insertError } = await supabase
+          .from("product_likes")
+          .insert({
+            product_id: productId,
+            user_id: userId
+          });
+
+        if (insertError) {
+          console.error("Error adding like:", insertError);
+          return res.status(500).json({ message: "좋아요 추가에 실패했습니다." });
+        }
+
+        // Increment likes_count
+        const { error: updateError } = await supabase
+          .from("products")
+          .update({
+            likes_count: await supabase.rpc('increment_likes_count', { product_id: productId })
+          })
+          .eq("id", productId);
+
+        isLiked = true;
+      }
+
+      // Get updated product with counts
+      const { data: updatedProduct, error: productError } = await supabase
+        .from("products")
+        .select("likes_count, reviews_count")
+        .eq("id", productId)
+        .single();
+
+      res.json({
+        isLiked,
+        likesCount: updatedProduct?.likes_count || 0,
+        reviewsCount: updatedProduct?.reviews_count || 0
+      });
+    } catch (error) {
+      console.error("Error toggling product like:", error);
+      res.status(500).json({ message: "좋아요 처리에 실패했습니다." });
+    }
+  });
+
+  // POST: Toggle review like and update likes_count  
+  app.post("/api/reviews/:reviewId/like", authenticateToken, async (req: any, res) => {
+    try {
+      const reviewId = parseInt(req.params.reviewId);
+      const userId = req.user.userId;
+
+      // Check if user already liked this review
+      const { data: existingLike, error: checkError } = await supabase
+        .from("review_likes")
+        .select("id")
+        .eq("review_id", reviewId)
+        .eq("user_id", userId)
+        .single();
+
+      let isLiked = false;
+
+      if (existingLike) {
+        // Unlike: Remove like
+        const { error: deleteError } = await supabase
+          .from("review_likes")
+          .delete()
+          .eq("id", existingLike.id);
+
+        if (deleteError) {
+          console.error("Error removing review like:", deleteError);
+          return res.status(500).json({ message: "좋아요 취소에 실패했습니다." });
+        }
+
+        // Decrement likes_count in review
+        const { error: updateError } = await supabase
+          .from("product_reviews")
+          .update({
+            likes_count: await supabase.rpc('decrement_review_likes_count', { review_id: reviewId })
+          })
+          .eq("id", reviewId);
+
+        isLiked = false;
+      } else {
+        // Like: Add like
+        const { error: insertError } = await supabase
+          .from("review_likes")
+          .insert({
+            review_id: reviewId,
+            user_id: userId
+          });
+
+        if (insertError) {
+          console.error("Error adding review like:", insertError);
+          return res.status(500).json({ message: "좋아요 추가에 실패했습니다." });
+        }
+
+        // Increment likes_count in review
+        const { error: updateError } = await supabase
+          .from("product_reviews")
+          .update({
+            likes_count: await supabase.rpc('increment_review_likes_count', { review_id: reviewId })
+          })
+          .eq("id", reviewId);
+
+        isLiked = true;
+      }
+
+      // Get updated review with counts
+      const { data: updatedReview, error: reviewError } = await supabase
+        .from("product_reviews")
+        .select("likes_count, comments_count")
+        .eq("id", reviewId)
+        .single();
+
+      res.json({
+        isLiked,
+        likesCount: updatedReview?.likes_count || 0,
+        commentsCount: updatedReview?.comments_count || 0
+      });
+    } catch (error) {
+      console.error("Error toggling review like:", error);
+      res.status(500).json({ message: "좋아요 처리에 실패했습니다." });
     }
   });
 

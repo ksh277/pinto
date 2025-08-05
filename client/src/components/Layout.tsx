@@ -34,7 +34,6 @@ const communityNavItems: CommunityNavItem[] = [
     label: { ko: "사용후기", en: "Reviews", ja: "レビュー", zh: "评价" },
     href: "/reviews",
     icon: MessageCircle,
-    badge: "HOT",
   },
   {
     id: "collections",
@@ -53,19 +52,6 @@ const communityNavItems: CommunityNavItem[] = [
     label: { ko: "이벤트", en: "Events", ja: "イベント", zh: "活动" },
     href: "/events",
     icon: Calendar,
-    badge: "3",
-  },
-  {
-    id: "membership",
-    label: {
-      ko: "회원등급혜택",
-      en: "Membership Benefits",
-      ja: "会員特典",
-      zh: "会员福利",
-    },
-    href: "/rewards",
-    icon: Users,
-    isNew: true,
   },
 ];
 
@@ -155,11 +141,11 @@ function CommunityTopNav() {
                     className={cn(
                       "relative flex-shrink-0 h-8 px-2 text-xs font-medium rounded-md transition-colors",
                       isActive
-                        ? "text-white bg-slate-700 border-b-2 border-white"
-                        : "text-white hover:text-gray-200 hover:bg-slate-700/50",
+                        ? "text-black dark:text-white bg-slate-200 dark:bg-slate-700 border-b-2 border-black dark:border-white"
+                        : "text-black dark:text-white hover:text-gray-800 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-700/50",
                     )}
                   >
-                    <Icon className="h-3 w-3 mr-1 text-white" />
+                    <Icon className="h-3 w-3 mr-1 text-black" />
                     {t(item.label)}
                     {item.badge && (
                       <Badge

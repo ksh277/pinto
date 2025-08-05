@@ -77,6 +77,8 @@ export const products = mysqlTable("products", {
   sellerId: int("seller_id").references(() => sellers.id),
   imageUrl: varchar("image_url", { length: 500 }).notNull(),
   stock: int("stock").default(0).notNull(),
+  reviewsCount: int("reviews_count").default(0).notNull(),
+  likesCount: int("likes_count").default(0).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isApproved: boolean("is_approved").default(false).notNull(),
@@ -99,6 +101,8 @@ export const productReviews = mysqlTable("product_reviews", {
   content: text("content").notNull(),
   rating: int("rating").notNull(),
   images: json("images"),
+  commentsCount: int("comments_count").default(0).notNull(),
+  likesCount: int("likes_count").default(0).notNull(),
   isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
