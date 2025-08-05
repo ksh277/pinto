@@ -28,7 +28,7 @@ export function NicknameSetupDialog({
   const [nickname, setNickname] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const { user, login } = useAuth();
+  const { user, setUser } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,19 +52,29 @@ export function NicknameSetupDialog({
         body: JSON.stringify({ nickname }),
       });
 
-      if (response.ok) {
-        // Update user context with new nickname
-        const updatedUser = await response.json();
-        login(updatedUser);
-        onSuccess();
-        onOpenChange(false);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "닉네임 설정에 실패했습니다.");
-      }
-    } catch (error) {
+      // apiRequest throws on non-OK responses
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
       console.error("Error setting nickname:", error);
-      setError("닉네임 설정에 실패했습니다. 다시 시도해주세요.");
+      const defaultMessage = "닉네임 설정에 실패했습니다. 다시 시도해주세요.";
+      if (error instanceof Error) {
+        const colonIndex = error.message.indexOf(":");
+        if (colonIndex !== -1) {
+          const errorText = error.message.slice(colonIndex + 1).trim();
+          try {
+            const parsed = JSON.parse(errorText);
+            setError(parsed.message || defaultMessage);
+            return;
+          } catch {
+            setError(errorText || defaultMessage);
+            return;
+          }
+        }
+      }
+      setError(defaultMessage);
     } finally {
       setIsSubmitting(false);
     }
