@@ -26,7 +26,9 @@ import {
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
+import session from "express-session";
 import { getChatbotResponse } from "./lib/openai";
+import { initializeSocialAuth } from "./socialAuth";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-here";
 
@@ -61,6 +63,20 @@ const requireAdmin = (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware
   app.use(cookieParser());
+  
+  // Session middleware for OAuth state management
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      maxAge: 1000 * 60 * 15 // 15 minutes
+    }
+  }));
+
+  // Initialize social auth routes
+  initializeSocialAuth(app);
 
   // Populate Supabase with sample data
   app.post("/api/populate-data", async (req, res) => {
@@ -1531,6 +1547,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking wishlist:", error);
       res.status(500).json({ message: "찜 상태를 확인하는데 실패했습니다." });
+    }
+  });
+
+  // JWT로 사용자 정보 가져오기 API
+  app.get("/api/auth/me", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.user.userId;
+      
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error || !user) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+      res.status(500).json({ message: "사용자 정보를 가져오는데 실패했습니다." });
     }
   });
 

@@ -24,14 +24,67 @@ export default function Login() {
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
 
-  // URL 파라미터에서 redirect_to 읽기
+  // URL 파라미터에서 redirect_to 읽기 및 소셜 로그인 토큰 처리
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const redirectTo = urlParams.get('redirect_to');
+    const token = urlParams.get('token');
+    const socialLogin = urlParams.get('social_login');
+    
     if (redirectTo) {
       setRedirectPath(decodeURIComponent(redirectTo));
     }
+    
+    // 소셜 로그인 성공 시 토큰 처리
+    if (token && socialLogin === 'success') {
+      handleSocialLoginSuccess(token);
+    }
   }, [setRedirectPath]);
+
+  const handleSocialLoginSuccess = async (token: string) => {
+    try {
+      // JWT 토큰을 저장
+      localStorage.setItem("token", token);
+      
+      // 토큰으로 사용자 정보 가져오기
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        const mappedUser = {
+          id: userData.id,
+          name: userData.full_name || userData.username,
+          username: userData.username,
+          email: userData.email,
+          points: userData.points_balance || 0,
+          coupons: 0,
+          totalOrders: 0,
+          totalSpent: userData.total_spent || 0,
+          isAdmin: userData.is_admin || false,
+          firstName: userData.full_name ? userData.full_name.split(' ')[0] : "",
+          lastName: userData.full_name ? userData.full_name.split(' ').slice(1).join(' ') : "",
+        };
+        
+        setUser(mappedUser);
+        localStorage.setItem("user", JSON.stringify(mappedUser));
+        
+        // URL에서 토큰 파라미터 제거
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // 리다이렉트
+        const targetPath = redirectPath || "/";
+        setRedirectPath(null);
+        setLocation(targetPath);
+      }
+    } catch (error) {
+      console.error('소셜 로그인 처리 실패:', error);
+      setError('로그인 처리 중 오류가 발생했습니다.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +154,8 @@ export default function Login() {
   };
 
   const handleSnsLogin = (provider: "kakao" | "naver") => {
-    console.log(`${provider} 로그인 시도`);
+    // 소셜 로그인 API 엔드포인트로 리다이렉트
+    window.location.href = `/auth/${provider}`;
   };
 
   return (
