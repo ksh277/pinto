@@ -2045,6 +2045,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user password
+  app.patch("/api/users/:userId/password", authenticateToken, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { currentPassword, newPassword } = req.body;
+
+      console.log("Password update request received:", {
+        userId,
+        tokenUserId: req.user.userId,
+        tokenUsername: req.user.username,
+        isAdmin: req.user.isAdmin
+      });
+
+      // Find user by username (from token) to get the integer ID
+      const { data: currentUser, error: userError } = await supabase
+        .from("users")
+        .select("id, username, password")
+        .eq("username", req.user.username)
+        .single();
+
+      if (userError || !currentUser) {
+        console.error("Error finding current user:", userError);
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      const actualUserId = currentUser.id;
+      const targetUserId = parseInt(userId);
+
+      // Check if user is updating their own password or is admin
+      if (actualUserId !== targetUserId && !req.user.isAdmin) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      // Validate input
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "현재 비밀번호와 새 비밀번호를 모두 입력해주세요." });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "새 비밀번호는 6자 이상이어야 합니다." });
+      }
+
+      // Verify current password
+      const bcrypt = require('bcrypt');
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentUser.password);
+      
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ message: "현재 비밀번호가 올바르지 않습니다." });
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update password
+      const { data: updatedUser, error } = await supabase
+        .from("users")
+        .update({ 
+          password: hashedNewPassword,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", actualUserId)
+        .select("id, username, email, first_name, last_name, nickname, is_admin, created_at")
+        .single();
+
+      if (error) {
+        console.error("Error updating password:", error);
+        return res.status(500).json({ message: "비밀번호 업데이트에 실패했습니다." });
+      }
+
+      console.log("Password update success for user:", actualUserId);
+      res.json({ message: "비밀번호가 성공적으로 변경되었습니다." });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      res.status(500).json({ message: "비밀번호 업데이트 중 오류가 발생했습니다." });
+    }
+  });
+
   app.get("/api/orders/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);

@@ -38,9 +38,12 @@ export default function MyPage() {
   const [userInfo, setUserInfo] = useState({
     name: localUser?.name || supabaseUser?.user_metadata?.name || "사용자",
     email: localUser?.email || supabaseUser?.email || "user@example.com",
-    phone: localUser?.phone || "010-1234-5678",
-    address: localUser?.address || "서울시 강남구 테헤란로 123",
-    password: "••••••••",
+    phone: localUser?.phone || "",
+    address: localUser?.address || "",
+    nickname: localUser?.nickname || "",
+    password: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   // Load user orders from Supabase
@@ -116,11 +119,14 @@ export default function MyPage() {
   };
 
   const handleSaveProfile = async () => {
-    if (!localUser?.id) return;
+    const currentUser = localUser || supabaseUser;
+    if (!currentUser?.id) return;
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/users/${localUser.id}`, {
+
+      // 기본 프로필 정보 업데이트
+      const response = await fetch(`/api/users/${currentUser.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -134,23 +140,115 @@ export default function MyPage() {
         }),
       });
 
-      if (response.ok) {
-        setIsEditing(false);
-        toast({
-          title: "프로필 수정 완료",
-          description: "프로필 정보가 저장되었습니다.",
-        });
-      } else {
-        toast({
-          title: "프로필 수정 실패",
-          description: "프로필 정보 저장에 실패했습니다.",
-          variant: "destructive",
-        });
+      if (!response.ok) {
+        throw new Error("프로필 업데이트 실패");
       }
+
+      // 닉네임 업데이트 (별도 API 호출)
+      if (userInfo.nickname && userInfo.nickname !== localUser?.nickname) {
+        const nicknameResponse = await fetch(`/api/users/${currentUser.id}/nickname`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            nickname: userInfo.nickname,
+          }),
+        });
+
+        if (!nicknameResponse.ok) {
+          const errorData = await nicknameResponse.json();
+          throw new Error(errorData.message || "닉네임 업데이트 실패");
+        }
+      }
+
+      setIsEditing(false);
+      toast({
+        title: "프로필 수정 완료",
+        description: "프로필 정보가 성공적으로 저장되었습니다.",
+      });
+
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
         title: "프로필 수정 실패",
+        description: error instanceof Error ? error.message : "프로필 정보 저장에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    const currentUser = localUser || supabaseUser;
+    if (!currentUser?.id) return;
+
+    if (!userInfo.password || !userInfo.newPassword || !userInfo.confirmPassword) {
+      toast({
+        title: "입력 오류",
+        description: "모든 비밀번호 필드를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userInfo.newPassword !== userInfo.confirmPassword) {
+      toast({
+        title: "입력 오류",
+        description: "새 비밀번호와 확인 비밀번호가 일치하지 않습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userInfo.newPassword.length < 6) {
+      toast({
+        title: "입력 오류",
+        description: "새 비밀번호는 6자 이상이어야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/users/${currentUser.id}/password`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          currentPassword: userInfo.password,
+          newPassword: userInfo.newPassword,
+        }),
+      });
+
+      if (response.ok) {
+        setUserInfo(prev => ({
+          ...prev,
+          password: "",
+          newPassword: "",
+          confirmPassword: "",
+        }));
+        toast({
+          title: "비밀번호 변경 완료",
+          description: "비밀번호가 성공적으로 변경되었습니다.",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "비밀번호 변경 실패",
+          description: errorData.message || "비밀번호 변경에 실패했습니다.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
+      toast({
+        title: "비밀번호 변경 실패",
         description: "네트워크 오류가 발생했습니다.",
         variant: "destructive",
       });
@@ -374,7 +472,7 @@ export default function MyPage() {
 
         {/* 탭 메뉴 */}
         <Tabs defaultValue="orders" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
+          <TabsList className="grid w-full grid-cols-5 bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
             <TabsTrigger
               value="orders"
               className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
@@ -392,6 +490,12 @@ export default function MyPage() {
               className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
             >
               리뷰관리
+            </TabsTrigger>
+            <TabsTrigger
+              value="profile"
+              className="dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
+            >
+              개인정보수정
             </TabsTrigger>
             <TabsTrigger
               value="settings"
@@ -521,6 +625,214 @@ export default function MyPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="profile">
+            <div className="space-y-6">
+              {/* 기본 정보 수정 */}
+              <Card className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-gray-900 dark:text-white">
+                    <span className="flex items-center">
+                      <Edit2 className="h-5 w-5 mr-2" />
+                      기본 정보 수정
+                    </span>
+                    {!isEditing ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        수정하기
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsEditing(false)}
+                          disabled={loading}
+                        >
+                          취소
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleSaveProfile}
+                          disabled={loading}
+                        >
+                          {loading ? "저장 중..." : "저장"}
+                        </Button>
+                      </div>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
+                        이름
+                      </Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        value={userInfo.name}
+                        onChange={(e) =>
+                          setUserInfo({ ...userInfo, name: e.target.value })
+                        }
+                        disabled={!isEditing}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
+                        이메일
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={userInfo.email}
+                        onChange={(e) =>
+                          setUserInfo({ ...userInfo, email: e.target.value })
+                        }
+                        disabled={!isEditing}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone" className="text-gray-700 dark:text-gray-300">
+                        휴대폰 번호
+                      </Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={userInfo.phone}
+                        onChange={(e) =>
+                          setUserInfo({ ...userInfo, phone: e.target.value })
+                        }
+                        disabled={!isEditing}
+                        placeholder="010-1234-5678"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nickname" className="text-gray-700 dark:text-gray-300">
+                        닉네임
+                      </Label>
+                      <Input
+                        id="nickname"
+                        type="text"
+                        value={userInfo.nickname}
+                        onChange={(e) =>
+                          setUserInfo({ ...userInfo, nickname: e.target.value })
+                        }
+                        disabled={!isEditing}
+                        placeholder="닉네임을 입력하세요"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="address" className="text-gray-700 dark:text-gray-300">
+                        주소
+                      </Label>
+                      <Input
+                        id="address"
+                        type="text"
+                        value={userInfo.address}
+                        onChange={(e) =>
+                          setUserInfo({ ...userInfo, address: e.target.value })
+                        }
+                        disabled={!isEditing}
+                        placeholder="주소를 입력하세요"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 비밀번호 변경 */}
+              <Card className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-gray-900 dark:text-white">
+                    <Settings className="h-5 w-5 mr-2" />
+                    비밀번호 변경
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <Label htmlFor="currentPassword" className="text-gray-700 dark:text-gray-300">
+                        현재 비밀번호
+                      </Label>
+                      <div className="relative mt-1">
+                        <Input
+                          id="currentPassword"
+                          type={showPassword ? "text" : "password"}
+                          value={userInfo.password}
+                          onChange={(e) =>
+                            setUserInfo({ ...userInfo, password: e.target.value })
+                          }
+                          placeholder="현재 비밀번호를 입력하세요"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="newPassword" className="text-gray-700 dark:text-gray-300">
+                        새 비밀번호
+                      </Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={userInfo.newPassword}
+                        onChange={(e) =>
+                          setUserInfo({ ...userInfo, newPassword: e.target.value })
+                        }
+                        placeholder="새 비밀번호를 입력하세요"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300">
+                        비밀번호 확인
+                      </Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={userInfo.confirmPassword}
+                        onChange={(e) =>
+                          setUserInfo({ ...userInfo, confirmPassword: e.target.value })
+                        }
+                        placeholder="새 비밀번호를 다시 입력하세요"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <Button
+                      onClick={handleChangePassword}
+                      disabled={loading}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {loading ? "변경 중..." : "비밀번호 변경"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="settings">
