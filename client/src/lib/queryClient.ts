@@ -9,20 +9,21 @@ async function throwIfResNotOk(res: Response) {
 
 export async function apiRequest(
   url: string,
-  options?: RequestInit
+  options: RequestInit = {}
 ): Promise<Response> {
   const token = localStorage.getItem("token");
-  
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(options.headers || {}),
+  } as Record<string, string>;
+
   const res = await fetch(url, {
-    method: options?.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options?.headers,
-    },
-    body: options?.body,
-    credentials: "include",
     ...options,
+    method: options.method || "GET",
+    headers,
+    credentials: "include",
   });
 
   await throwIfResNotOk(res);
