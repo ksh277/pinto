@@ -258,40 +258,41 @@ export default function MyPage() {
   };
 
   // 주문 상태 표시 함수
-  const statusMap = {
-    payment_completed: {
-      label: '결제 완료',
-      icon: <Clock className="w-3 h-3 mr-1" />,
-      color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-    },
-    processing: {
-      label: '제작 중',
-      icon: <Package className="w-3 h-3 mr-1" />,
-      color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-    },
-    shipping: {
-      label: '배송 중',
-      icon: <Truck className="w-3 h-3 mr-1" />,
-      color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-    },
-    delivered: {
-      label: '배송 완료',
-      icon: <CheckCircle className="w-3 h-3 mr-1" />,
-      color: 'bg-gray-100 text-gray-800 dark:bg-[#1a1a1a]/30 dark:text-gray-300',
-    },
-    canceled: {
-      label: '취소됨',
-      icon: <XCircle className="w-3 h-3 mr-1" />,
-      color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-    },
-  } as const;
+  const StatusBadge = ({ status }: { status: string }) => {
+    const statusMap = {
+      payment_completed: {
+        label: '결제 완료',
+        icon: <Clock className="w-3 h-3 mr-1" />,
+        color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+      },
+      processing: {
+        label: '제작 중',
+        icon: <Package className="w-3 h-3 mr-1" />,
+        color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      },
+      shipping: {
+        label: '배송 중',
+        icon: <Truck className="w-3 h-3 mr-1" />,
+        color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+      },
+      delivered: {
+        label: '배송 완료',
+        icon: <CheckCircle className="w-3 h-3 mr-1" />,
+        color: 'bg-gray-100 text-gray-800 dark:bg-[#1a1a1a]/30 dark:text-gray-300',
+      },
+      canceled: {
+        label: '취소됨',
+        icon: <XCircle className="w-3 h-3 mr-1" />,
+        color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+      },
+    } as const;
 
-  const info =
-    statusMap[status as keyof typeof statusMap] || statusMap.payment_completed;
+    const info =
+      statusMap[status as keyof typeof statusMap] || statusMap.payment_completed;
 
-  return (
-    <Badge className={`flex items-center ${info.color}`}>{info.icon}{info.label}</Badge>
-  );
+    return (
+      <Badge className={`flex items-center ${info.color}`}>{info.icon}{info.label}</Badge>
+    );
   };
 
   // 임시 주문 데이터 (데이터베이스에서 가져온 데이터가 없을 때 표시)

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -11,165 +11,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Star, 
-  Search, 
-  Filter,
+import {
+  Star,
+  Search,
   Heart,
   MessageCircle,
-  Share2,
   ChevronLeft,
   ChevronRight,
   User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface Review {
-  id: string;
-  userName: string;
-  userAvatar?: string;
+type ReviewAPI = {
+  id: number;
   rating: number;
-  reviewText: string;
-  productName: string;
-  productCategory: string;
+  comment: string;
+  createdAt: string;
+  product: {
+    id: number | null;
+    name: string;
+    price: number;
+    thumbnail: string | null;
+    categoryName: string;
+  };
   images: string[];
-  date: string;
-  likes: number;
-  isVerifiedPurchase: boolean;
-  tags: string[];
-}
-
-// Mock review data - replace with real API data
-const MOCK_REVIEWS: Review[] = [
-  {
-    id: "1",
-    userName: "주영현 번명월",
-    rating: 5,
-    reviewText: "정말 좋네요! 내 아들이 너무 좋아해서 계속 만들어는 예정이고 지금꺼지 굉장히 만족해요!",
-    productName: "아크릴 키링",
-    productCategory: "키링",
-    images: ["/api/placeholder/200/200"],
-    date: "2024.08.15",
-    likes: 267,
-    isVerifiedPurchase: true,
-    tags: ["품질좋음", "빠른배송"]
-  },
-  {
-    id: "2",
-    userName: "이다현 배우",
-    rating: 5,
-    reviewText: "처음 인쇄해본 케이크 꾸미기 솜씨가 행상되는 늘을 수 있게해주셔서 너무 편리하고요",
-    productName: "포토카드 홀더",
-    productCategory: "홀더",
-    images: ["/api/placeholder/200/200"],
-    date: "2024.08.14",
-    likes: 412,
-    isVerifiedPurchase: true,
-    tags: ["디자인좋음"]
-  },
-  {
-    id: "3",
-    userName: "주영현 번명월",
-    rating: 4,
-    reviewText: "아크릴 제품 새워서 정말 굳슝카리한선정은 섰는 데 적질이 낭 편차맨에 너무 걱정이..",
-    productName: "스마트톡",
-    productCategory: "스마트톡",
-    images: ["/api/placeholder/200/200"],
-    date: "2024.08.13",
-    likes: 356,
-    isVerifiedPurchase: true,
-    tags: ["실용적"]
-  },
-  {
-    id: "4",
-    userName: "이다현 배우",
-    rating: 5,
-    reviewText: "배우민 기념악의 투어에서 만출이니다. 실서니라 작고 굽 넘 케어만셔서 닫가 이뤄..",
-    productName: "뱃지",
-    productCategory: "뱃지",
-    images: ["/api/placeholder/200/200"],
-    date: "2024.08.12",
-    likes: 430,
-    isVerifiedPurchase: true,
-    tags: ["기념품"]
-  },
-  {
-    id: "5",
-    userName: "이다현 배우",
-    rating: 5,
-    reviewText: "아크릴에서 케이크 어디던 숨층이신니다. 싶서니라 작고 굽 넘 케어만셔서 닫가 이뤄넓서 김답시...",
-    productName: "아크릴 원형 뱃지",
-    productCategory: "뱃지",
-    images: ["/api/placeholder/200/200"],
-    date: "2024.08.11",
-    likes: 388,
-    isVerifiedPurchase: true,
-    tags: ["아크릴", "고품질"]
-  },
-  {
-    id: "6",
-    userName: "박서연",
-    rating: 5,
-    reviewText: "퀄리티가 정말 좋아요! 색감도 선명하고 내구성도 뛰어나네요. 다음에도 주문할게요!",
-    productName: "포토카드",
-    productCategory: "포토카드",
-    images: ["/api/placeholder/200/200"],
-    date: "2024.08.10",
-    likes: 245,
-    isVerifiedPurchase: true,
-    tags: ["포토카드", "고화질"]
-  }
-];
-
-const CATEGORIES = ["전체", "키링", "스마트톡", "뱃지", "포토카드", "홀더"];
+  counts: { likes: number; comments: number };
+  user: { id: number; username: string };
+};
 const SORT_OPTIONS = ["최신순", "평점순", "좋아요순"];
 
 export default function ReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>(MOCK_REVIEWS);
-  const [filteredReviews, setFilteredReviews] = useState<Review[]>(MOCK_REVIEWS);
-  const [selectedCategory, setSelectedCategory] = useState("전체");
-  const [sortBy, setSortBy] = useState("최신순");
-  const [searchQuery, setSearchQuery] = useState("");
+  const { data: list = [], isLoading, error } = useQuery<ReviewAPI[]>({
+    queryKey: ['/api/reviews', { limit: 20 }],
+    queryFn: async () => {
+      const res = await fetch('/api/reviews?limit=20');
+      if (!res.ok) throw new Error('리뷰를 불러오는데 실패했습니다.');
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  const [filteredReviews, setFilteredReviews] = useState<ReviewAPI[]>([]);
+  const [categories, setCategories] = useState<string[]>(['전체']);
+  const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [sortBy, setSortBy] = useState('최신순');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const reviewsPerPage = 6;
 
-  // Filter and sort reviews
   useEffect(() => {
-    let filtered = [...reviews];
+    setCategories(['전체', ...Array.from(new Set(list.map(r => r.product.categoryName)))]);
+    let filtered = [...list];
 
-    // Filter by category
-    if (selectedCategory !== "전체") {
-      filtered = filtered.filter(review => review.productCategory === selectedCategory);
+    if (selectedCategory !== '전체') {
+      filtered = filtered.filter(review => review.product.categoryName === selectedCategory);
     }
 
-    // Filter by search
     if (searchQuery) {
       filtered = filtered.filter(review =>
-        review.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        review.reviewText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        review.userName.toLowerCase().includes(searchQuery.toLowerCase())
+        review.product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        review.comment.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Sort reviews
     switch (sortBy) {
-      case "평점순":
+      case '평점순':
         filtered.sort((a, b) => b.rating - a.rating);
         break;
-      case "좋아요순":
-        filtered.sort((a, b) => b.likes - a.likes);
+      case '좋아요순':
+        filtered.sort((a, b) => b.counts.likes - a.counts.likes);
         break;
-      case "최신순":
+      case '최신순':
       default:
-        filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
     }
 
     setFilteredReviews(filtered);
     setCurrentPage(1);
-  }, [reviews, selectedCategory, sortBy, searchQuery]);
+  }, [list, selectedCategory, sortBy, searchQuery]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
   const startIndex = (currentPage - 1) * reviewsPerPage;
   const currentReviews = filteredReviews.slice(startIndex, startIndex + reviewsPerPage);
@@ -186,13 +107,13 @@ export default function ReviewsPage() {
     ));
   };
 
-  const handleLike = (reviewId: string) => {
-    setReviews(prev => prev.map(review =>
-      review.id === reviewId 
-        ? { ...review, likes: review.likes + 1 }
-        : review
-    ));
-  };
+  if (isLoading) {
+    return <div className="p-8">로딩중...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-red-500">리뷰를 불러오는데 실패했습니다.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -226,7 +147,7 @@ export default function ReviewsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(category => (
+                  {categories.map(category => (
                     <SelectItem key={category} value={category}>
                       {category}
                     </SelectItem>
@@ -257,84 +178,78 @@ export default function ReviewsPage() {
             <Link key={review.id} href={`/reviews/${review.id}`}>
               <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="p-0">
-                {/* Review Image */}
-                <div className="relative aspect-square">
-                  <img
-                    src={review.images[0]}
-                    alt={review.productName}
-                    className="w-full h-full object-cover"
-                  />
-                  {review.isVerifiedPurchase && (
-                    <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs">
-                      구매 인증
-                    </Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-700"
-                    onClick={() => handleLike(review.id)}
-                  >
-                    <Heart className="w-4 h-4 mr-1" />
-                    {review.likes}
-                  </Button>
-                </div>
-
-                {/* Review Content */}
-                <div className="p-4">
-                  {/* User Info and Rating */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-gray-500" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm text-gray-900">
-                          {review.userName}
-                        </div>
-                        <div className="text-xs text-gray-500">{review.date}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      {renderStars(review.rating)}
-                    </div>
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="text-sm text-gray-600 mb-2">
-                    [{review.productCategory}] {review.productName}
-                  </div>
-
-                  {/* Review Text */}
-                  <p className="text-sm text-gray-800 line-clamp-3 mb-3">
-                    {review.reviewText}
-                  </p>
-
-                  {/* Tags */}
-                  {review.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {review.tags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          #{tag}
-                        </Badge>
+                  {review.images.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-1">
+                      {review.images.slice(0, 4).map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`review-${review.id}-${idx}`}
+                          className="w-full aspect-square object-cover"
+                        />
                       ))}
                     </div>
+                  ) : (
+                    <div className="w-full h-48 bg-gray-100" />
                   )}
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <div className="flex items-center space-x-3">
-                      <Button variant="ghost" size="sm" className="text-gray-500">
+                  <div className="p-4">
+                    {/* Product Summary */}
+                    <div className="flex items-center space-x-3 mb-3">
+                      {review.product.thumbnail && (
+                        <img
+                          src={review.product.thumbnail}
+                          alt={review.product.name}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      )}
+                      <div>
+                        <div className="font-medium text-sm text-gray-900">
+                          {review.product.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          [{review.product.categoryName}] {review.product.price.toLocaleString()}원
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User Info and Rating */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-gray-500" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm text-gray-900">
+                            {review.user.username}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(review.createdAt).toISOString().slice(0,10).replaceAll('-','.')}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        {renderStars(review.rating)}
+                      </div>
+                    </div>
+
+                    {/* Review Text */}
+                    <p className="text-sm text-gray-800 line-clamp-3 mb-3">
+                      {review.comment}
+                    </p>
+
+                    {/* Counts */}
+                    <div className="flex items-center space-x-4 text-sm text-gray-500 border-t pt-2">
+                      <div className="flex items-center">
+                        <Heart className="w-4 h-4 mr-1" />
+                        {review.counts.likes}
+                      </div>
+                      <div className="flex items-center">
                         <MessageCircle className="w-4 h-4 mr-1" />
-                        댓글
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-gray-500">
-                        <Share2 className="w-4 h-4 mr-1" />
-                        공유
-                      </Button>
+                        {review.counts.comments}
+                      </div>
                     </div>
                   </div>
-                </div>
                 </CardContent>
               </Card>
             </Link>
