@@ -33,6 +33,40 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import type { Product } from "@shared/schema";
 
+type CreatorReview = {
+  id: number;
+  productImage: string;
+  productName: string;
+  userName: string;
+  rating: number;
+  date: string;
+  reviewCount: number;
+  comment: string;
+  tags: string[];
+};
+
+type CommunityItem = {
+  id: number;
+  image: string;
+  title: string;
+  likes: number;
+  comments: number;
+  tags: string[];
+  author: string;
+};
+
+type MaterialReco = {
+  id: number;
+  image: string;
+  title: string;
+  price: number;
+  originalPrice?: number | null;
+  reviewCount: number;
+  badge: string;
+  material: string;
+  discount: number;
+};
+
 export default function Home() {
   const { toast } = useToast();
   const { language, t } = useLanguage();
@@ -62,138 +96,35 @@ export default function Home() {
     },
   });
 
-  // Mock data for enhanced sections
-  const creatorReviews = [
-    {
-      id: 1,
-      productImage: "/api/placeholder/300/300",
-      productName: "홀로그램 아크릴 키링",
-      userName: "창작자님***",
-      rating: 5,
-      date: "2025.01.10",
-      reviewCount: 127,
-      comment:
-        "퀄리티가 정말 좋아요! 색감도 예쁘고 홀로그램 효과가 환상적이에요",
-      tags: ["홀로그램", "아크릴", "키링"],
-    },
-    {
-      id: 2,
-      productImage: "/api/placeholder/300/300",
-      productName: "투명 아크릴 스탠드",
-      userName: "디자이너***",
-      rating: 5,
-      date: "2025.01.09",
-      reviewCount: 89,
-      comment: "투명도가 완벽하고 마감이 깔끔해요. 캐릭터가 생생하게 보입니다",
-      tags: ["투명", "스탠드", "아크릴"],
-    },
-    {
-      id: 3,
-      productImage: "/api/placeholder/300/300",
-      productName: "우드 키링 세트",
-      userName: "작가님***",
-      rating: 4,
-      date: "2025.01.08",
-      reviewCount: 156,
-      comment: "나무 질감이 좋고 레이저 각인이 선명해요. 선물용으로 최고!",
-      tags: ["우드", "키링", "레이저각인"],
-    },
-    {
-      id: 4,
-      productImage: "/api/placeholder/300/300",
-      productName: "반투명 스마트톡",
-      userName: "사용자***",
-      rating: 5,
-      date: "2025.01.07",
-      reviewCount: 203,
-      comment:
-        "접착력도 좋고 회전도 부드러워요. 디자인이 너무 예뻐서 자랑하고 다녀요",
-      tags: ["반투명", "스마트톡", "회전"],
-    },
-  ];
+  const { data: creatorReviews, isLoading: isLoadingCreatorReviews, isError: isErrorCreator } =
+    useQuery<CreatorReview[]>({
+      queryKey: ['creatorReviews', { limit: 4 }],
+      queryFn: async () => {
+        const res = await fetch('/api/reviews/creator?limit=4');
+        if (!res.ok) throw new Error('Failed to fetch creator reviews');
+        return res.json();
+      },
+    });
 
-  const communityShowcase = [
-    {
-      id: 1,
-      image: "/api/placeholder/300/300",
-      title: "나만의 캐릭터 키링 완성!",
-      likes: 245,
-      comments: 18,
-      tags: ["캐릭터", "키링", "커스텀"],
-      author: "네기디***",
-    },
-    {
-      id: 2,
-      image: "/api/placeholder/300/300",
-      title: "홀로그램 스티커 대박!",
-      likes: 189,
-      comments: 24,
-      tags: ["홀로그램", "스티커", "반짝"],
-      author: "모토***",
-    },
-    {
-      id: 3,
-      image: "/api/placeholder/300/300",
-      title: "투명 아크릴 스탠드 후기",
-      likes: 167,
-      comments: 12,
-      tags: ["투명", "스탠드", "아크릴"],
-      author: "짱구***",
-    },
-    {
-      id: 4,
-      image: "/api/placeholder/300/300",
-      title: "레진 키링 DIY 성공!",
-      likes: 134,
-      comments: 15,
-      tags: ["레진", "DIY", "키링"],
-      author: "토루***",
-    },
-  ];
+  const { data: communityShowcase, isLoading: isLoadingCommunity, isError: isErrorCommunity } =
+    useQuery<CommunityItem[]>({
+      queryKey: ['communityShowcase', { limit: 4 }],
+      queryFn: async () => {
+        const res = await fetch('/api/community/highlight?limit=4');
+        if (!res.ok) throw new Error('Failed to fetch community showcase');
+        return res.json();
+      },
+    });
 
-  const materialRecommendations = [
-    {
-      id: 1,
-      image: "/api/placeholder/300/300",
-      title: "프리미엄 홀로그램 키링",
-      price: 12000,
-      originalPrice: 15000,
-      reviewCount: 245,
-      badge: "HIT",
-      material: "홀로그램",
-      discount: 20,
-    },
-    {
-      id: 2,
-      image: "/api/placeholder/300/300",
-      title: "투명 아크릴 스탠드",
-      price: 8000,
-      reviewCount: 189,
-      badge: "NEW",
-      material: "투명아크릴",
-      discount: 0,
-    },
-    {
-      id: 3,
-      image: "/api/placeholder/300/300",
-      title: "미러 아크릴 키링",
-      price: 10000,
-      reviewCount: 167,
-      badge: "추천",
-      material: "미러",
-      discount: 0,
-    },
-    {
-      id: 4,
-      image: "/api/placeholder/300/300",
-      title: "원목 레이저 키링",
-      price: 9000,
-      reviewCount: 134,
-      badge: "HIT",
-      material: "원목",
-      discount: 0,
-    },
-  ];
+  const { data: materialRecommendations, isLoading: isLoadingMaterial, isError: isErrorMaterial } =
+    useQuery<MaterialReco[]>({
+      queryKey: ['materialRecommendations', { limit: 4 }],
+      queryFn: async () => {
+        const res = await fetch('/api/recommendations/materials?limit=4');
+        if (!res.ok) throw new Error('Failed to fetch material recommendations');
+        return res.json();
+      },
+    });
 
 
 
@@ -401,67 +332,67 @@ export default function Home() {
             </Link>
           </div>
 
-          <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {creatorReviews.slice(0, isMobile ? 4 : 4).map((review) => (
-              <motion.div
-                key={review.id}
-                variants={itemVariants}
-                className="w-full"
-              >
-                <Link href={`/product/${review.id}`}>
-                  <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[420px] flex flex-col">
-                    {/* Large Review Image - 70% of card height */}
-                    <div className="relative flex-[0_0_70%]">
-                      <img
-                        src={review.productImage}
-                        alt={review.productName}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.src = "/api/placeholder/360/280";
-                        }}
-                      />
+          {isLoadingCreatorReviews ? (
+            <ProductCardSkeleton
+              count={4}
+              gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            />
+          ) : isErrorCreator ? (
+            <p className="text-sm text-red-500">Failed to load reviews</p>
+          ) : (
+            <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {(creatorReviews ?? []).slice(0, 4).map((review) => (
+                <motion.div
+                  key={review.id}
+                  variants={itemVariants}
+                  className="w-full"
+                >
+                  <Link href={`/product/${review.id}`}>
+                    <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[420px] flex flex-col">
+                      {/* Large Review Image - 70% of card height */}
+                      <div className="relative flex-[0_0_70%]">
+                        <img
+                          src={review.productImage}
+                          alt={review.productName}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = "/api/placeholder/360/280";
+                          }}
+                        />
 
-                      {/* HOT Badge */}
-                      <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
-                        HOT
+                        {/* HOT Badge */}
+                        <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
+                          HOT
+                        </div>
+
+                        {/* LIKE Button */}
+                        <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+                          LIKE {review.reviewCount}
+                        </div>
                       </div>
-                      
-                      {/* LIKE Button */}
-                      <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                        LIKE {review.rating * 40 + 120}
+
+                      {/* Review Content - 30% of card height */}
+                      <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
+                            {review.productName}
+                          </h3>
+                          <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
+                            {review.comment}
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
+                          리뷰 {review.reviewCount} / 평점 {review.rating}
+                        </div>
                       </div>
                     </div>
-
-                    {/* Review Content - 30% of card height */}
-                    <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                          {review.productName}
-                        </h3>
-                        
-                        <p className="text-lg font-bold text-blue-600 dark:text-white">
-                          ₩{(review.rating * 1200 + 3500).toLocaleString()}
-                        </p>
-                        
-                        {/* Review Summary Text */}
-                        <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                          {review.rating >= 4 
-                            ? "정말 만족스러운 품질이에요! 디자인도 예쁘고 제작도 깔끔하게 잘 나왔어요. 다음에도 또 주문하고 싶어요."
-                            : "좋은 품질로 잘 만들어졌네요. 배송도 빨랐고 포장도 깔끔했어요. 추천합니다!"
-                          }
-                        </p>
-                      </div>
-                      
-                      <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                        리뷰 {review.rating * 25 + 45} / LIKE {review.rating * 40 + 120}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </motion.section>
 
         {/* Community Showcase */}
@@ -498,68 +429,65 @@ export default function Home() {
             </Link>
           </div>
 
-          <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {communityShowcase.slice(0, isMobile ? 4 : 4).map((item) => (
-              <motion.div
-                key={item.id}
-                variants={itemVariants}
-                className="w-full"
-              >
-                <Link href={`/community/${item.id}`}>
-                  <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
-                    {/* Large Community Image - 70% of card height */}
-                    <div className="relative flex-[0_0_70%]">
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.src = "/api/placeholder/360/280";
-                        }}
-                      />
+          {isLoadingCommunity ? (
+            <ProductCardSkeleton
+              count={4}
+              gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            />
+          ) : isErrorCommunity ? (
+            <p className="text-sm text-red-500">Failed to load community</p>
+          ) : (
+            <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {(communityShowcase ?? []).slice(0, 4).map((item) => (
+                <motion.div
+                  key={item.id}
+                  variants={itemVariants}
+                  className="w-full"
+                >
+                  <Link href={`/community/${item.id}`}>
+                    <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
+                      {/* Large Community Image - 70% of card height */}
+                      <div className="relative flex-[0_0_70%]">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = "/api/placeholder/360/280";
+                          }}
+                        />
 
-                      {/* 인기 Badge */}
-                      <div className="absolute top-3 left-3 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">
-                        인기
+                        {/* LIKE Button */}
+                        <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+                          LIKE {item.likes}
+                        </div>
                       </div>
-                      
-                      {/* LIKE Button */}
-                      <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                        LIKE {item.likes}
+
+                      {/* Community Content - 30% of card height */}
+                      <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
+                            {item.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-200 truncate leading-snug">
+                            @{item.author}
+                          </p>
+                          <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
+                            {item.tags.join(', ')}
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
+                          댓글 {item.comments} / LIKE {item.likes}
+                        </div>
                       </div>
                     </div>
-
-                    {/* Community Content - 30% of card height */}
-                    <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                          {item.title}
-                        </h3>
-                        
-                        <p className="text-sm text-gray-600 dark:text-gray-200 truncate leading-snug">
-                          @{item.author}
-                        </p>
-                        
-                        {/* Community Description */}
-                        <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                          {item.id === 1 ? "홀로그램 효과가 너무 예뻐요! 빛에 따라 색이 바뀌는 게 정말 신기해요. 친구들한테도 추천했어요."
-                            : item.id === 2 ? "투명 아크릴 질감이 정말 고급스러워요. 제작 퀄리티가 기대 이상이었습니다."
-                            : item.id === 3 ? "우드 키링 질감이 부드럽고 각인도 선명해요. 선물용으로 완벽합니다."
-                            : "커스텀 굿즈 제작 퀄리티가 정말 만족스러워요. 다시 주문할 예정입니다!"
-                          }
-                        </p>
-                      </div>
-                      
-                      <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                        리뷰 {item.comments} / LIKE {item.likes}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </motion.section>
 
         {/* Material Recommendations */}
@@ -596,68 +524,77 @@ export default function Home() {
             </Link>
           </div>
 
-          <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {materialRecommendations.slice(0, isMobile ? 4 : 4).map((item) => (
-              <motion.div
-                key={item.id}
-                variants={itemVariants}
-                className="w-full"
-              >
-                <Link href={`/product/${item.id}`}>
-                  <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
-                    {/* Large Material Image - 70% of card height */}
-                    <div className="relative flex-[0_0_70%]">
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.src = "/api/placeholder/360/280";
-                        }}
-                      />
+          {isLoadingMaterial ? (
+            <ProductCardSkeleton
+              count={4}
+              gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            />
+          ) : isErrorMaterial ? (
+            <p className="text-sm text-red-500">Failed to load recommendations</p>
+          ) : (
+            <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {(materialRecommendations ?? []).slice(0, 4).map((item) => (
+                <motion.div
+                  key={item.id}
+                  variants={itemVariants}
+                  className="w-full"
+                >
+                  <Link href={`/product/${item.id}`}>
+                    <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
+                      {/* Large Material Image - 70% of card height */}
+                      <div className="relative flex-[0_0_70%]">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = "/api/placeholder/360/280";
+                          }}
+                        />
 
-                      {/* Material Badge */}
-                      <div className="absolute top-3 left-3 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
-                        {item.badge}
+                        {/* Material Badge */}
+                        <div className="absolute top-3 left-3 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
+                          {item.badge}
+                        </div>
+
+                        {/* LIKE Button */}
+                        <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+                          LIKE {Math.floor(item.reviewCount * 0.6)}
+                        </div>
                       </div>
-                      
-                      {/* LIKE Button */}
-                      <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                        LIKE {Math.floor(item.reviewCount * 0.6)}
+
+                      {/* Material Content - 30% of card height */}
+                      <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
+                            {item.title}
+                          </h3>
+
+                          <p className="text-lg font-bold text-blue-600 dark:text-white">
+                            ₩{Number(item.price ?? 0).toLocaleString()}
+                          </p>
+
+                          {/* Material Description */}
+                          <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
+                            {item.material === "홀로그램" ? "무지개색 홀로그램 효과로 각도마다 다른 색감을 연출하는 프리미엄 키링입니다."
+                              : item.material === "투명아크릴" ? "투명하고 깔끔한 아크릴 소재로 제작되어 세련된 느낌을 주는 스탠드입니다."
+                              : item.material === "미러" ? "거울 효과가 있는 미러 아크릴로 빛 반사가 아름다운 키링입니다."
+                              : "천연 우드 소재에 정밀한 레이저 각인으로 고급스러운 마감을 자랑합니다."
+                            }
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
+                          리뷰 {item.reviewCount} / LIKE {Math.floor(item.reviewCount * 0.6)}
+                        </div>
                       </div>
                     </div>
-
-                    {/* Material Content - 30% of card height */}
-                    <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                          {item.title}
-                        </h3>
-                        
-                        <p className="text-lg font-bold text-blue-600 dark:text-white">
-                          ₩{item.price.toLocaleString()}
-                        </p>
-                        
-                        {/* Material Description */}
-                        <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                          {item.material === "홀로그램" ? "무지개색 홀로그램 효과로 각도마다 다른 색감을 연출하는 프리미엄 키링입니다."
-                            : item.material === "투명아크릴" ? "투명하고 깔끔한 아크릴 소재로 제작되어 세련된 느낌을 주는 스탠드입니다."
-                            : item.material === "미러" ? "거울 효과가 있는 미러 아크릴로 빛 반사가 아름다운 키링입니다."
-                            : "천연 우드 소재에 정밀한 레이저 각인으로 고급스러운 마감을 자랑합니다."
-                          }
-                        </p>
-                      </div>
-                      
-                      <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                        리뷰 {item.reviewCount} / LIKE {Math.floor(item.reviewCount * 0.6)}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </motion.section>
 
         {/* Instagram Feed Section */}
