@@ -18,7 +18,7 @@ export const users = mysqlTable("users", {
   username: varchar("username", { length: 255 }).notNull().unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
-  nickname: varchar("nickname", { length: 30 }),
+  nickname: varchar("nickname", { length: 30 }).notNull().unique(),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
   phone: varchar("phone", { length: 20 }),

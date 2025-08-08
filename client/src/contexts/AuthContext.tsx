@@ -12,6 +12,7 @@ interface User {
   name: string;
   username?: string;
   email: string;
+  nickname?: string;
   points: number;
   coupons: number;
   totalOrders: number;
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : data.username,
           username: data.username,
           email: data.email,
+          nickname: data.nickname,
           points: 0,
           coupons: 0,
           totalOrders: 0,
