@@ -22,6 +22,16 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// 안전 접근 헬퍼
+const toLower = (v: unknown) =>
+  typeof v === "string" ? v.toLowerCase() : String(v ?? "").toLowerCase();
+
+const getCategory = (r: any) =>
+  r?.product?.categoryName ? String(r.product.categoryName) : "기타";
+
+const getProductName = (r: any) =>
+  r?.product?.name ? String(r.product.name) : "";
+
 type ReviewAPI = {
   id: number;
   rating: number;
@@ -60,30 +70,38 @@ export default function ReviewsPage() {
   const reviewsPerPage = 6;
 
   useEffect(() => {
-    setCategories(['전체', ...Array.from(new Set(list.map(r => r.product.categoryName)))]);
+    if (!list) return;
+    const cats = Array.from(new Set(list.map(getCategory))).filter(Boolean);
+    setCategories(['전체', ...cats]);
     let filtered = [...list];
 
     if (selectedCategory !== '전체') {
-      filtered = filtered.filter(review => review.product.categoryName === selectedCategory);
+      filtered = filtered.filter(review => getCategory(review) === selectedCategory);
     }
 
-    if (searchQuery) {
-      filtered = filtered.filter(review =>
-        review.product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        review.comment.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+    const term = toLower(searchQuery);
+    if (term) {
+      filtered = filtered.filter(review => {
+        const name = toLower(getProductName(review));
+        const comment = toLower(review?.comment ?? '');
+        return name.includes(term) || comment.includes(term);
+      });
     }
 
     switch (sortBy) {
       case '평점순':
-        filtered.sort((a, b) => b.rating - a.rating);
+        filtered.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
         break;
       case '좋아요순':
-        filtered.sort((a, b) => b.counts.likes - a.counts.likes);
+        filtered.sort((a, b) => (b.counts?.likes ?? 0) - (a.counts?.likes ?? 0));
         break;
       case '최신순':
       default:
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt ?? 0).getTime() -
+            new Date(a.createdAt ?? 0).getTime()
+        );
         break;
     }
 
@@ -196,19 +214,26 @@ export default function ReviewsPage() {
                   <div className="p-4">
                     {/* Product Summary */}
                     <div className="flex items-center space-x-3 mb-3">
-                      {review.product.thumbnail && (
-                        <img
-                          src={review.product.thumbnail}
-                          alt={review.product.name}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                      )}
+                      <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex items-center justify-center">
+                        {review?.product?.thumbnail ? (
+                          <img
+                            src={review.product.thumbnail}
+                            alt={getProductName(review)}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </div>
                       <div>
                         <div className="font-medium text-sm text-gray-900">
-                          {review.product.name}
+                          {getProductName(review) || '상품명'}
                         </div>
                         <div className="text-xs text-gray-500">
-                          [{review.product.categoryName}] {review.product.price.toLocaleString()}원
+                          [{getCategory(review)}]
+                          {Number.isFinite(Number(review?.product?.price))
+                            ? ` ${Number(review?.product?.price).toLocaleString()}원`
+                            : ''}
                         </div>
                       </div>
                     </div>
