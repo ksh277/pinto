@@ -121,7 +121,7 @@ export const Header = () => {
 
   const getDisplayName = () => {
     if (localUser) {
-      return localUser.username || localUser.email?.split("@")[0] || "사용자";
+      return localUser.nickname || localUser.username || localUser.email?.split("@")[0] || "사용자";
     }
     return "사용자";
   };

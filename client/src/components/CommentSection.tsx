@@ -6,6 +6,8 @@ import { Separator } from '@/components/ui/separator'
 import { MessageSquare, User, Send, Edit2, Trash2, Save, X } from 'lucide-react'
 import { Link } from 'wouter'
 import { useSupabaseAuth } from '@/components/SupabaseProvider'
+import { useAuth } from '@/contexts/AuthContext'
+import { NicknameSetupDialog } from '@/components/NicknameSetupDialog'
 import { 
   usePostComments, 
   useCreatePostComment, 
@@ -61,7 +63,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       <div className="flex-1 min-w-0">
         <div className="flex items-center space-x-2 mb-1">
           <span className="font-medium text-white text-sm">
-            {comment.users?.username || comment.users?.email || '익명'}
+            {comment.users?.nickname || comment.users?.username || comment.users?.email || '익명'}
           </span>
           <span className="text-xs text-gray-400">
             {formatPostDate(comment.created_at)}
@@ -129,6 +131,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
 export const CommentSection: React.FC<CommentSectionProps> = ({ postId, commentsCount = 0 }) => {
   const { user } = useSupabaseAuth()
+  const { user: authUser } = useAuth()
   const { data: comments, isLoading, error } = usePostComments(postId)
   const createComment = useCreatePostComment()
   const updateComment = useUpdatePostComment()
@@ -137,11 +140,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, comments
   const [commentContent, setCommentContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [showNicknameDialog, setShowNicknameDialog] = useState(false)
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!user || !commentContent.trim()) {
+      return
+    }
+
+    if (!authUser?.nickname) {
+      setShowNicknameDialog(true)
       return
     }
 
@@ -184,6 +193,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, comments
   const actualCommentsCount = comments?.length || commentsCount
 
   return (
+    <>
     <Card className="bg-[#1a1a1a] border-gray-700">
       <CardHeader>
         <CardTitle className="text-white flex items-center">
@@ -292,6 +302,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, comments
         )}
       </CardContent>
     </Card>
+    <NicknameSetupDialog
+      open={showNicknameDialog}
+      onOpenChange={setShowNicknameDialog}
+      onSuccess={() => setShowNicknameDialog(false)}
+    />
+    </>
   )
 }
 

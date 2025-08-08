@@ -934,8 +934,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingUser.username === username) message += "아이디입니다.";
         else if (existingUser.email === email) message += "이메일입니다.";
         else if (existingUser.nickname === nickname) message += "닉네임입니다.";
-        
-        return res.status(400).json({ message });
+
+        return res.status(409).json({ message });
       }
 
       // Hash password with bcrypt
@@ -2031,7 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (existingNickname) {
-        return res.status(400).json({ message: "이미 사용 중인 닉네임입니다." });
+        return res.status(409).json({ message: "이미 사용 중인 닉네임입니다." });
       }
 
       // Update nickname using the validated target user ID
