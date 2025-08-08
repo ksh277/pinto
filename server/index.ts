@@ -3,6 +3,9 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeAdminAuth } from "./adminAuth";
+import reviewsRouter from "./routes/reviews";
+import communityRouter from "./routes/community";
+import recommendationsRouter from "./routes/recommendations";
 
 const app = express();
 app.use(express.json());
@@ -51,6 +54,10 @@ app.use((req, res, next) => {
 
   next();
 });
+
+app.use('/api/reviews', reviewsRouter);
+app.use('/api/community', communityRouter);
+app.use('/api/recommendations', recommendationsRouter);
 
 (async () => {
   const server = await registerRoutes(app);
