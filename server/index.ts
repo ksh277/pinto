@@ -4,6 +4,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeAdminAuth } from "./adminAuth";
 import reviewsRouter from "./routes/reviews";
+import { checkProductsTable } from './db/diagnostics';
+import { seedProducts } from './scripts/seedProducts';
 import communityRouter from "./routes/community";
 import recommendationsRouter from "./routes/recommendations";
 
@@ -60,6 +62,21 @@ app.use('/api/community', communityRouter);
 app.use('/api/recommendations', recommendationsRouter);
 
 (async () => {
+  if (process.env.NODE_ENV !== 'production') {
+    const { exists, count } = await checkProductsTable();
+    console.log(`products table exists=${exists} count=${count ?? 0}`);
+    if (!exists) {
+      console.warn('products table missing. run server/scripts/ensureSchema.ts');
+    } else if ((count ?? 0) === 0) {
+      console.log('seeding products...');
+      try {
+        await seedProducts();
+        console.log('seeded products');
+      } catch (e) {
+        console.error('seedProducts failed', e);
+      }
+    }
+  }
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
