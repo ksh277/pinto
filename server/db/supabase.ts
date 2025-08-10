@@ -21,8 +21,8 @@ if (!key) {
 }
 
 if (process.env.NODE_ENV !== 'production') {
-  console.log(`SUPABASE_URL: ${url.slice(0, 30)}...`);
-  console.log(`SUPABASE_SERVICE_ROLE_KEY: ${key.slice(0, 6)}...`);
+  console.debug(`SUPABASE_URL: ${url.slice(0, 30)}...`);
+  console.debug(`SUPABASE_SERVICE_ROLE_KEY: ${key.slice(0, 6)}...`);
 }
 
 export const sb = createClient(url, key, { auth: { persistSession: false } });

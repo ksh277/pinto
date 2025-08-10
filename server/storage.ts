@@ -56,7 +56,7 @@ import {
   type InsertInquiry,
   type PointHistory,
   type InsertPointHistory,
-} from "@shared/schema";
+} from '../shared/schema';
 import { db } from "./db";
 import { eq, count, and, sql } from "drizzle-orm";
 

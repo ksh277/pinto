@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
-import * as schema from "@shared/schema";
+import * as schema from '../../shared/schema';
 
 // Check for MySQL database URL, fallback to environment variable
 const databaseUrl = process.env.MYSQL_DATABASE_URL || process.env.DATABASE_URL;
