@@ -842,6 +842,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Username availability check
+  app.get("/api/auth/check-username/:username?", async (req, res) => {
+    try {
+      console.log(
+        "Username check endpoint hit with:",
+        req.params.username || req.query.value
+      );
+      const username = req.params.username || (req.query.value as string);
+
+      res.setHeader("Content-Type", "application/json");
+
+      if (!username) {
+        return res.status(400).json({
+          available: false,
+          message: "아이디를 입력해주세요.",
+        });
+      }
+
+      const { data: existingUser, error } = await supabase
+        .from("users")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();
+
+      console.log("Username check result:", { existingUser, error });
+
+      if (error) {
+        console.error("Error checking username:", error);
+        return res.status(500).json({
+          available: false,
+          message: "아이디 확인 중 오류가 발생했습니다.",
+        });
+      }
+
+      if (existingUser) {
+        return res.status(200).json({
+          available: false,
+          message: "이미 사용 중인 아이디입니다.",
+        });
+      }
+
+      return res.status(200).json({
+        available: true,
+        message: "사용 가능한 아이디입니다.",
+      });
+    } catch (error) {
+      console.error("Error in username check endpoint:", error);
+      res.status(500).json({
+        available: false,
+        message: "아이디 확인 중 오류가 발생했습니다.",
+      });
+    }
+  });
+
   // Nickname availability check
   app.get("/api/auth/check-nickname/:nickname", async (req, res) => {
     try {

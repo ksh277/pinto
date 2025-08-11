@@ -43,6 +43,11 @@ export default function Register() {
     available: boolean | null;
     message: string;
   }>({ checking: false, available: null, message: "" });
+  const [usernameStatus, setUsernameStatus] = useState<{
+    checking: boolean;
+    available: boolean | null;
+    message: string;
+  }>({ checking: false, available: null, message: "" });
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
 
@@ -98,6 +103,38 @@ export default function Register() {
   const canProceedFromStep1 =
     agreements.serviceTerms && agreements.privacyPolicy;
 
+  // 아이디 중복 체크 함수
+  const checkUsernameAvailability = useCallback(async (username: string) => {
+    if (!username) {
+      setUsernameStatus({ checking: false, available: null, message: "" });
+      return;
+    }
+
+    setUsernameStatus({ checking: true, available: null, message: "확인 중..." });
+
+    try {
+      const response = await fetch(
+        `/api/auth/check-username?value=${encodeURIComponent(username)}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "아이디 확인 실패");
+      }
+
+      setUsernameStatus({
+        checking: false,
+        available: data.available,
+        message: data.message,
+      });
+    } catch (error) {
+      setUsernameStatus({
+        checking: false,
+        available: false,
+        message: "아이디 확인 중 오류가 발생했습니다.",
+      });
+    }
+  }, []);
   // 닉네임 중복 체크 함수
   const checkNicknameAvailability = useCallback(async (nickname: string) => {
     if (!nickname || nickname.length < 2) {
@@ -140,6 +177,17 @@ export default function Register() {
     }
   }, []);
 
+  // 아이디 변경 시 중복 체크 (debouncing 적용)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (userData.username) {
+        checkUsernameAvailability(userData.username);
+      }
+    }, 500); // 500ms 지연
+
+    return () => clearTimeout(timeoutId);
+  }, [userData.username, checkUsernameAvailability]);
+
   // 닉네임 변경 시 중복 체크 (debouncing 적용)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -162,7 +210,8 @@ export default function Register() {
     userData.password === userData.confirmPassword &&
     userData.nickname.length >= 2 &&
     userData.nickname.length <= 10 &&
-    nicknameStatus.available === true;
+    nicknameStatus.available === true &&
+    usernameStatus.available === true;
 
   const handleStep1Next = () => {
     if (!canProceedFromStep1) {
@@ -393,8 +442,30 @@ export default function Register() {
             onChange={(e) =>
               setUserData({ ...userData, username: e.target.value })
             }
-            className="mt-1 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+            className={`mt-1 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 ${
+              usernameStatus.available === false
+                ? 'border-red-500'
+                : usernameStatus.available === true
+                ? 'border-green-500'
+                : ''
+            }`}
           />
+          <div className="mt-1 min-h-[20px]">
+            {usernameStatus.checking && (
+              <p className="text-sm text-blue-500">확인 중...</p>
+            )}
+            {usernameStatus.available === true && (
+              <p className="text-sm text-green-600">✓ 사용 가능한 아이디입니다</p>
+            )}
+            {usernameStatus.available === false && usernameStatus.message && (
+              <p className="text-sm text-red-500">✗ {usernameStatus.message}</p>
+            )}
+            {!usernameStatus.checking && usernameStatus.available === null && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                로그인 시 사용할 아이디입니다 (필수)
+              </p>
+            )}
+          </div>
         </div>
 
         <div>
