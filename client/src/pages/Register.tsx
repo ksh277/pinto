@@ -117,13 +117,19 @@ export default function Register() {
     setNicknameStatus({ checking: true, available: null, message: "확인 중..." });
 
     try {
-      const response = await fetch(`/api/auth/check-nickname/${encodeURIComponent(nickname)}`);
+      const response = await fetch(
+        `/api/auth/check-nickname?value=${encodeURIComponent(nickname)}`
+      );
       const data = await response.json();
-      
+
+      if (!response.ok) {
+        throw new Error(data.message || "닉네임 확인 실패");
+      }
+
       setNicknameStatus({
         checking: false,
         available: data.available,
-        message: data.message
+        message: data.message,
       });
     } catch (error) {
       setNicknameStatus({
