@@ -70,7 +70,7 @@ export const fetchProductById = async (id: string) => {
       `
       *,
       categories(name, name_ko),
-      reviews(*, users(username, avatar_url))
+      reviews(*, users(username, avatar_url, nickname))
     `,
     )
     .eq("id", id)
@@ -135,7 +135,7 @@ export const fetchProductReviews = async (productId: string) => {
     .select(
       `
       *,
-      users(username, email, avatar_url)
+      users(username, email, avatar_url, nickname)
     `,
     )
     .eq("product_id", productId)
@@ -161,7 +161,7 @@ export const createProductReview = async (review: {
     .select(
       `
       *,
-      users(username, email, avatar_url)
+      users(username, email, avatar_url, nickname)
     `,
     )
     .single();
@@ -188,7 +188,7 @@ export const updateProductReview = async (
     .select(
       `
       *,
-      users(username, email, avatar_url)
+      users(username, email, avatar_url, nickname)
     `,
     )
     .single();
@@ -224,7 +224,7 @@ export const fetchUserReviewForProduct = async (
     .select(
       `
       *,
-      users(username, email, avatar_url)
+      users(username, email, avatar_url, nickname)
     `,
     )
     .eq("user_id", userId)
@@ -318,7 +318,7 @@ export const fetchAllDeliveryTrackings = async () => {
     .select(
       `
       *,
-      orders(id, total_amount, created_at, users(username, email))
+      orders(id, total_amount, created_at, users(username, email, nickname))
     `,
     )
     .order("last_updated", { ascending: false });
@@ -338,7 +338,7 @@ export const fetchCommunityPosts = async () => {
     .select(
       `
       *,
-      users(id, username, email),
+      users(id, username, email, nickname),
       comments(count)
     `,
     )
@@ -358,12 +358,12 @@ export const fetchCommunityPost = async (postId: string) => {
     .select(
       `
       *,
-      users(id, username, email),
+      users(id, username, email, nickname),
       comments(
         id,
         content,
         created_at,
-        users(id, username, email)
+        users(id, username, email, nickname)
       )
     `,
     )
@@ -403,7 +403,7 @@ export const createCommunityPost = async (post: {
     .select(
       `
       *,
-      users(id, username, email)
+      users(id, username, email, nickname)
     `,
     )
     .single();
@@ -432,7 +432,7 @@ export const updateCommunityPost = async (
     .select(
       `
       *,
-      users(id, username, email)
+      users(id, username, email, nickname)
     `,
     )
     .single();
@@ -464,7 +464,7 @@ export const fetchPostComments = async (postId: string) => {
     .select(
       `
       *,
-      users(id, username, email)
+      users(id, username, email, nickname)
     `,
     )
     .eq("post_id", postId)
@@ -501,7 +501,7 @@ export const createPostComment = async (comment: {
     .select(
       `
       *,
-      users(id, username, email)
+      users(id, username, email, nickname)
     `,
     )
     .single();
@@ -536,7 +536,7 @@ export const updatePostComment = async (
     .select(
       `
       *,
-      users(id, username, email)
+      users(id, username, email, nickname)
     `,
     )
     .single();
@@ -739,7 +739,7 @@ export const fetchOrders = async (options?: {
 }) => {
   let query = supabase.from("orders").select(`
     *,
-    users(username, email),
+    users(username, email, nickname),
     order_items(*, products(name, name_ko, image_url))
   `);
 
@@ -788,7 +788,7 @@ export const fetchReviews = async (options?: {
 }) => {
   let query = supabase.from("reviews").select(`
     *,
-    users(username, avatar_url),
+    users(username, avatar_url, nickname),
     products(name, name_ko, image_url)
   `);
 
@@ -860,7 +860,7 @@ export const fetchCommunityPostsLegacy = async (options?: {
 }) => {
   let query = supabase.from("community").select(`
     *,
-    users(username, avatar_url)
+    users(username, avatar_url, nickname)
   `);
 
   if (options?.category) {

@@ -1068,7 +1068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Single query failed, trying manual filter...");
         const { data: allUsers, error: listError } = await supabase
           .from("users")
-          .select("id, username, email, password, first_name, last_name");
+          .select("id, username, email, password, first_name, last_name, nickname");
 
         console.log("All users query result:", {
           count: allUsers?.length,
@@ -1193,7 +1193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { data: user, error } = await supabase
         .from("users")
-        .select("id, username, email, first_name, last_name, created_at")
+        .select("id, username, email, first_name, last_name, nickname, created_at")
         .eq("id", req.user.id)
         .single();
 
@@ -1273,7 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find user by username and email/phone
       let query = supabase
         .from("users")
-        .select("id, username, email")
+        .select("id, username, email, nickname")
         .eq("username", username);
 
       if (method === "email") {

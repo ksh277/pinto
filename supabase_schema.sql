@@ -38,6 +38,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY REFERENCES auth.users(id),
     email VARCHAR(255) UNIQUE NOT NULL,
     username VARCHAR(50) UNIQUE,
+    nickname VARCHAR(30) UNIQUE NOT NULL,
     full_name VARCHAR(100),
     avatar_url TEXT,
     phone VARCHAR(20),
