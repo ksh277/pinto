@@ -864,39 +864,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from("users")
         .select("id")
         .eq("nickname", nickname)
-        .single();
+        .maybeSingle();
 
       console.log("Nickname check result:", { existingUser, error });
 
-      // If no error and user exists, nickname is taken
-      if (existingUser && !error) {
-        return res.status(200).json({ 
-          available: false, 
-          message: "이미 사용 중인 닉네임입니다." 
-        });
-      }
-
-      // If error code is PGRST116 (no rows), nickname is available
-      if (error && error.code === "PGRST116") {
-        return res.status(200).json({ 
-          available: true, 
-          message: "사용 가능한 닉네임입니다." 
-        });
-      }
-
-      // Other errors
       if (error) {
         console.error("Error checking nickname:", error);
-        return res.status(500).json({ 
-          available: false, 
-          message: "닉네임 확인 중 오류가 발생했습니다." 
+        return res.status(500).json({
+          available: false,
+          message: "닉네임 확인 중 오류가 발생했습니다.",
         });
       }
 
-      // Fallback - should not reach here
-      return res.status(200).json({ 
-        available: true, 
-        message: "사용 가능한 닉네임입니다." 
+      if (existingUser) {
+        return res.status(200).json({
+          available: false,
+          message: "이미 사용 중인 닉네임입니다.",
+        });
+      }
+
+      return res.status(200).json({
+        available: true,
+        message: "사용 가능한 닉네임입니다.",
       });
     } catch (error) {
       console.error("Error in nickname check endpoint:", error);
