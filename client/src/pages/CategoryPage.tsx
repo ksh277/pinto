@@ -63,16 +63,21 @@ export default function CategoryPage() {
   const activeTab = subcategory || "";
 
   const currentCategory = categoryData[category as keyof typeof categoryData];
-  
-  // Query for all products
+
+  const isKeyringCategory = category === "acrylic" && subcategory === "keyring";
+
+  // Query for all products. Skip network request when showing static keyring data
   const { data: allProducts, isLoading } = useQuery({
-    queryKey: ['/api/products'],
+    queryKey: ["/api/products"],
     queryFn: async () => {
-      const response = await fetch('/api/products');
-      if (!response.ok) throw new Error('Failed to fetch products');
+      const response = await fetch("/api/products");
+      if (!response.ok) throw new Error("Failed to fetch products");
       return await response.json();
-    }
+    },
+    enabled: !isKeyringCategory,
   });
+
+  const loading = isLoading && !isKeyringCategory;
 
   const keyringProducts = React.useMemo(() => {
     return acrylicKeyrings.map((p) => ({
@@ -230,7 +235,7 @@ export default function CategoryPage() {
 
       {/* Products Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoading ? (
+        {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-sm p-4 animate-pulse">
