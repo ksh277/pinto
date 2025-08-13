@@ -60,8 +60,6 @@ export default function CategoryPage() {
   // activeTab is now directly controlled by subcategory parameter
   const activeTab = subcategory || "";
 
-  console.log('CategoryPage render - category:', category, 'subcategory:', subcategory, 'activeTab:', activeTab);
-
   const currentCategory = categoryData[category as keyof typeof categoryData];
   
   // Query for all products
@@ -74,184 +72,34 @@ export default function CategoryPage() {
     }
   });
 
-  // Filter products based on category and activeTab
+  // Filter products based on category and subcategory fields only
   const products = React.useMemo(() => {
     if (!allProducts) return [];
-    
-    let filteredProducts = allProducts;
-    
-    // First filter by main category
-    if (category === 'acrylic') {
-      filteredProducts = allProducts.filter((product: Product) => 
-        product.categoryId === 4 || 
-        product.nameKo.includes('아크릴') ||
-        product.name.toLowerCase().includes('acrylic')
-      );
-      
-      console.log('Acrylic products found:', filteredProducts.length, 'activeTab:', activeTab);
-      
-      // Then filter by subcategory if not "all"
-      if (activeTab && activeTab !== '' && activeTab !== 'all') {
-          const subcategoryFilters = {
-            'keyring': (product: Product) => 
-              product.nameKo.includes('키링') || 
-              product.name.toLowerCase().includes('keyring') ||
-              product.name.toLowerCase().includes('keychain'),
-            'korotto': (product: Product) => 
-              product.nameKo.includes('코롯토') || 
-              product.name.toLowerCase().includes('korotto'),
-            'smarttok': (product: Product) => 
-              product.nameKo.includes('스마트톡') || 
-              product.name.toLowerCase().includes('smart tok') ||
-              product.name.toLowerCase().includes('grip'),
-            'stand': (product: Product) => 
-              product.nameKo.includes('스탠드') || 
-              product.nameKo.includes('디오라마') ||
-              product.name.toLowerCase().includes('stand') ||
-              product.name.toLowerCase().includes('diorama'),
-            'holder': (product: Product) => 
-              product.nameKo.includes('포카홀더') || 
-              product.nameKo.includes('홀더') ||
-              product.name.toLowerCase().includes('holder') ||
-              product.name.toLowerCase().includes('card'),
-            'shaker': (product: Product) => 
-              product.nameKo.includes('쉐이커') || 
-              product.name.toLowerCase().includes('shaker'),
-            'carabiner': (product: Product) => 
-              product.nameKo.includes('카라비너') || 
-              product.name.toLowerCase().includes('carabiner'),
-            'mirror': (product: Product) => 
-              product.nameKo.includes('거울') || 
-              product.name.toLowerCase().includes('mirror'),
-            'magnet': (product: Product) => 
-              product.nameKo.includes('자석') || 
-              product.nameKo.includes('마그넷') ||
-              product.name.toLowerCase().includes('magnet'),
-            'stationery': (product: Product) => 
-              product.nameKo.includes('문구') || 
-              product.name.toLowerCase().includes('stationery'),
-            'cutting': (product: Product) => 
-              product.nameKo.includes('재단') || 
-              product.name.toLowerCase().includes('cutting')
-          };
-          
-          const filterFn = subcategoryFilters[activeTab as keyof typeof subcategoryFilters];
-          if (filterFn) {
-            filteredProducts = filteredProducts.filter(filterFn);
-          }
-        }
-      } else if (category === 'lanyard') {
-        // Filter lanyard products (categoryId: 7 or by name)
-        filteredProducts = allProducts.filter((product: Product) => 
-          product.categoryId === 7 ||
-          product.nameKo.includes('렌야드') || 
-          product.nameKo.includes('랜야드') ||
-          product.nameKo.includes('스트랩') ||
-          product.name.toLowerCase().includes('lanyard') ||
-          product.name.toLowerCase().includes('strap')
-        );
-        
-        console.log('Lanyard products found:', filteredProducts.length, 'activeTab:', activeTab);
-        
-        // Then filter by subcategory if not "all"
-        if (activeTab && activeTab !== '' && activeTab !== 'all') {
-          const subcategoryFilters = {
-            'neck': (product: Product) => 
-              product.nameKo.includes('목걸이') || 
-              product.name.toLowerCase().includes('neck'),
-            'phone': (product: Product) => 
-              product.nameKo.includes('핸드폰') || 
-              product.nameKo.includes('폰') ||
-              product.name.toLowerCase().includes('phone')
-          };
-          
-          const filterFn = subcategoryFilters[activeTab as keyof typeof subcategoryFilters];
-          if (filterFn) {
-            filteredProducts = filteredProducts.filter(filterFn);
-          }
-        }
-      } else if (category === 'wood') {
-        // Filter wood products - expanded to include all wood-related products
-        filteredProducts = allProducts.filter((product: Product) => 
-          product.nameKo.includes('우드') || 
-          product.nameKo.includes('나무') ||
-          product.nameKo.includes('대나무') ||
-          product.nameKo.includes('코스터') ||
-          product.nameKo.includes('뱃지') ||
-          product.name.toLowerCase().includes('wood') ||
-          product.name.toLowerCase().includes('bamboo') ||
-          product.name.toLowerCase().includes('coaster') ||
-          product.name.toLowerCase().includes('badge')
-        );
-        
-        console.log('Wood products found:', filteredProducts.length, 'activeTab:', activeTab);
-        
-        // Then filter by subcategory if not "all"
-        if (activeTab && activeTab !== '' && activeTab !== 'all') {
-          const subcategoryFilters = {
-            'keyring': (product: Product) => 
-              product.nameKo.includes('키링') || 
-              product.name.toLowerCase().includes('keyring') ||
-              product.name.toLowerCase().includes('keychain'),
-            'coaster': (product: Product) => 
-              product.nameKo.includes('코스터') || 
-              product.name.toLowerCase().includes('coaster'),
-            'magnet': (product: Product) => 
-              product.nameKo.includes('마그넷') || 
-              product.nameKo.includes('자석') ||
-              product.name.toLowerCase().includes('magnet'),
-            'stand': (product: Product) => 
-              product.nameKo.includes('스탠드') || 
-              product.name.toLowerCase().includes('stand'),
-            'badge': (product: Product) => 
-              product.nameKo.includes('뱃지') || 
-              product.name.toLowerCase().includes('badge')
-          };
-          
-          const filterFn = subcategoryFilters[activeTab as keyof typeof subcategoryFilters];
-          if (filterFn) {
-            filteredProducts = filteredProducts.filter(filterFn);
-          }
-        }
-      } else if (category === 'packaging') {
-        // Filter packaging products
-        filteredProducts = allProducts.filter((product: Product) => 
-          product.nameKo.includes('포장') || 
-          product.nameKo.includes('박스') ||
-          product.nameKo.includes('부자재') ||
-          product.name.toLowerCase().includes('packaging') ||
-          product.name.toLowerCase().includes('box')
-        );
-        
-        console.log('Packaging products found:', filteredProducts.length, 'activeTab:', activeTab);
-        
-        // Then filter by subcategory if not "all"
-        if (activeTab && activeTab !== '' && activeTab !== 'all') {
-          const subcategoryFilters = {
-            'box': (product: Product) => 
-              product.nameKo.includes('박스') || 
-              product.name.toLowerCase().includes('box'),
-            'bag': (product: Product) => 
-              product.nameKo.includes('포장지') || 
-              product.nameKo.includes('봉투') ||
-              product.name.toLowerCase().includes('bag') ||
-              product.name.toLowerCase().includes('wrapping')
-          };
-          
-          const filterFn = subcategoryFilters[activeTab as keyof typeof subcategoryFilters];
-          if (filterFn) {
-            filteredProducts = filteredProducts.filter(filterFn);
-          }
-        }
-      } else if (category) {
-        // Filter by other categories
-        filteredProducts = allProducts.filter((product: Product) => 
-          product.name.toLowerCase().includes(category.toLowerCase())
-        );
-      }
-      
-      return filteredProducts;
-    }, [allProducts, category, subcategory]);
+
+    // 1) Normalize fields to camelCase and ensure presence
+    const normalize = (p: any) => ({
+      ...p,
+      nameKo: p.nameKo ?? p.name_ko ?? p.name,
+      priceKrw: p.priceKrw ?? p.price_krw ?? p.price,
+      reviewCount: p.reviewCount ?? p.review_count ?? 0,
+      category: (p.category ?? p.categorySlug ?? p.category_id ?? "").toString().toLowerCase(),
+      subcategory: (p.subcategory ?? p.subcategorySlug ?? "").toString().toLowerCase(),
+    });
+
+    let list = (allProducts as any[]).map(normalize);
+
+    // 2) Main category filter: /category/:category
+    if (category) {
+      list = list.filter((p) => p.category === category.toLowerCase());
+    }
+
+    // 3) Subcategory filter: /category/:category/:subcategory
+    if (subcategory && subcategory !== "all") {
+      list = list.filter((p) => p.subcategory === subcategory.toLowerCase());
+    }
+
+    return list as Product[];
+  }, [allProducts, category, subcategory]);
 
   const handleTabClick = (subcat: SubCategory) => {
     setLocation(`/category/${category}/${subcat.slug}`);
