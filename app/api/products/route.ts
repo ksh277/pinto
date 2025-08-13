@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sb } from '../../../server/db/supabase';
-import type { Product } from '../../../types/db';
+import { supabase } from '../../../server/lib/supabase';
+import { camelize, Product } from '../../../shared/types';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const page = Math.max(parseInt(searchParams.get('page') || '1', 10), 1);
-  const limit = Math.max(parseInt(searchParams.get('limit') || '12', 10), 1);
   const category = searchParams.get('category');
+  const subcategory = searchParams.get('subcategory');
 
-  try {
-    let query = sb.from('products').select('*', { count: 'exact' }).eq('status', 'published');
-    if (category) {
-      query = query.eq('category', category);
-    }
-    const from = (page - 1) * limit;
-    const to = page * limit - 1;
-    const { data, count, error } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
-    if (error) throw error;
-    return NextResponse.json({ items: (data as Product[]) || [], total: count || 0, page, limit });
-  } catch (e: any) {
-    console.error('GET /api/products failed:', e.message);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  let query = supabase
+    .from('products')
+    .select(
+      'id, category, subcategory, name_ko, name_en, slug, price_krw, review_count, thumbnail_url, is_active, created_at'
+    )
+    .eq('is_active', true);
+
+  if (category) query = query.eq('category', category);
+  if (subcategory) query = query.eq('subcategory', subcategory);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('GET /api/products failed:', error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
 
+  const items = (data || []).map((row) => camelize<Product>(row));
+  return NextResponse.json(items);
+}
