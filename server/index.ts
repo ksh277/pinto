@@ -8,6 +8,7 @@ import { checkProductsTable } from './db/diagnostics';
 import { seedProducts } from './scripts/seedProducts';
 import communityRouter from "./routes/community";
 import recommendationsRouter from "./routes/recommendations";
+import productsRouter from "./routes/products";
 
 const app = express();
 app.use(express.json());
@@ -60,6 +61,7 @@ app.use((req, res, next) => {
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/community', communityRouter);
 app.use('/api/recommendations', recommendationsRouter);
+app.use('/api/products', productsRouter);
 
 (async () => {
   if (process.env.NODE_ENV !== 'production') {
