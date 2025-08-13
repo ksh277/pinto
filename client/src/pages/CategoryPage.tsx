@@ -7,6 +7,7 @@ import { ProductGrid } from "@/components/ProductGrid";
 import { Product } from "@/shared/schema";
 import { ChevronRight, Grid } from "lucide-react";
 import { motion } from "framer-motion";
+import { acrylicKeyrings } from "@/data/acrylicKeyrings";
 
 interface SubCategory {
   id: string;
@@ -20,9 +21,10 @@ const categoryData = {
     id: "acrylic",
     name: { ko: "아크릴굿즈", en: "Acrylic Goods", ja: "アクリルグッズ", zh: "亚克力商品" },
     subcategories: [
+      { id: "keyring", name: { ko: "키링", en: "Keyring", ja: "キーリング", zh: "钥匙扣" }, slug: "keyring", count: 15 },
       { id: "korotto", name: { ko: "코롯토", en: "Korotto", ja: "コロット", zh: "Korotto" }, slug: "korotto", count: 85 },
       { id: "holder", name: { ko: "포카홀더", en: "Card Holder", ja: "カードホルダー", zh: "卡片夹" }, slug: "holder", count: 78 },
-      { id: "shaker", name: { ko: "아크릴쉐이커", en: "Acrylic Shaker", ja: "アクリルシェーカー", zh: "亚크力摇摇杯" }, slug: "shaker", count: 52 }
+      { id: "shaker", name: { ko: "아크릴쉐이커", en: "Acrylic Shaker", ja: "アクリルシェーカー", zh: "亚克力摇摇杯" }, slug: "shaker", count: 52 }
     ]
   },
   wood: {
@@ -52,7 +54,7 @@ const categoryData = {
 };
 
 export default function CategoryPage() {
-  const { category, subcategory } = useParams();
+  const { category, subcategory, page } = useParams();
   const [, setLocation] = useLocation();
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
@@ -72,8 +74,25 @@ export default function CategoryPage() {
     }
   });
 
+  const keyringProducts = React.useMemo(() => {
+    return acrylicKeyrings.map((p) => ({
+      id: p.id,
+      name: p.name,
+      nameKo: p.name,
+      basePrice: p.price.toString(),
+      category: "acrylic",
+      subcategory: "keyring",
+      detailPath: `/category/acrylic/keyring/${p.id}`,
+      isActive: true,
+    }));
+  }, []);
+
   // Filter products based on category and subcategory fields only
   const products = React.useMemo(() => {
+    if (category === "acrylic" && subcategory === "keyring") {
+      return keyringProducts as unknown as Product[];
+    }
+
     if (!allProducts) return [];
 
     // 1) Normalize fields to camelCase and ensure presence
@@ -99,7 +118,7 @@ export default function CategoryPage() {
     }
 
     return list as Product[];
-  }, [allProducts, category, subcategory]);
+  }, [allProducts, category, subcategory, keyringProducts]);
 
   const handleTabClick = (subcat: SubCategory) => {
     setLocation(`/category/${category}/${subcat.slug}`);

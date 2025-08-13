@@ -13,6 +13,7 @@ import Products from "@/pages/Products";
 import ProductDetail from "@/pages/ProductDetail";
 import ProductDetailSupabase from "@/pages/ProductDetailSupabase";
 import CategoryPage from "@/pages/CategoryPage";
+import KeyringDetail from "@/pages/KeyringDetail";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import FindId from "@/pages/FindId";
@@ -97,6 +98,10 @@ function Router() {
         <Route path="/search" component={ProductSearchPage} />
 
         {/* Category routes */}
+        <Route
+          path="/category/:category/:subcategory/:id"
+          component={KeyringDetail}
+        />
         <Route
           path="/category/:category/:subcategory"
           component={CategoryPage}
