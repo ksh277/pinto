@@ -1,7 +1,7 @@
 import '../lib/loadEnv';
 import { createClient } from '@supabase/supabase-js';
 
-const url = process.env.SUPABASE_URL;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 // NOTE: Service role key is for server-side use only. Never expose this to client code.
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

@@ -3,15 +3,20 @@ import { sb } from '../db/supabase';
 export const PRODUCTS_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS public.products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  price integer NOT NULL,
+  category text NOT NULL,
+  subcategory text NOT NULL,
+  name_ko text NOT NULL,
+  name_en text,
+  slug text NOT NULL UNIQUE,
+  price_krw integer NOT NULL,
+  review_count integer NOT NULL DEFAULT 0,
   thumbnail_url text,
-  category text,
-  status text DEFAULT 'published',
-  created_at timestamptz DEFAULT now()
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS idx_products_status_created_at
-  ON public.products(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_products_category_subcategory
+  ON public.products(category, subcategory);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON public.products(slug);
 `;
 
 export async function ensureProductsSchema(): Promise<void> {
