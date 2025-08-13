@@ -79,8 +79,9 @@ export function ProductCard({
   const reviewCount = product.reviewsCount || product.reviewCount || 0;
   const likeCount = product.likesCount || product.likeCount || 0;
 
+  const link = (product as any).detailPath || `/product/${product.id}`;
   return (
-    <Link href={`/product/${product.id}`} className="block">
+    <Link href={link} className="block">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
