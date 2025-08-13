@@ -1,13 +1,11 @@
 import { useParams, useLocation, Link } from "wouter";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { ProductGrid } from "@/components/ProductGrid";
 import { Product } from "@/shared/schema";
 import { ChevronRight, Grid } from "lucide-react";
 import { motion } from "framer-motion";
-import { acrylicKeyrings } from "@/data/acrylicKeyrings";
 
 interface SubCategory {
   id: string;
@@ -57,73 +55,68 @@ export default function CategoryPage() {
   const { category, subcategory, page } = useParams();
   const [, setLocation] = useLocation();
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
 
   // activeTab is now directly controlled by subcategory parameter
   const activeTab = subcategory || "";
 
   const currentCategory = categoryData[category as keyof typeof categoryData];
 
-  const isKeyringCategory = category === "acrylic" && subcategory === "keyring";
+  const PAGE_SIZE = 15;
+  const pageNum = Math.max(1, Number(page ?? "1"));
+  const subParam = (subcategory && subcategory !== "all") ? subcategory : undefined;
 
-  // Query for all products. Skip network request when showing static keyring data
-  const { data: allProducts, isLoading } = useQuery({
-    queryKey: ["/api/products"],
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["products", category, subParam, pageNum],
     queryFn: async () => {
-      const response = await fetch("/api/products");
-      if (!response.ok) throw new Error("Failed to fetch products");
-      return await response.json();
+      const qs = new URLSearchParams({
+        ...(category ? { category } : {}),
+        ...(subParam ? { subcategory: subParam } : {}),
+        limit: String(PAGE_SIZE),
+        page: String(pageNum),
+      });
+      const res = await fetch(`/api/products?` + qs.toString());
+      const text = await res.text();
+      if (!res.ok) throw new Error(`GET /api/products failed ${res.status} ${res.statusText} — ${text}`);
+      const json = JSON.parse(text);
+      return json;
     },
-    enabled: !isKeyringCategory,
+    staleTime: 0,
   });
+  console.log("API products resp:", data);
 
-  const loading = isLoading && !isKeyringCategory;
+  const items = (data?.items ?? []).map((it: any) => ({
+    id: it.id,
+    category: (it.category ?? "").toLowerCase(),
+    subcategory: (it.subcategory ?? "").toLowerCase(),
+    nameKo: it.nameKo ?? it.name_ko ?? it.name,
+    priceKrw: it.priceKrw ?? it.price_krw ?? it.price,
+    reviewCount: it.reviewCount ?? it.review_count ?? 0,
+    thumbnailUrl: it.thumbnailUrl ?? it.thumbnail_url ?? null,
+    createdAt: it.createdAt ?? it.created_at,
+  }));
 
-  const keyringProducts = React.useMemo(() => {
-    return acrylicKeyrings.map((p) => ({
-      id: p.id,
-      name: p.name,
-      nameKo: p.name,
-      basePrice: p.price.toString(),
-      category: "acrylic",
-      subcategory: "keyring",
-      detailPath: `/category/acrylic/keyring/${p.id}`,
-      isActive: true,
-    }));
-  }, []);
+  const filtered = items
+    .filter(p => !category || p.category === category.toLowerCase())
+    .filter(p => !subParam || p.subcategory === subParam.toLowerCase());
 
-  // Filter products based on category and subcategory fields only
-  const products = React.useMemo(() => {
-    if (category === "acrylic" && subcategory === "keyring") {
-      return keyringProducts as unknown as Product[];
-    }
+  const products = filtered.map(p => ({
+    id: p.id,
+    nameKo: p.nameKo,
+    basePrice: String(p.priceKrw ?? 0),
+    category: p.category,
+    subcategory: p.subcategory,
+    reviewCount: p.reviewCount,
+    thumbnailUrl: p.thumbnailUrl,
+    createdAt: p.createdAt,
+  })) as Product[];
 
-    if (!allProducts) return [];
+  const loading = isLoading;
 
-    // 1) Normalize fields to camelCase and ensure presence
-    const normalize = (p: any) => ({
-      ...p,
-      nameKo: p.nameKo ?? p.name_ko ?? p.name,
-      priceKrw: p.priceKrw ?? p.price_krw ?? p.price,
-      reviewCount: p.reviewCount ?? p.review_count ?? 0,
-      category: (p.category ?? p.categorySlug ?? p.category_id ?? "").toString().toLowerCase(),
-      subcategory: (p.subcategory ?? p.subcategorySlug ?? "").toString().toLowerCase(),
-    });
-
-    let list = (allProducts as any[]).map(normalize);
-
-    // 2) Main category filter: /category/:category
-    if (category) {
-      list = list.filter((p) => p.category === category.toLowerCase());
-    }
-
-    // 3) Subcategory filter: /category/:category/:subcategory
-    if (subcategory && subcategory !== "all") {
-      list = list.filter((p) => p.subcategory === subcategory.toLowerCase());
-    }
-
-    return list as Product[];
-  }, [allProducts, category, subcategory, keyringProducts]);
+  if (isError) {
+    return <div style={{padding:16,border:"1px solid #f00",color:"#f00"}}>
+      <b>제품 로드 실패</b><br/>{String((error as any)?.message)}
+    </div>;
+  }
 
   const handleTabClick = (subcat: SubCategory) => {
     setLocation(`/category/${category}/${subcat.slug}`);
