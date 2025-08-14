@@ -45,22 +45,29 @@ const KRW_FORMATTER = new Intl.NumberFormat('ko-KR', {
   maximumFractionDigits: 0,
 });
 
-interface ProductCardProps {
+// 공통 Product 타입을 사용하는 카드 컴포넌트의 props 정의
+type ProductCardProps = {
   product: Product;
   onAddToCart?: (product: Product) => void;
   onToggleFavorite?: (product: Product) => void;
-  isFavorite?: boolean;
-}
+  className?: string;
+};
 
 export function ProductCard({
-  product,
+  product: rawProduct,
   onAddToCart,
   onToggleFavorite,
-  isFavorite = false,
+  className = "",
 }: ProductCardProps) {
+  // 서버에서 snake_case(image_url)로 오는 경우를 대비해 매핑
+  const product: Product = {
+    ...rawProduct,
+    imageUrl: (rawProduct as any).image_url ?? rawProduct.imageUrl,
+  };
+
   const [isHovered, setIsHovered] = useState(false);
-  const [isLiked, setIsLiked] = useState(isFavorite);
-  const { language, t } = useLanguage();
+  const [isLiked, setIsLiked] = useState(false);
+  const { language } = useLanguage(); // t는 사용되지 않아 제거
   const { toast } = useToast();
   const { addToFavorites, removeFromFavorites, isFavorite: isInDbFavorites } = useFavorites();
 
@@ -118,11 +125,17 @@ export function ProductCard({
         transition={{ duration: 0.5 }}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
-        className="allprint-card"
+        // 외부에서 전달된 className을 합쳐 사용
+        className={`allprint-card ${className}`}
       >
         <div className="allprint-card-image">
           {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name ?? ""} loading="lazy" />
+            // alt와 src에 널 병합 연산자를 사용해 TS 오류 방지
+            <img
+              src={product.imageUrl ?? ""}
+              alt={product.name ?? "product image"}
+              loading="lazy"
+            />
           ) : (
             <div className="allprint-card-image-placeholder">
               <ImageIcon className="w-full h-28 object-contain mx-auto text-gray-300 dark:text-gray-700" />
