@@ -1,23 +1,72 @@
 import { useState, useEffect } from "react";
-import { Heart, ShoppingCart, Eye, ImageIcon } from "lucide-react";
+import { Heart, ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { useFavorites } from "@/hooks/useFavorites";
-import type { Product } from "@shared/schema";
+
+// 상품 타입 정의 (필요 필드만 명시)
+interface Product {
+  id: string | number;
+  name?: string | null;
+  nameKo?: string | null;
+  imageUrl?: string | null;
+  price_krw?: number | null; // 원화 정수
+  price?: number | string | null; // 외화 또는 소수
+  basePrice?: number | string | null; // 예비 가격
+  currency?: 'KRW' | 'USD' | 'EUR' | string;
+  reviewCount?: number;
+  reviewsCount?: number;
+  likeCount?: number;
+  likesCount?: number;
+  stock?: number;
+  isOutOfStock?: boolean;
+  isLowStock?: boolean;
+  isFeatured?: boolean;
+  detailPath?: string;
+}
+
+// 금액 계산에 사용할 상수 및 유틸 함수
+const FALLBACK_RATE = 1000; // 임시 환율 1:1000
+
+// 값 → 숫자 변환 (NaN 방지)
+const toNumber = (
+  value: number | string | null | undefined,
+): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return Number.isNaN(value) ? null : value;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+// 상품 정보를 원화 정수로 변환
+const toKRW = (product: Product): number => {
+  if (typeof product.price_krw === 'number' && !Number.isNaN(product.price_krw)) {
+    return product.price_krw;
+  }
+
+  const price = toNumber(product.price);
+  if (price !== null) {
+    return Math.round(price * FALLBACK_RATE);
+  }
+
+  const basePrice = toNumber(product.basePrice);
+  if (basePrice !== null) {
+    return Math.round(basePrice * FALLBACK_RATE);
+  }
+
+  return 0;
+};
+
+const KRW_FORMATTER = new Intl.NumberFormat('ko-KR', {
+  style: 'currency',
+  currency: 'KRW',
+  maximumFractionDigits: 0,
+});
 
 interface ProductCardProps {
-  product: Product & { 
-    reviewCount?: number; 
-    likeCount?: number; 
-    stock?: number;
-    isOutOfStock?: boolean;
-    isLowStock?: boolean;
-  };
+  product: Product;
   onAddToCart?: (product: Product) => void;
   onToggleFavorite?: (product: Product) => void;
   isFavorite?: boolean;
@@ -75,11 +124,12 @@ export function ProductCard({
     onAddToCart?.(product);
   };
 
-  const formattedPrice = parseInt(product.basePrice).toLocaleString();
-  const reviewCount = product.reviewsCount || product.reviewCount || 0;
-  const likeCount = product.likesCount || product.likeCount || 0;
+  // 가격 계산 로직 리팩터링
+  const formattedPrice = KRW_FORMATTER.format(toKRW(product));
+  const reviewCount = product.reviewsCount ?? product.reviewCount ?? 0;
+  const likeCount = product.likesCount ?? product.likeCount ?? 0;
 
-  const link = (product as any).detailPath || `/product/${product.id}`;
+  const link = product.detailPath ?? `/product/${product.id}`;
   return (
     <Link href={link} className="block">
       <motion.div
