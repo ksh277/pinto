@@ -6,6 +6,7 @@ import { ProductGrid } from "@/components/ProductGrid";
 import { Product } from "@/shared/schema";
 import { ChevronRight, Grid } from "lucide-react";
 import { motion } from "framer-motion";
+import { acrylicKeyrings } from "@/data/acrylicKeyrings";
 
 interface SubCategory {
   id: string;
@@ -99,16 +100,28 @@ export default function CategoryPage() {
     .filter(p => !category || p.category === category.toLowerCase())
     .filter(p => !subParam || p.subcategory === subParam.toLowerCase());
 
-  const products = filtered.map(p => ({
+  let products = filtered.map(p => ({
     id: p.id,
     nameKo: p.nameKo,
-    basePrice: String(p.priceKrw ?? 0),
+    basePrice: p.priceKrw,
+    price_krw: p.priceKrw,
     category: p.category,
     subcategory: p.subcategory,
     reviewCount: p.reviewCount,
     thumbnailUrl: p.thumbnailUrl,
     createdAt: p.createdAt,
-  })) as Product[];
+  })) as unknown as Product[];
+
+  if (!isLoading && products.length === 0 && category === "acrylic") {
+    products = acrylicKeyrings.map(k => ({
+      id: k.id,
+      nameKo: k.name,
+      basePrice: k.price,
+      price_krw: k.price,
+      category: "acrylic",
+      subcategory: "keyring",
+    })) as unknown as Product[];
+  }
 
   const loading = isLoading;
 
