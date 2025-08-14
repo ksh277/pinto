@@ -5,27 +5,7 @@ import { Link } from "wouter";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { useFavorites } from "@/hooks/useFavorites";
-
-// 상품 타입 정의 (필요 필드만 명시)
-interface Product {
-  id: string | number;
-  name?: string | null;
-  nameKo?: string | null;
-  imageUrl?: string | null;
-  price_krw?: number | null; // 원화 정수
-  price?: number | string | null; // 외화 또는 소수
-  basePrice?: number | string | null; // 예비 가격
-  currency?: 'KRW' | 'USD' | 'EUR' | string;
-  reviewCount?: number;
-  reviewsCount?: number;
-  likeCount?: number;
-  likesCount?: number;
-  stock?: number;
-  isOutOfStock?: boolean;
-  isLowStock?: boolean;
-  isFeatured?: boolean;
-  detailPath?: string;
-}
+import type { Product } from "@/types/product";
 
 // 금액 계산에 사용할 상수 및 유틸 함수
 const FALLBACK_RATE = 1000; // 임시 환율 1:1000
@@ -142,7 +122,7 @@ export function ProductCard({
       >
         <div className="allprint-card-image">
           {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} loading="lazy" />
+            <img src={product.imageUrl} alt={product.name ?? ""} loading="lazy" />
           ) : (
             <div className="allprint-card-image-placeholder">
               <ImageIcon className="w-full h-28 object-contain mx-auto text-gray-300 dark:text-gray-700" />

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ProductCard } from "./ProductCard";
-import type { Product } from "@shared/schema";
+import type { Product } from "@/types/product";
 
 interface ProductGridProps {
   products: Product[];
