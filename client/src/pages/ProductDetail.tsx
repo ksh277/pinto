@@ -81,6 +81,7 @@ export default function ProductDetail() {
   const [customText, setCustomText] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [dbProduct, setDbProduct] = useState<any | null>(null);
   const { user } = useSupabaseAuth();
 
   const refreshReviews = async () => {
@@ -98,6 +99,18 @@ export default function ProductDetail() {
     refreshReviews();
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+    supabase
+      .from("products")
+      .select(
+        "name_ko, price_krw, review_count, like_count, image_url, category, subcategory",
+      )
+      .eq("id", id)
+      .single()
+      .then(({ data }) => setDbProduct(data));
+  }, [id]);
+
   // Fetch product data
   const {
     data: product,
@@ -113,15 +126,17 @@ export default function ProductDetail() {
     ...product,
     // Basic product info
     name: product.name || "상품명",
-    nameKo: product.name_ko || product.name || "상품명", 
+    nameKo:
+      dbProduct?.name_ko ?? product.name_ko ?? product.name ?? "상품명",
     description: product.description || product.description_ko || "",
     basePrice: product.base_price || 0,
-    imageUrl: product.image_url || "/api/placeholder/600/600",
-    
+    imageUrl:
+      dbProduct?.image_url ?? product.image_url ?? "/api/placeholder/600/600",
+
     // Image gallery
     images: [
-      product.image_url || "/api/placeholder/600/600",
-      "/api/placeholder/600/600", 
+      dbProduct?.image_url ?? product.image_url ?? "/api/placeholder/600/600",
+      "/api/placeholder/600/600",
       "/api/placeholder/600/600",
     ],
     
@@ -184,7 +199,8 @@ export default function ProductDetail() {
     ],
     
     rating: 4.5,
-    reviewCount: product.reviewsCount || product.reviews_count || 0,
+    reviewCount:
+      product.reviewCount ?? product.reviews_count ?? dbProduct?.review_count ?? 0,
   } : null;
 
   // Mock reviews data
@@ -215,74 +231,49 @@ export default function ProductDetail() {
     },
   ];
 
-  // Calculate total price with proper validation
+  // Calculate total price with unified logic
   const calculateTotalPrice = () => {
-    console.log("Calculating price with:", {
-      selectedSize,
-      selectedColor, 
-      selectedBase,
-      selectedPackaging,
-      quantity,
-      productDisplay
-    });
+    // size price (main when selected)
+    const sizeData = productDisplay?.sizes?.find(
+      (s: any) => s.name === selectedSize,
+    );
+    const sizePrice = Number(sizeData?.price || 0);
 
-    // Get base price from product data
-    const basePrice = product?.base_price ? Number(product.base_price) : 0;
-    
-    // Get size price (this is the main price component)
-    const sizeData = productDisplay?.sizes?.find((s: any) => s.name === selectedSize);
-    const sizePrice = sizeData?.price || 0;
-    
-    // Get color price delta
-    const colorData = productDisplay?.colors?.find((c: any) => c.name === selectedColor);
-    const colorPrice = colorData?.priceDelta || 0;
-    
-    // Get base material price
-    const baseData = productDisplay?.bases?.find((b: any) => b.name === selectedBase);
-    const baseTypePrice = baseData?.price || 0;
-    
-    // Get packaging price
-    const packagingData = productDisplay?.packaging?.find((p: any) => p.name === selectedPackaging);
-    const packagingPrice = packagingData?.price || 0;
+    // option surcharges
+    const colorData = productDisplay?.colors?.find(
+      (c: any) => c.name === selectedColor,
+    );
+    const colorPrice = Number(colorData?.priceDelta || 0);
 
-    // Calculate subtotal - use size price as main price if available, otherwise use base price
-    const itemPrice = sizePrice > 0 ? sizePrice : basePrice;
+    const baseData = productDisplay?.bases?.find(
+      (b: any) => b.name === selectedBase,
+    );
+    const baseTypePrice = Number(baseData?.price || 0);
+
+    const packagingData = productDisplay?.packaging?.find(
+      (p: any) => p.name === selectedPackaging,
+    );
+    const packagingPrice = Number(packagingData?.price || 0);
+
+    // base price fallback: DB > API > 0
+    const dbBase = Number(dbProduct?.price_krw ?? 0);
+    const apiBase = Number(product?.base_price ?? 0);
+    const itemPrice = sizePrice > 0 ? sizePrice : dbBase > 0 ? dbBase : apiBase;
+
     const addons = colorPrice + baseTypePrice + packagingPrice;
     const subtotal = itemPrice + addons;
 
-    // Apply quantity-based multiplier
-    const quantityRange = productDisplay?.quantityRanges?.find((r: any) => {
+    // quantity discount
+    const range = productDisplay?.quantityRanges?.find((r: any) => {
       if (!r.range) return false;
-      const [min, max] = r.range.split(/[~-]/).map((n: string) => parseInt(n.replace(/\D/g, "")));
+      const [minStr, maxStr] = r.range.split(/[~-]/);
+      const min = parseInt(minStr.replace(/\D/g, "")) || 0;
+      const max = parseInt((maxStr || "").replace(/\D/g, ""));
       return quantity >= min && (isNaN(max) || quantity <= max);
     });
-    const multiplier = quantityRange?.multiplier || 1;
+    const multiplier = Number(range?.multiplier ?? 1);
 
-    const total = Math.round(subtotal * multiplier * quantity);
-    
-    console.log("Price calculation details:", {
-      basePrice,
-      selectedSize,
-      sizeData,
-      sizePrice,
-      selectedColor,
-      colorData,
-      colorPrice,
-      selectedBase,
-      baseData,
-      baseTypePrice,
-      selectedPackaging,
-      packagingData,
-      packagingPrice,
-      itemPrice,
-      addons,
-      subtotal,
-      multiplier,
-      quantity,
-      total
-    });
-
-    return total;
+    return Math.round(subtotal * multiplier * quantity);
   };
 
   // File upload handlers
@@ -318,7 +309,7 @@ export default function ProductDetail() {
       setUploadedFile(file);
       toast({
         title: t({
-          ko: "PDF 파일 rk�로드 완료",
+          ko: "PDF 파일 업로드 완료",
           en: "PDF file uploaded successfully",
         }),
         description: t({
@@ -332,15 +323,14 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     // Validate required selections
     if (
-      !selectedSize ||
       !selectedBase ||
-      (productDisplay.colors.length > 0 && !selectedColor)
+      (!selectedSize && !dbProduct?.price_krw && !product?.base_price)
     ) {
       toast({
         title: t({ ko: "옵션을 선택해주세요", en: "Please select options" }),
         description: t({
-          ko: "사이즈, 색상, 받침을 선택해야 합니다.",
-          en: "Size, color and base must be selected.",
+          ko: "사이즈가 없으면 DB 기본가 또는 API 기본가가 필요합니다.",
+          en: "If no size is selected, a base price from DB or API is required.",
         }),
         variant: "destructive",
       });
@@ -941,7 +931,7 @@ export default function ProductDetail() {
             <div className="flex gap-3">
               <Button
                 onClick={handleAddToCart}
-                disabled={!selectedSize || !selectedBase}
+                disabled={!selectedBase || (!selectedSize && !dbProduct?.price_krw && !product?.base_price)}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium"
               >
                 <ShoppingCart className="w-5 h-5 mr-2" />
