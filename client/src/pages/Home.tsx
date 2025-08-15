@@ -1,42 +1,22 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import {
-  Heart,
-  MessageCircle,
-  ShoppingCart,
-  Eye,
-  ArrowRight,
-  ChevronRight,
-  Puzzle,
-  ChevronLeft,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { Hero } from "@/components/Hero";
 import { CategoryNav } from "@/components/CategoryNav";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { PopularBox } from "@/components/PopularBox";
+import { ProductCard } from "@/components/ProductCard";
 import { InstagramFeed } from "@/components/InstagramFeed";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import type { Product } from "@shared/schema";
-
-type ReviewRow = {
-  id: string;
-  rating: number;
-  content: string;
-  created_at: string;
-  product_id: string;
-};
-
-type ProductMini = { id: string; name_ko?: string; image_url?: string; price_krw?: number };
+import type { Product } from "@/types/product";
 
 const currency = (n?: number | null) => ((n ?? 0) as number).toLocaleString() + " 원";
 const imgFallback = "/api/placeholder/600/600";
@@ -44,9 +24,7 @@ const imgFallback = "/api/placeholder/600/600";
 export default function Home() {
   const { toast } = useToast();
   const { language, t } = useLanguage();
-  const isMobile = useIsMobile();
   const [favorites, setFavorites] = useState<number[]>([]);
-  const [currentSlide, setCurrentSlide] = useState(0);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['products'],
@@ -59,88 +37,48 @@ export default function Home() {
     },
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const response = await fetch('/api/categories');
-      if (!response.ok) {
-        throw new Error('Failed to fetch categories');
-      }
-      return response.json();
-    },
+
+  const fetchCategoryProducts = async (category: string) => {
+    const params = new URLSearchParams({ category, limit: "4" });
+    const res = await fetch(`/api/products?${params.toString()}`);
+    if (!res.ok) {
+      throw new Error("Failed to fetch products");
+    }
+    const data = await res.json();
+    const items = data.items || data;
+    return items.map((p: any) => ({
+      ...p,
+      nameKo: p.name_ko,
+      imageUrl: p.image_url,
+    }));
+  };
+
+  const {
+    data: acrylicProducts = [],
+    isLoading: acrylicLoading,
+    error: acrylicError,
+  } = useQuery({
+    queryKey: ["category-products", "acrylic"],
+    queryFn: () => fetchCategoryProducts("acrylic"),
   });
 
   const {
-    data: reviewCards,
-    isLoading: reviewsLoading,
-    error: reviewsError,
+    data: woodProducts = [],
+    isLoading: woodLoading,
+    error: woodError,
   } = useQuery({
-    queryKey: ["home-reviews"],
-    queryFn: async () => {
-      const { data: reviews, error: rerr } = await supabase
-        .from("reviews")
-        .select("id, rating, content, created_at, product_id")
-        .eq("is_approved", true)
-        .order("created_at", { ascending: false })
-        .limit(6);
-      if (rerr) throw rerr;
-      if (!reviews || reviews.length === 0) return [];
-
-      const ids = Array.from(
-        new Set((reviews as ReviewRow[]).map((r) => r.product_id).filter(Boolean)),
-      );
-      const { data: products, error: perr } = await supabase
-        .from("products")
-        .select("id, name_ko, image_url, price_krw")
-        .in("id", ids);
-      if (perr) throw perr;
-
-      const pmap = new Map<string, ProductMini>();
-      (products || []).forEach((p) => pmap.set(p.id, p as ProductMini));
-
-      return (reviews as ReviewRow[]).map((r) => ({
-        ...r,
-        product: pmap.get(r.product_id) || null,
-      }));
-    },
+    queryKey: ["category-products", "wood"],
+    queryFn: () => fetchCategoryProducts("wood"),
   });
 
   const {
-    data: communityCards,
-    isLoading: commLoading,
-    error: commError,
+    data: lanyardProducts = [],
+    isLoading: lanyardLoading,
+    error: lanyardError,
   } = useQuery({
-    queryKey: ["home-community"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("community_posts")
-        .select("id, title, body, image_url, like_count, created_at")
-        .order("created_at", { ascending: false })
-        .limit(6);
-      if (error && (error as any).code === "42P01") return [];
-      if (error) throw error;
-      return data || [];
-    },
+    queryKey: ["category-products", "lanyard"],
+    queryFn: () => fetchCategoryProducts("lanyard"),
   });
-
-  const {
-    data: recommended,
-    isLoading: recLoading,
-    error: recError,
-  } = useQuery({
-    queryKey: ["home-recommendations"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name_ko, image_url, price_krw, review_count, like_count")
-        .order("like_count", { ascending: false })
-        .order("review_count", { ascending: false })
-        .limit(12);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
 
 
   const handleAddToCart = (product: Product) => {
@@ -297,7 +235,10 @@ export default function Home() {
           )}
         </motion.section>
 
-        {/* Creator Reviews Section */}
+
+
+
+        {/* Acrylic Goods */}
         <motion.section
           className="section-spacing"
           variants={containerVariants}
@@ -305,76 +246,40 @@ export default function Home() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
         >
-          {/* Section Header */}
           <div className="flex items-center justify-between section-header">
             <div className="flex items-center space-x-2">
-              <span className="text-2xl">🤗</span>
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                  {t({
-                    ko: "창작자들의 소중한 리뷰",
-                    en: "Precious Reviews from Creators",
-                    ja: "クリエイターの大切なレビュー",
-                    zh: "创作者宝贵评论"
-                  })}
-                </h2>
-                <p className="text-sm text-muted-foreground hidden sm:block">
-                  {t({
-                    ko: "실제 창작자들이 남긴 생생한 후기를 확인해보세요",
-                    en: "Check out vivid reviews from real creators",
-                    ja: "実際のクリエイターが残した生の感想をご覧ください",
-                    zh: "查看真实创作者留下的生动评价"
-                  })}
-                </p>
-              </div>
+              <span className="text-2xl">🪞</span>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                {t({ ko: "아크릴 굿즈", en: "Acrylic Goods" })}
+              </h2>
             </div>
-            <Link href="/reviews">
+            <Link href="/category/acrylic/all">
               <button className="text-sm text-blue-500 hover:underline flex items-center">
-                {t({ ko: "더보기", en: "View More", ja: "もっと見る", zh: "查看更多" })}{" "}
+                {t({ ko: "더보기", en: "View More" })}{" "}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </button>
             </Link>
           </div>
-
-          {reviewsLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-32 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
-                />
-              ))}
-            </div>
-          ) : reviewsError ? (
-            (console.error(reviewsError), (
-              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
-            ))
-          ) : (reviewCards?.length ?? 0) === 0 ? (
-            <p className="text-sm text-gray-500">아직 후기가 없습니다.</p>
+          {acrylicLoading ? (
+            <ProductCardSkeleton count={4} gridClassName="grid grid-cols-2 md:grid-cols-4 gap-4" />
+          ) : acrylicError ? (
+            <p className="text-sm text-gray-500">데이터를 불러오지 못했어요.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {reviewCards!.map((r: any) => (
-                <Link key={r.id} href={`/product/${r.product?.id}`}>
-                  <div className="rounded-lg border dark:border-gray-700 p-3 hover:shadow transition">
-                    <img
-                      className="w-full h-32 object-cover rounded mb-2"
-                      src={r.product?.image_url || imgFallback}
-                      alt={r.product?.name_ko || "상품"}
-                    />
-                    <div className="text-sm font-semibold truncate">
-                      {r.product?.name_ko || "상품"}
-                    </div>
-                    <div className="text-xs text-gray-500 line-clamp-2 mt-1">
-                      ★ {r.rating} · {r.content}
-                    </div>
-                  </div>
-                </Link>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {acrylicProducts.slice(0, 4).map((p: Product) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  onAddToCart={handleAddToCart}
+                  onToggleFavorite={handleToggleFavorite}
+                  isFavorite={favorites.includes(p.id as number)}
+                />
               ))}
             </div>
           )}
         </motion.section>
 
-        {/* Community Showcase */}
+        {/* Wood Goods */}
         <motion.section
           className="section-spacing"
           variants={containerVariants}
@@ -384,84 +289,38 @@ export default function Home() {
         >
           <div className="flex items-center justify-between section-header">
             <div className="flex items-center space-x-2">
-              <span className="text-2xl">🔥</span>
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                  {t({
-                    ko: "굿즈 자랑 커뮤니티",
-                    en: "Goods Showcase Community",
-                  })}
-                </h2>
-                <p className="text-sm text-muted-foreground hidden sm:block">
-                  {t({
-                    ko: "멋진 굿즈들을 자랑해보세요",
-                    en: "Show off your amazing goods",
-                  })}
-                </p>
-              </div>
+              <span className="text-2xl">🪵</span>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                {t({ ko: "우드 굿즈", en: "Wood Goods" })}
+              </h2>
             </div>
-            <Link href="/community">
+            <Link href="/category/wood/all">
               <button className="text-sm text-blue-500 hover:underline flex items-center">
-                {t({ ko: "더보기", en: "View More", ja: "もっと見る", zh: "查看更多" })}{" "}
+                {t({ ko: "더보기", en: "View More" })}{" "}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </button>
             </Link>
           </div>
-
-          {commLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-32 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
-                />
-              ))}
-            </div>
-          ) : commError ? (
-            (console.error(commError), (
-              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
-            ))
-          ) : (communityCards?.length ?? 0) === 0 ? (
-            <p className="text-sm text-gray-500">아직 커뮤니티 글이 없습니다.</p>
+          {woodLoading ? (
+            <ProductCardSkeleton count={4} gridClassName="grid grid-cols-2 md:grid-cols-4 gap-4" />
+          ) : woodError ? (
+            <p className="text-sm text-gray-500">데이터를 불러오지 못했어요.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {communityCards!.slice(0, 4).map((item: any) => (
-                <Link key={item.id} href={`/community/${item.id}`}>
-                  <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
-                    <div className="relative flex-[0_0_70%]">
-                      <img
-                        src={item.image_url || imgFallback}
-                        alt={item.title || '게시글'}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                        LIKE {item.like_count ?? 0}
-                      </div>
-                    </div>
-
-                    <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                          {item.title}
-                        </h3>
-                        <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                          {item.body}
-                        </p>
-                      </div>
-
-                      <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                        {new Date(item.created_at).toLocaleDateString()} / LIKE {item.like_count ?? 0}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {woodProducts.slice(0, 4).map((p: Product) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  onAddToCart={handleAddToCart}
+                  onToggleFavorite={handleToggleFavorite}
+                  isFavorite={favorites.includes(p.id as number)}
+                />
               ))}
             </div>
           )}
         </motion.section>
 
-        {/* Material Recommendations */}
+        {/* Lanyard Goods */}
         <motion.section
           className="section-spacing"
           variants={containerVariants}
@@ -471,62 +330,32 @@ export default function Home() {
         >
           <div className="flex items-center justify-between section-header">
             <div className="flex items-center space-x-2">
-              <span className="text-2xl">✨</span>
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                  {t({
-                    ko: "자재별 추천",
-                    en: "Material-Based Recommendations",
-                  })}
-                </h2>
-                <p className="text-sm text-muted-foreground hidden sm:block">
-                  {t({
-                    ko: "원하는 재질의 완벽한 굿즈를 찾아보세요",
-                    en: "Find perfect goods with your desired materials",
-                  })}
-                </p>
-              </div>
+              <span className="text-2xl">📿</span>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                {t({ ko: "랜야드 굿즈", en: "Lanyard Goods" })}
+              </h2>
             </div>
-            <Link href="/products">
+            <Link href="/category/lanyard/all">
               <button className="text-sm text-blue-500 hover:underline flex items-center">
-                {t({ ko: "더보기", en: "View More", ja: "もっと見る", zh: "查看更多" })}{" "}
+                {t({ ko: "더보기", en: "View More" })}{" "}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </button>
             </Link>
           </div>
-
-          {recLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-44 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
-                />
-              ))}
-            </div>
-          ) : recError ? (
-            (console.error(recError), (
-              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
-            ))
-          ) : (recommended?.length ?? 0) === 0 ? (
-            <p className="text-sm text-gray-500">아직 추천할 상품이 없습니다.</p>
+          {lanyardLoading ? (
+            <ProductCardSkeleton count={4} gridClassName="grid grid-cols-2 md:grid-cols-4 gap-4" />
+          ) : lanyardError ? (
+            <p className="text-sm text-gray-500">데이터를 불러오지 못했어요.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {recommended!.map((p: any) => (
-                <Link key={p.id} href={`/product/${p.id}`}>
-                  <div className="rounded-lg border dark:border-gray-700 p-3 hover:shadow transition">
-                    <img
-                      className="w-full h-32 object-cover rounded mb-2"
-                      src={p.image_url || imgFallback}
-                      alt={p.name_ko || "상품"}
-                    />
-                    <div className="text-sm font-semibold truncate">{p.name_ko}</div>
-                    <div className="text-xs text-gray-500 mt-1">{currency(p.price_krw)}</div>
-                    <div className="text-[11px] text-gray-400 mt-1">
-                      ❤ {p.like_count ?? 0} · 리뷰 {p.review_count ?? 0}
-                    </div>
-                  </div>
-                </Link>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {lanyardProducts.slice(0, 4).map((p: Product) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  onAddToCart={handleAddToCart}
+                  onToggleFavorite={handleToggleFavorite}
+                  isFavorite={favorites.includes(p.id as number)}
+                />
               ))}
             </div>
           )}
