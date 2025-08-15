@@ -63,8 +63,17 @@ import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseProvider";
 import type { Product, ProductReview } from "@shared/schema";
 
+type DbProduct = {
+  id: string;
+  name_ko: string | null;
+  price_krw: number | null;
+  image_url: string | null;
+  like_count: number | null;
+  review_count: number | null;
+};
+
 export default function ProductDetail() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const { language, t } = useLanguage();
 
@@ -81,7 +90,7 @@ export default function ProductDetail() {
   const [customText, setCustomText] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [dbProduct, setDbProduct] = useState<any | null>(null);
+  const [dbProduct, setDbProduct] = useState<DbProduct | null>(null);
   const { user } = useSupabaseAuth();
 
   const refreshReviews = async () => {
@@ -103,9 +112,7 @@ export default function ProductDetail() {
     if (!id) return;
     supabase
       .from("products")
-      .select(
-        "name_ko, price_krw, review_count, like_count, image_url, category, subcategory",
-      )
+      .select("id, name_ko, price_krw, image_url, like_count, review_count")
       .eq("id", id)
       .single()
       .then(({ data }) => setDbProduct(data));
@@ -477,6 +484,9 @@ export default function ProductDetail() {
     );
   }
 
+  const totalPrice = calculateTotalPrice();
+  const displayPrice = selectedSize ? totalPrice : dbProduct?.price_krw ?? totalPrice;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#1a1a1a]">
       {/* Breadcrumb */}
@@ -512,7 +522,7 @@ export default function ProductDetail() {
             {/* Main Image */}
             <div className="aspect-square bg-white dark:bg-[#1a1a1a] rounded-lg overflow-hidden shadow-sm border dark:border-gray-700">
               <img
-                src={productDisplay.images[currentImageIndex]}
+                src={dbProduct?.image_url ?? productDisplay.images[currentImageIndex]}
                 alt={productDisplay.nameKo}
                 className="w-full h-full object-cover"
               />
@@ -565,7 +575,7 @@ export default function ProductDetail() {
             {/* Price Display */}
             <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
               <div className="text-3xl font-bold text-blue-600 dark:text-blue-300 mb-2">
-                {calculateTotalPrice().toLocaleString()} 원
+                {displayPrice.toLocaleString()} 원
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 기본 가격부터 시작 (옵션에 따라 변동)
@@ -935,7 +945,7 @@ export default function ProductDetail() {
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium"
               >
                 <ShoppingCart className="w-5 h-5 mr-2" />
-                {calculateTotalPrice().toLocaleString()}원 주문하기
+                {displayPrice.toLocaleString()}원 주문하기
               </Button>
               <Button
                 variant="outline"

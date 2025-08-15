@@ -28,18 +28,67 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import type { Product } from "@shared/schema";
 
-type ReviewRow = {
+type DbProduct = {
+  id: string;
+  name_ko: string | null;
+  price_krw: number | null;
+  image_url: string | null;
+  like_count: number | null;
+  review_count: number | null;
+};
+
+type ReviewWithProduct = {
   id: string;
   rating: number;
   content: string;
   created_at: string;
-  product_id: string;
+  product: DbProduct | null;
 };
 
-type ProductMini = { id: string; name_ko?: string; image_url?: string; price_krw?: number };
-
-const currency = (n?: number | null) => ((n ?? 0) as number).toLocaleString() + " 원";
+const toKRW = (n?: number | null) =>
+  typeof n === "number" ? `${n.toLocaleString("ko-KR")} 원` : "가격 문의";
 const imgFallback = "/api/placeholder/600/600";
+
+const fetchLatestReviews = async (): Promise<ReviewWithProduct[]> => {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select(
+      `id, rating, content, created_at,
+      product:products (
+        id, name_ko, image_url, price_krw, like_count, review_count
+      )`
+    )
+    .eq("is_approved", true)
+    .order("created_at", { ascending: false })
+    .limit(8);
+
+  if (error) {
+    if ((error as any).code === "42P01" || (error as any).code === "42703") {
+      console.error("[home] supabase", error);
+      return [];
+    }
+    throw error;
+  }
+  return data ?? [];
+};
+
+const fetchRecommended = async (): Promise<DbProduct[]> => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, name_ko, image_url, price_krw, like_count, review_count")
+    .order("like_count", { ascending: false })
+    .order("review_count", { ascending: false })
+    .limit(12);
+
+  if (error) {
+    if ((error as any).code === "42P01" || (error as any).code === "42703") {
+      console.error("[home] supabase", error);
+      return [];
+    }
+    throw error;
+  }
+  return data ?? [];
+};
 
 export default function Home() {
   const { toast } = useToast();
@@ -71,39 +120,10 @@ export default function Home() {
   });
 
   const {
-    data: reviewCards,
-    isLoading: reviewsLoading,
-    error: reviewsError,
-  } = useQuery({
-    queryKey: ["home-reviews"],
-    queryFn: async () => {
-      const { data: reviews, error: rerr } = await supabase
-        .from("reviews")
-        .select("id, rating, content, created_at, product_id")
-        .eq("is_approved", true)
-        .order("created_at", { ascending: false })
-        .limit(6);
-      if (rerr) throw rerr;
-      if (!reviews || reviews.length === 0) return [];
-
-      const ids = Array.from(
-        new Set((reviews as ReviewRow[]).map((r) => r.product_id).filter(Boolean)),
-      );
-      const { data: products, error: perr } = await supabase
-        .from("products")
-        .select("id, name_ko, image_url, price_krw")
-        .in("id", ids);
-      if (perr) throw perr;
-
-      const pmap = new Map<string, ProductMini>();
-      (products || []).forEach((p) => pmap.set(p.id, p as ProductMini));
-
-      return (reviews as ReviewRow[]).map((r) => ({
-        ...r,
-        product: pmap.get(r.product_id) || null,
-      }));
-    },
-  });
+    data: latestReviews,
+    isLoading: revLoading,
+    error: revErr,
+  } = useQuery({ queryKey: ["home-reviews"], queryFn: fetchLatestReviews });
 
   const {
     data: communityCards,
@@ -126,20 +146,8 @@ export default function Home() {
   const {
     data: recommended,
     isLoading: recLoading,
-    error: recError,
-  } = useQuery({
-    queryKey: ["home-recommendations"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name_ko, image_url, price_krw, review_count, like_count")
-        .order("like_count", { ascending: false })
-        .order("review_count", { ascending: false })
-        .limit(12);
-      if (error) throw error;
-      return data || [];
-    },
-  });
+    error: recErr,
+  } = useQuery({ queryKey: ["home-recommended"], queryFn: fetchRecommended });
 
 
 
@@ -336,40 +344,42 @@ export default function Home() {
             </Link>
           </div>
 
-          {reviewsLoading ? (
+          {revLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
                   className="h-32 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
                 />
               ))}
             </div>
-          ) : reviewsError ? (
-            (console.error(reviewsError), (
-              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+          ) : revErr ? (
+            (console.error("[home] supabase", revErr), (
+              <p className="text-sm text-gray-500">아직 후기가 없습니다.</p>
             ))
-          ) : (reviewCards?.length ?? 0) === 0 ? (
+          ) : (latestReviews?.filter((r) => r.product).length ?? 0) === 0 ? (
             <p className="text-sm text-gray-500">아직 후기가 없습니다.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {reviewCards!.map((r: any) => (
-                <Link key={r.id} href={`/product/${r.product?.id}`}>
-                  <div className="rounded-lg border dark:border-gray-700 p-3 hover:shadow transition">
-                    <img
-                      className="w-full h-32 object-cover rounded mb-2"
-                      src={r.product?.image_url || imgFallback}
-                      alt={r.product?.name_ko || "상품"}
-                    />
-                    <div className="text-sm font-semibold truncate">
-                      {r.product?.name_ko || "상품"}
+              {latestReviews!
+                .filter((r) => r.product)
+                .map((r) => (
+                  <Link key={r.id} href={`/product/${r.product!.id}`}>
+                    <div className="rounded-lg border dark:border-gray-700 p-3 hover:shadow transition">
+                      <img
+                        className="w-full h-32 object-cover rounded mb-2"
+                        src={r.product!.image_url || imgFallback}
+                        alt={r.product!.name_ko || "상품"}
+                      />
+                      <div className="text-sm font-semibold truncate">
+                        {r.product!.name_ko || "상품"}
+                      </div>
+                      <div className="text-xs text-gray-500 line-clamp-2 mt-1">
+                        ★ {r.rating} · {r.content}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 line-clamp-2 mt-1">
-                      ★ {r.rating} · {r.content}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))}
             </div>
           )}
         </motion.section>
@@ -504,15 +514,15 @@ export default function Home() {
                 />
               ))}
             </div>
-          ) : recError ? (
-            (console.error(recError), (
-              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+          ) : recErr ? (
+            (console.error("[home] supabase", recErr), (
+              <p className="text-sm text-gray-500">아직 추천할 상품이 없습니다.</p>
             ))
           ) : (recommended?.length ?? 0) === 0 ? (
             <p className="text-sm text-gray-500">아직 추천할 상품이 없습니다.</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {recommended!.map((p: any) => (
+              {recommended!.map((p) => (
                 <Link key={p.id} href={`/product/${p.id}`}>
                   <div className="rounded-lg border dark:border-gray-700 p-3 hover:shadow transition">
                     <img
@@ -521,7 +531,7 @@ export default function Home() {
                       alt={p.name_ko || "상품"}
                     />
                     <div className="text-sm font-semibold truncate">{p.name_ko}</div>
-                    <div className="text-xs text-gray-500 mt-1">{currency(p.price_krw)}</div>
+                    <div className="text-xs text-gray-500 mt-1">{toKRW(p.price_krw)}</div>
                     <div className="text-[11px] text-gray-400 mt-1">
                       ❤ {p.like_count ?? 0} · 리뷰 {p.review_count ?? 0}
                     </div>
