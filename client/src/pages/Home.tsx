@@ -11,16 +11,10 @@ import {
   Puzzle,
   ChevronLeft,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { Hero } from "@/components/Hero";
 import { CategoryNav } from "@/components/CategoryNav";
-import { SectionHeader } from "@/components/SectionHeader";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
-import { ProductCard } from "@/components/ProductCard";
-import { HotProductPreview } from "@/components/HotProductPreview";
 import { PopularBox } from "@/components/PopularBox";
 import { InstagramFeed } from "@/components/InstagramFeed";
 import { useToast } from "@/hooks/use-toast";
@@ -34,15 +28,17 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import type { Product } from "@shared/schema";
 
-type ReviewCard = {
+type ReviewRow = {
   id: string;
   rating: number;
   content: string;
   created_at: string;
-  product?: { id: string; name_ko?: string; image_url?: string; price_krw?: number } | null;
+  product_id: string;
 };
 
-const currency = (n?: number) => (n ?? 0).toLocaleString() + "원";
+type ProductMini = { id: string; name_ko?: string; image_url?: string; price_krw?: number };
+
+const currency = (n?: number | null) => ((n ?? 0) as number).toLocaleString() + " 원";
 const imgFallback = "/api/placeholder/600/600";
 
 export default function Home() {
@@ -75,30 +71,42 @@ export default function Home() {
   });
 
   const {
-    data: reviewCards = [],
+    data: reviewCards,
     isLoading: reviewsLoading,
     error: reviewsError,
   } = useQuery({
     queryKey: ["home-reviews"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: reviews, error: rerr } = await supabase
         .from("reviews")
-        .select(
-          `
-        id, rating, content, created_at,
-        product:products ( id, name_ko, image_url, price_krw )
-      `,
-        )
+        .select("id, rating, content, created_at, product_id")
         .eq("is_approved", true)
         .order("created_at", { ascending: false })
         .limit(6);
-      if (error) throw error;
-      return (data as ReviewCard[]) || [];
+      if (rerr) throw rerr;
+      if (!reviews || reviews.length === 0) return [];
+
+      const ids = Array.from(
+        new Set((reviews as ReviewRow[]).map((r) => r.product_id).filter(Boolean)),
+      );
+      const { data: products, error: perr } = await supabase
+        .from("products")
+        .select("id, name_ko, image_url, price_krw")
+        .in("id", ids);
+      if (perr) throw perr;
+
+      const pmap = new Map<string, ProductMini>();
+      (products || []).forEach((p) => pmap.set(p.id, p as ProductMini));
+
+      return (reviews as ReviewRow[]).map((r) => ({
+        ...r,
+        product: pmap.get(r.product_id) || null,
+      }));
     },
   });
 
   const {
-    data: communityCards = [],
+    data: communityCards,
     isLoading: commLoading,
     error: commError,
   } = useQuery({
@@ -116,7 +124,7 @@ export default function Home() {
   });
 
   const {
-    data: recommended = [],
+    data: recommended,
     isLoading: recLoading,
     error: recError,
   } = useQuery({
@@ -124,10 +132,8 @@ export default function Home() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select(
-          "id, name_ko, image_url, price_krw, review_count, like_count, category, subcategory",
-        )
-        .order("like_count", { ascending: false, nullsFirst: false })
+        .select("id, name_ko, image_url, price_krw, review_count, like_count")
+        .order("like_count", { ascending: false })
         .order("review_count", { ascending: false })
         .limit(12);
       if (error) throw error;
@@ -162,17 +168,6 @@ export default function Home() {
       opacity: 1,
       transition: {
         staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 10, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.3,
       },
     },
   };
@@ -342,51 +337,40 @@ export default function Home() {
           </div>
 
           {reviewsLoading ? (
-            <ProductCardSkeleton
-              count={4}
-              gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-            />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-32 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
+                />
+              ))}
+            </div>
           ) : reviewsError ? (
-            <>
-              {console.error(reviewsError)}
+            (console.error(reviewsError), (
               <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
-            </>
-          ) : reviewCards.length === 0 ? (
+            ))
+          ) : (reviewCards?.length ?? 0) === 0 ? (
             <p className="text-sm text-gray-500">아직 후기가 없습니다.</p>
           ) : (
-            <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {reviewCards.slice(0, 4).map((card) => (
-                <motion.div key={card.id} variants={itemVariants} className="w-full">
-                  <Link href={`/product/${card.product?.id}`}>
-                    <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[420px] flex flex-col">
-                      <div className="relative flex-[0_0_70%]">
-                        <img
-                          src={card.product?.image_url || imgFallback}
-                          alt={card.product?.name_ko || '상품'}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-
-                      <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                            {card.product?.name_ko}
-                          </h3>
-                          <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                            {card.content}
-                          </p>
-                        </div>
-
-                        <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                          평점 {card.rating}
-                        </div>
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reviewCards!.map((r: any) => (
+                <Link key={r.id} href={`/product/${r.product?.id}`}>
+                  <div className="rounded-lg border dark:border-gray-700 p-3 hover:shadow transition">
+                    <img
+                      className="w-full h-32 object-cover rounded mb-2"
+                      src={r.product?.image_url || imgFallback}
+                      alt={r.product?.name_ko || "상품"}
+                    />
+                    <div className="text-sm font-semibold truncate">
+                      {r.product?.name_ko || "상품"}
                     </div>
-                  </Link>
-                </motion.div>
+                    <div className="text-xs text-gray-500 line-clamp-2 mt-1">
+                      ★ {r.rating} · {r.content}
+                    </div>
+                  </div>
+                </Link>
               ))}
-            </motion.div>
+            </div>
           )}
         </motion.section>
 
@@ -425,54 +409,55 @@ export default function Home() {
           </div>
 
           {commLoading ? (
-            <ProductCardSkeleton
-              count={4}
-              gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-            />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-32 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
+                />
+              ))}
+            </div>
           ) : commError ? (
-            <>
-              {console.error(commError)}
+            (console.error(commError), (
               <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
-            </>
-          ) : communityCards.length === 0 ? (
+            ))
+          ) : (communityCards?.length ?? 0) === 0 ? (
             <p className="text-sm text-gray-500">아직 커뮤니티 글이 없습니다.</p>
           ) : (
-            <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {communityCards.slice(0, 4).map((item) => (
-                <motion.div key={item.id} variants={itemVariants} className="w-full">
-                  <Link href={`/community/${item.id}`}>
-                    <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
-                      <div className="relative flex-[0_0_70%]">
-                        <img
-                          src={item.image_url || imgFallback}
-                          alt={item.title || '게시글'}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                          LIKE {item.like_count ?? 0}
-                        </div>
-                      </div>
-
-                      <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                            {item.title}
-                          </h3>
-                          <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                            {item.body}
-                          </p>
-                        </div>
-
-                        <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                          {new Date(item.created_at).toLocaleDateString()} / LIKE {item.like_count ?? 0}
-                        </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {communityCards!.slice(0, 4).map((item: any) => (
+                <Link key={item.id} href={`/community/${item.id}`}>
+                  <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
+                    <div className="relative flex-[0_0_70%]">
+                      <img
+                        src={item.image_url || imgFallback}
+                        alt={item.title || '게시글'}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+                        LIKE {item.like_count ?? 0}
                       </div>
                     </div>
-                  </Link>
-                </motion.div>
+
+                    <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
+                          {item.title}
+                        </h3>
+                        <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
+                          {item.body}
+                        </p>
+                      </div>
+
+                      <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
+                        {new Date(item.created_at).toLocaleDateString()} / LIKE {item.like_count ?? 0}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
               ))}
-            </motion.div>
+            </div>
           )}
         </motion.section>
 
@@ -511,53 +496,39 @@ export default function Home() {
           </div>
 
           {recLoading ? (
-            <ProductCardSkeleton
-              count={4}
-              gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-            />
-          ) : recError ? (
-            <>
-              {console.error(recError)}
-              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
-            </>
-          ) : recommended.length === 0 ? (
-            <p className="text-sm text-gray-500">데이터가 아직 없습니다.</p>
-          ) : (
-            <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {recommended.slice(0, 4).map((item) => (
-                <motion.div key={item.id} variants={itemVariants} className="w-full">
-                  <Link href={`/product/${item.id}`}>
-                    <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
-                      <div className="relative flex-[0_0_70%]">
-                        <img
-                          src={item.image_url || imgFallback}
-                          alt={item.name_ko || '상품'}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-
-                      <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                            {item.name_ko}
-                          </h3>
-
-                          <p className="text-lg font-bold text-blue-600 dark:text-white">
-                            {currency(item.price_krw)}
-                          </p>
-
-                          <div className="flex gap-2">
-                            <Badge variant="secondary">리뷰 {item.review_count ?? 0}</Badge>
-                            <Badge variant="secondary">LIKE {item.like_count ?? 0}</Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-44 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
+                />
               ))}
-            </motion.div>
+            </div>
+          ) : recError ? (
+            (console.error(recError), (
+              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+            ))
+          ) : (recommended?.length ?? 0) === 0 ? (
+            <p className="text-sm text-gray-500">아직 추천할 상품이 없습니다.</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {recommended!.map((p: any) => (
+                <Link key={p.id} href={`/product/${p.id}`}>
+                  <div className="rounded-lg border dark:border-gray-700 p-3 hover:shadow transition">
+                    <img
+                      className="w-full h-32 object-cover rounded mb-2"
+                      src={p.image_url || imgFallback}
+                      alt={p.name_ko || "상품"}
+                    />
+                    <div className="text-sm font-semibold truncate">{p.name_ko}</div>
+                    <div className="text-xs text-gray-500 mt-1">{currency(p.price_krw)}</div>
+                    <div className="text-[11px] text-gray-400 mt-1">
+                      ❤ {p.like_count ?? 0} · 리뷰 {p.review_count ?? 0}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
         </motion.section>
 
