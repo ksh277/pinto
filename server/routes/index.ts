@@ -27,7 +27,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import { getChatbotResponse } from "./lib/openai";
+import { getChatbotResponse } from "../lib/openai";
 import { initializeSocialAuth } from "./socialAuth";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-here";
