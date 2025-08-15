@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import {
   Heart,
   MessageCircle,
@@ -33,39 +34,16 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import type { Product } from "@shared/schema";
 
-type CreatorReview = {
-  id: number;
-  productImage: string;
-  productName: string;
-  userName: string;
+type ReviewCard = {
+  id: string;
   rating: number;
-  date: string;
-  reviewCount: number;
-  comment: string;
-  tags: string[];
+  content: string;
+  created_at: string;
+  product?: { id: string; name_ko?: string; image_url?: string; price_krw?: number } | null;
 };
 
-type CommunityItem = {
-  id: number;
-  image: string;
-  title: string;
-  likes: number;
-  comments: number;
-  tags: string[];
-  author: string;
-};
-
-type MaterialReco = {
-  id: number;
-  image: string;
-  title: string;
-  price: number;
-  originalPrice?: number | null;
-  reviewCount: number;
-  badge: string;
-  material: string;
-  discount: number;
-};
+const currency = (n?: number) => (n ?? 0).toLocaleString() + "원";
+const imgFallback = "/api/placeholder/600/600";
 
 export default function Home() {
   const { toast } = useToast();
@@ -96,35 +74,66 @@ export default function Home() {
     },
   });
 
-  const { data: creatorReviews, isLoading: isLoadingCreatorReviews, isError: isErrorCreator } =
-    useQuery<CreatorReview[]>({
-      queryKey: ['creatorReviews', { limit: 4 }],
-      queryFn: async () => {
-        const res = await fetch('/api/reviews/creator?limit=4');
-        if (!res.ok) throw new Error('Failed to fetch creator reviews');
-        return res.json();
-      },
-    });
+  const {
+    data: reviewCards = [],
+    isLoading: reviewsLoading,
+    error: reviewsError,
+  } = useQuery({
+    queryKey: ["home-reviews"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select(
+          `
+        id, rating, content, created_at,
+        product:products ( id, name_ko, image_url, price_krw )
+      `,
+        )
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return (data as ReviewCard[]) || [];
+    },
+  });
 
-  const { data: communityShowcase, isLoading: isLoadingCommunity, isError: isErrorCommunity } =
-    useQuery<CommunityItem[]>({
-      queryKey: ['communityShowcase', { limit: 4 }],
-      queryFn: async () => {
-        const res = await fetch('/api/community/highlight?limit=4');
-        if (!res.ok) throw new Error('Failed to fetch community showcase');
-        return res.json();
-      },
-    });
+  const {
+    data: communityCards = [],
+    isLoading: commLoading,
+    error: commError,
+  } = useQuery({
+    queryKey: ["home-community"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("community_posts")
+        .select("id, title, body, image_url, like_count, created_at")
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (error && (error as any).code === "42P01") return [];
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
-  const { data: materialRecommendations, isLoading: isLoadingMaterial, isError: isErrorMaterial } =
-    useQuery<MaterialReco[]>({
-      queryKey: ['materialRecommendations', { limit: 4 }],
-      queryFn: async () => {
-        const res = await fetch('/api/recommendations/materials?limit=4');
-        if (!res.ok) throw new Error('Failed to fetch material recommendations');
-        return res.json();
-      },
-    });
+  const {
+    data: recommended = [],
+    isLoading: recLoading,
+    error: recError,
+  } = useQuery({
+    queryKey: ["home-recommendations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(
+          "id, name_ko, image_url, price_krw, review_count, like_count, category, subcategory",
+        )
+        .order("like_count", { ascending: false, nullsFirst: false })
+        .order("review_count", { ascending: false })
+        .limit(12);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
 
 
@@ -332,59 +341,45 @@ export default function Home() {
             </Link>
           </div>
 
-          {isLoadingCreatorReviews ? (
+          {reviewsLoading ? (
             <ProductCardSkeleton
               count={4}
               gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
             />
-          ) : isErrorCreator ? (
-            <p className="text-sm text-red-500">Failed to load reviews</p>
+          ) : reviewsError ? (
+            <>
+              {console.error(reviewsError)}
+              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+            </>
+          ) : reviewCards.length === 0 ? (
+            <p className="text-sm text-gray-500">아직 후기가 없습니다.</p>
           ) : (
             <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {(creatorReviews ?? []).slice(0, 4).map((review) => (
-                <motion.div
-                  key={review.id}
-                  variants={itemVariants}
-                  className="w-full"
-                >
-                  <Link href={`/product/${review.id}`}>
+              {reviewCards.slice(0, 4).map((card) => (
+                <motion.div key={card.id} variants={itemVariants} className="w-full">
+                  <Link href={`/product/${card.product?.id}`}>
                     <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[420px] flex flex-col">
-                      {/* Large Review Image - 70% of card height */}
                       <div className="relative flex-[0_0_70%]">
                         <img
-                          src={review.productImage}
-                          alt={review.productName}
+                          src={card.product?.image_url || imgFallback}
+                          alt={card.product?.name_ko || '상품'}
                           className="w-full h-full object-cover"
                           loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.src = "/api/placeholder/360/280";
-                          }}
                         />
-
-                        {/* HOT Badge */}
-                        <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
-                          HOT
-                        </div>
-
-                        {/* LIKE Button */}
-                        <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                          LIKE {review.reviewCount}
-                        </div>
                       </div>
 
-                      {/* Review Content - 30% of card height */}
                       <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
                         <div className="space-y-2">
                           <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                            {review.productName}
+                            {card.product?.name_ko}
                           </h3>
                           <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                            {review.comment}
+                            {card.content}
                           </p>
                         </div>
 
                         <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                          리뷰 {review.reviewCount} / 평점 {review.rating}
+                          평점 {card.rating}
                         </div>
                       </div>
                     </div>
@@ -429,57 +424,48 @@ export default function Home() {
             </Link>
           </div>
 
-          {isLoadingCommunity ? (
+          {commLoading ? (
             <ProductCardSkeleton
               count={4}
               gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
             />
-          ) : isErrorCommunity ? (
-            <p className="text-sm text-red-500">Failed to load community</p>
+          ) : commError ? (
+            <>
+              {console.error(commError)}
+              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+            </>
+          ) : communityCards.length === 0 ? (
+            <p className="text-sm text-gray-500">아직 커뮤니티 글이 없습니다.</p>
           ) : (
             <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {(communityShowcase ?? []).slice(0, 4).map((item) => (
-                <motion.div
-                  key={item.id}
-                  variants={itemVariants}
-                  className="w-full"
-                >
+              {communityCards.slice(0, 4).map((item) => (
+                <motion.div key={item.id} variants={itemVariants} className="w-full">
                   <Link href={`/community/${item.id}`}>
                     <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
-                      {/* Large Community Image - 70% of card height */}
                       <div className="relative flex-[0_0_70%]">
                         <img
-                          src={item.image}
-                          alt={item.title}
+                          src={item.image_url || imgFallback}
+                          alt={item.title || '게시글'}
                           className="w-full h-full object-cover"
                           loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.src = "/api/placeholder/360/280";
-                          }}
                         />
-
-                        {/* LIKE Button */}
                         <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                          LIKE {item.likes}
+                          LIKE {item.like_count ?? 0}
                         </div>
                       </div>
 
-                      {/* Community Content - 30% of card height */}
                       <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
                         <div className="space-y-2">
                           <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
                             {item.title}
                           </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-200 truncate leading-snug">
-                            @{item.author}
-                          </p>
                           <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                            {item.tags.join(', ')}
+                            {item.body}
                           </p>
                         </div>
 
                         <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                          댓글 {item.comments} / LIKE {item.likes}
+                          {new Date(item.created_at).toLocaleDateString()} / LIKE {item.like_count ?? 0}
                         </div>
                       </div>
                     </div>
@@ -524,69 +510,47 @@ export default function Home() {
             </Link>
           </div>
 
-          {isLoadingMaterial ? (
+          {recLoading ? (
             <ProductCardSkeleton
               count={4}
               gridClassName="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
             />
-          ) : isErrorMaterial ? (
-            <p className="text-sm text-red-500">Failed to load recommendations</p>
+          ) : recError ? (
+            <>
+              {console.error(recError)}
+              <p className="text-sm text-gray-500">데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+            </>
+          ) : recommended.length === 0 ? (
+            <p className="text-sm text-gray-500">데이터가 아직 없습니다.</p>
           ) : (
             <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {(materialRecommendations ?? []).slice(0, 4).map((item) => (
-                <motion.div
-                  key={item.id}
-                  variants={itemVariants}
-                  className="w-full"
-                >
+              {recommended.slice(0, 4).map((item) => (
+                <motion.div key={item.id} variants={itemVariants} className="w-full">
                   <Link href={`/product/${item.id}`}>
                     <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300 min-h-[320px] md:min-h-[400px] flex flex-col">
-                      {/* Large Material Image - 70% of card height */}
                       <div className="relative flex-[0_0_70%]">
                         <img
-                          src={item.image}
-                          alt={item.title}
+                          src={item.image_url || imgFallback}
+                          alt={item.name_ko || '상품'}
                           className="w-full h-full object-cover"
                           loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.src = "/api/placeholder/360/280";
-                          }}
                         />
-
-                        {/* Material Badge */}
-                        <div className="absolute top-3 left-3 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
-                          {item.badge}
-                        </div>
-
-                        {/* LIKE Button */}
-                        <div className="absolute top-3 right-3 bg-white/80 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                          LIKE {Math.floor(item.reviewCount * 0.6)}
-                        </div>
                       </div>
 
-                      {/* Material Content - 30% of card height */}
                       <div className="flex-[0_0_30%] p-4 flex flex-col justify-between">
                         <div className="space-y-2">
                           <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-1">
-                            {item.title}
+                            {item.name_ko}
                           </h3>
 
                           <p className="text-lg font-bold text-blue-600 dark:text-white">
-                            ₩{Number(item.price ?? 0).toLocaleString()}
+                            {currency(item.price_krw)}
                           </p>
 
-                          {/* Material Description */}
-                          <p className="text-sm text-black dark:text-white line-clamp-2 font-medium leading-snug mt-1">
-                            {item.material === "홀로그램" ? "무지개색 홀로그램 효과로 각도마다 다른 색감을 연출하는 프리미엄 키링입니다."
-                              : item.material === "투명아크릴" ? "투명하고 깔끔한 아크릴 소재로 제작되어 세련된 느낌을 주는 스탠드입니다."
-                              : item.material === "미러" ? "거울 효과가 있는 미러 아크릴로 빛 반사가 아름다운 키링입니다."
-                              : "천연 우드 소재에 정밀한 레이저 각인으로 고급스러운 마감을 자랑합니다."
-                            }
-                          </p>
-                        </div>
-
-                        <div className="text-sm text-gray-500 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-600">
-                          리뷰 {item.reviewCount} / LIKE {Math.floor(item.reviewCount * 0.6)}
+                          <div className="flex gap-2">
+                            <Badge variant="secondary">리뷰 {item.review_count ?? 0}</Badge>
+                            <Badge variant="secondary">LIKE {item.like_count ?? 0}</Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
